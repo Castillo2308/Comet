@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LucideIcon } from 'lucide-react';
+import { DivideIcon as LucideIcon } from 'lucide-react';
 
 interface MenuItem {
   id: string;
