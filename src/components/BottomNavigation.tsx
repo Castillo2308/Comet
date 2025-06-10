@@ -78,24 +78,6 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
     }
   };
 
-  const handleMouseEnter = (tabId: string, hasMenu?: boolean) => {
-    if (tabId === 'announcements' && hasMenu) {
-      setShowAnnouncementsMenu(true);
-      setShowChatMenu(false);
-    } else if (tabId === 'chat' && hasMenu) {
-      setShowChatMenu(true);
-      setShowAnnouncementsMenu(false);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    // Don't close immediately to allow hovering over menu items
-    setTimeout(() => {
-      setShowAnnouncementsMenu(false);
-      setShowChatMenu(false);
-    }, 200);
-  };
-
   return (
     <>
       <ReportModal 
@@ -118,8 +100,8 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
       />
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-2 z-30 shadow-lg">
-        <nav className="flex items-center justify-around">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-2 py-2 z-30 shadow-lg safe-area-bottom">
+        <nav className="flex items-center justify-around max-w-sm mx-auto">
           {navItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -130,18 +112,16 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
                 key={item.id}
                 ref={item.id === 'announcements' ? announcementsRef : item.id === 'chat' ? chatRef : null}
                 onClick={() => handleTabClick(item.id, item.hasMenu)}
-                onMouseEnter={() => handleMouseEnter(item.id, item.hasMenu)}
-                onMouseLeave={handleMouseLeave}
                 className={`flex flex-col items-center justify-center p-2 transition-all duration-300 transform ${
                   isCenter
-                    ? 'bg-blue-500 text-white rounded-full w-14 h-14 -mt-6 shadow-xl hover:bg-blue-600 hover:scale-110 active:scale-95'
+                    ? 'bg-blue-500 text-white rounded-full w-12 h-12 -mt-4 shadow-xl hover:bg-blue-600 hover:scale-110 active:scale-95'
                     : isActive
                     ? 'text-blue-500 scale-110'
                     : 'text-gray-400 hover:text-gray-600 hover:scale-105'
                 }`}
               >
                 <IconComponent 
-                  className={`${isCenter ? 'h-6 w-6' : 'h-5 w-5'} mb-1 transition-transform duration-200`} 
+                  className={`${isCenter ? 'h-5 w-5' : 'h-4 w-4'} ${isCenter ? '' : 'mb-1'} transition-transform duration-200`} 
                 />
                 {!isCenter && (
                   <span className="text-xs font-medium transition-all duration-200">{item.label}</span>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import BottomNavigation from './BottomNavigation';
 
 interface LayoutProps {
@@ -9,8 +9,10 @@ interface LayoutProps {
 
 export default function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {children}
+    <div className="min-h-screen bg-gray-50 flex flex-col relative overflow-hidden">
+      <main className="flex-1 overflow-hidden">
+        {children}
+      </main>
       <BottomNavigation activeTab={activeTab} onTabChange={onTabChange} />
     </div>
   );

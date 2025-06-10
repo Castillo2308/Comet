@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LucideIcon } from 'lucide-react';
 
 interface MenuItem {
@@ -16,9 +16,24 @@ interface CircularMenuProps {
 }
 
 export default function CircularMenu({ items, isOpen, onClose, triggerRef }: CircularMenuProps) {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      setPosition({
+        x: centerX,
+        y: centerY
+      });
+    }
+  }, [isOpen, triggerRef]);
+
   if (!isOpen) return null;
 
-  const radius = 60;
+  const radius = 50;
   const angleStep = (2 * Math.PI) / items.length;
 
   return (
@@ -30,15 +45,18 @@ export default function CircularMenu({ items, isOpen, onClose, triggerRef }: Cir
       />
       
       {/* Menu Items */}
-      <div className="fixed z-50" style={{
-        left: triggerRef.current ? triggerRef.current.offsetLeft + triggerRef.current.offsetWidth / 2 : 0,
-        bottom: triggerRef.current ? window.innerHeight - triggerRef.current.offsetTop + 10 : 0,
-        transform: 'translateX(-50%)'
-      }}>
+      <div 
+        className="fixed z-50"
+        style={{
+          left: position.x,
+          top: position.y,
+          transform: 'translate(-50%, -50%)'
+        }}
+      >
         {items.map((item, index) => {
           const angle = angleStep * index - Math.PI / 2; // Start from top
           const x = Math.cos(angle) * radius;
-          const y = Math.sin(angle) * radius;
+          const y = Math.sin(angle) * radius - 20; // Move up to avoid bottom nav
           const IconComponent = item.icon;
           
           return (
@@ -57,6 +75,7 @@ export default function CircularMenu({ items, isOpen, onClose, triggerRef }: Cir
               }}
             >
               <IconComponent className="h-5 w-5 text-gray-600" />
+              <span className="sr-only">{item.label}</span>
             </button>
           );
         })}

@@ -6,19 +6,19 @@ export default function Announcements() {
   const { user } = useAuth();
 
   return (
-    <div className="flex-1 overflow-y-auto pb-20">
+    <div className="flex-1 overflow-y-auto pb-20 min-h-screen">
       {/* Header with background image */}
       <div 
-        className="relative h-48 bg-cover bg-center"
+        className="relative h-40 bg-cover bg-center"
         style={{
           backgroundImage: 'url(https://images.pexels.com/photos/1563356/pexels-photo-1563356.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&dpr=1)'
         }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-        <div className="relative z-10 p-6 h-full flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-4">
+        <div className="relative z-10 p-4 h-full flex flex-col justify-center">
+          <div className="flex items-center justify-between mb-2">
             <div>
-              <h1 className="text-2xl font-bold text-white mb-2">¡Descubre!</h1>
+              <h1 className="text-xl font-bold text-white mb-1">¡Descubre!</h1>
               <p className="text-white text-sm opacity-90">
                 Aquí puedes conocer más de tu cantón.
               </p>
@@ -30,17 +30,17 @@ export default function Announcements() {
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-4 py-4 space-y-4">
         {/* What do you want to know section */}
         <section className="animate-fadeInUp">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">¿Qué deseas conocer?</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">¿Qué deseas conocer?</h2>
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-green-500 text-white p-4 rounded-2xl hover:bg-green-600 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-              <h3 className="font-semibold text-lg mb-2">Parques</h3>
+              <h3 className="font-semibold text-base mb-1">Parques</h3>
               <p className="text-sm opacity-90">Ubicación de ruta uu cantón.</p>
             </div>
             <div className="bg-gray-400 text-white p-4 rounded-2xl hover:bg-gray-500 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-              <h3 className="font-semibold text-lg mb-2">Servicios</h3>
+              <h3 className="font-semibold text-base mb-1">Servicios</h3>
               <p className="text-sm opacity-90">Comicios municipales disponibles.</p>
             </div>
           </div>
@@ -48,28 +48,28 @@ export default function Announcements() {
 
         {/* Did you know section */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">¿Sabías qué...</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">¿Sabías qué...</h2>
           <div className="space-y-3">
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-105">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
               <div className="flex items-center space-x-3">
-                <div className="bg-gray-100 p-3 rounded-full">
-                  <Bus className="h-6 w-6 text-gray-600" />
+                <div className="bg-gray-100 p-2 rounded-full">
+                  <Bus className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">30 autobuses transitan</h3>
-                  <p className="text-gray-600 text-sm">diariamente por el cantón.</p>
+                  <h3 className="font-semibold text-gray-900 text-sm">30 autobuses transitan</h3>
+                  <p className="text-gray-600 text-xs">diariamente por el cantón.</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-105">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
               <div className="flex items-center space-x-3">
-                <div className="bg-gray-100 p-3 rounded-full">
-                  <Mountain className="h-6 w-6 text-gray-600" />
+                <div className="bg-gray-100 p-2 rounded-full">
+                  <Mountain className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">La montaña más alta</h3>
-                  <p className="text-gray-600 text-sm">está a 2050 MSNM.</p>
+                  <h3 className="font-semibold text-gray-900 text-sm">La montaña más alta</h3>
+                  <p className="text-gray-600 text-xs">está a 2050 MSNM.</p>
                 </div>
               </div>
             </div>
