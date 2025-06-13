@@ -19,21 +19,9 @@ html, body, #root {
   overflow-x: hidden;
 }
 
-/* Safe area for mobile devices - iPhone compatibility */
-.pb-safe {
+/* Safe area for mobile devices */
+.safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
-}
-
-.pt-safe {
-  padding-top: env(safe-area-inset-top);
-}
-
-.pl-safe {
-  padding-left: env(safe-area-inset-left);
-}
-
-.pr-safe {
-  padding-right: env(safe-area-inset-right);
 }
 
 /* Line clamp utility */
@@ -265,23 +253,10 @@ input:focus, textarea:focus, select:focus, button:focus {
   box-sizing: border-box;
 }
 
-/* Fix viewport issues on mobile - especially for iPhone */
+/* Fix viewport issues on mobile */
 @supports (-webkit-touch-callout: none) {
   .min-h-screen {
     min-height: -webkit-fill-available;
-  }
-  
-  /* Additional iPhone safe area handling */
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* iPhone specific fixes */
-@media screen and (max-width: 430px) and (-webkit-min-device-pixel-ratio: 2) {
-  /* iPhone 15 and similar models */
-  .fixed.bottom-0 {
-    bottom: env(safe-area-inset-bottom, 0);
   }
 }
 
@@ -345,33 +320,4 @@ input:focus, textarea:focus, select:focus, button:focus {
   100% {
     background-position: -200% 0;
   }
-}
-
-/* Additional mobile navigation fixes */
-.mobile-nav-container {
-  padding-bottom: max(env(safe-area-inset-bottom), 20px);
-}
-
-/* Ensure content doesn't get hidden behind navigation */
-.content-with-nav {
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
-}
-
-/* Side menu animations */
-@keyframes slideInFromRight {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.animate-slideInFromRight {
-  animation: slideInFromRight 0.3s ease-out;
-}
-
-/* Active scale animation */
-.active\:scale-98:active {
-  transform: scale(0.98);
 }
