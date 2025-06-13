@@ -356,3 +356,22 @@ input:focus, textarea:focus, select:focus, button:focus {
 .content-with-nav {
   padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
+
+/* Side menu animations */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slideInFromRight {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+/* Active scale animation */
+.active\:scale-98:active {
+  transform: scale(0.98);
+}

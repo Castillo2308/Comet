@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Home, Megaphone, Plus, Info, MoreHorizontal, Calendar, Bell, Users, Bus, MapPin, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ReportModal from './ReportModal';
+import SideMenu from './SideMenu';
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -12,6 +13,7 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
   const [showReportModal, setShowReportModal] = useState(false);
   const [showAnnouncementsSubmenu, setShowAnnouncementsSubmenu] = useState(false);
   const [showInfoSubmenu, setShowInfoSubmenu] = useState(false);
+  const [showSideMenu, setShowSideMenu] = useState(false);
   const { user } = useAuth();
 
   const navItems = [
@@ -25,7 +27,7 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
   const announcementsSubmenuItems = [
     { id: 'events', icon: Calendar, label: 'Eventos', action: () => console.log('Eventos clicked') },
     { id: 'notifications', icon: Bell, label: 'Notificaciones', action: () => console.log('Notificaciones clicked') },
-    { id: 'community', icon: Users, label: 'Comunidad', action: () => console.log('Comunidad clicked') }
+    { id: 'community', icon: Users, label: 'Comunidad', action: () => onTabChange('community') }
   ];
 
   const infoSubmenuItems = [
@@ -36,6 +38,8 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
   const handleTabClick = (tabId: string, hasSubmenu?: boolean) => {
     if (tabId === 'report') {
       setShowReportModal(true);
+    } else if (tabId === 'menu') {
+      setShowSideMenu(true);
     } else if (tabId === 'announcements' && hasSubmenu) {
       setShowAnnouncementsSubmenu(true);
       setShowInfoSubmenu(false);
@@ -131,6 +135,11 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
       <ReportModal 
         isOpen={showReportModal} 
         onClose={() => setShowReportModal(false)} 
+      />
+
+      <SideMenu 
+        isOpen={showSideMenu} 
+        onClose={() => setShowSideMenu(false)} 
       />
 
       {/* Bottom Navigation - Fixed for iPhone safe area */}
