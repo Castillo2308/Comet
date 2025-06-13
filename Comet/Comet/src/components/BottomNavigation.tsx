@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Home, Megaphone, Plus, Info, MoreHorizontal, Calendar, Bell, Users, Bus, MapPin, ArrowLeft } from 'lucide-react';
+import { Home, Megaphone, Plus, MessageCircle, MoreHorizontal, Calendar, Bell, Users, Shield, Phone, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ReportModal from './ReportModal';
-import SideMenu from './SideMenu';
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -12,56 +11,53 @@ interface BottomNavigationProps {
 export default function BottomNavigation({ activeTab, onTabChange }: BottomNavigationProps) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showAnnouncementsSubmenu, setShowAnnouncementsSubmenu] = useState(false);
-  const [showInfoSubmenu, setShowInfoSubmenu] = useState(false);
-  const [showSideMenu, setShowSideMenu] = useState(false);
+  const [showChatSubmenu, setShowChatSubmenu] = useState(false);
   const { user } = useAuth();
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Inicio' },
     { id: 'announcements', icon: Megaphone, label: 'Anuncios', hasSubmenu: true },
     { id: 'report', icon: Plus, label: 'Reportar', isCenter: true },
-    { id: 'info', icon: Info, label: 'Información', hasSubmenu: true },
+    { id: 'chat', icon: MessageCircle, label: 'Chat', hasSubmenu: true },
     { id: 'menu', icon: MoreHorizontal, label: 'Menú' },
   ];
 
   const announcementsSubmenuItems = [
     { id: 'events', icon: Calendar, label: 'Eventos', action: () => console.log('Eventos clicked') },
     { id: 'notifications', icon: Bell, label: 'Notificaciones', action: () => console.log('Notificaciones clicked') },
-    { id: 'community', icon: Users, label: 'Comunidad', action: () => onTabChange('community') }
+    { id: 'community', icon: Users, label: 'Comunidad', action: () => console.log('Comunidad clicked') }
   ];
 
-  const infoSubmenuItems = [
-    { id: 'security', icon: Users, label: 'Seguridad', action: () => onTabChange('security') },
-    { id: 'buses', icon: Bus, label: 'Buses', action: () => onTabChange('buses') }
+  const chatSubmenuItems = [
+    { id: 'security', icon: Shield, label: 'Seguridad', action: () => onTabChange('security') },
+    { id: 'emergency', icon: Phone, label: 'Emergencia', action: () => console.log('Emergencia clicked') }
   ];
 
   const handleTabClick = (tabId: string, hasSubmenu?: boolean) => {
     if (tabId === 'report') {
       setShowReportModal(true);
-    } else if (tabId === 'menu') {
-      setShowSideMenu(true);
     } else if (tabId === 'announcements' && hasSubmenu) {
       setShowAnnouncementsSubmenu(true);
-      setShowInfoSubmenu(false);
-    } else if (tabId === 'info' && hasSubmenu) {
-      setShowInfoSubmenu(true);
+      setShowChatSubmenu(false);
+    } else if (tabId === 'chat' && hasSubmenu) {
+      setShowChatSubmenu(true);
       setShowAnnouncementsSubmenu(false);
     } else {
       onTabChange(tabId);
       setShowAnnouncementsSubmenu(false);
-      setShowInfoSubmenu(false);
+      setShowChatSubmenu(false);
     }
   };
 
   const handleSubmenuItemClick = (action: () => void) => {
     action();
     setShowAnnouncementsSubmenu(false);
-    setShowInfoSubmenu(false);
+    setShowChatSubmenu(false);
   };
 
   const handleBackClick = () => {
     setShowAnnouncementsSubmenu(false);
-    setShowInfoSubmenu(false);
+    setShowChatSubmenu(false);
   };
 
   const renderNormalNavigation = () => (
@@ -137,28 +133,21 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
         onClose={() => setShowReportModal(false)} 
       />
 
-      <SideMenu 
-        isOpen={showSideMenu} 
-        onClose={() => setShowSideMenu(false)} 
-      />
-
-      {/* Bottom Navigation - Fixed for iPhone safe area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-2 sm:px-4 py-2 sm:py-3 z-30 shadow-lg">
-        <div className="pb-safe">
-          {showAnnouncementsSubmenu ? (
-            <div className="transform transition-all duration-300 animate-slideInRight">
-              {renderSubmenuNavigation(announcementsSubmenuItems, 'Anuncios')}
-            </div>
-          ) : showInfoSubmenu ? (
-            <div className="transform transition-all duration-300 animate-slideInRight">
-              {renderSubmenuNavigation(infoSubmenuItems, 'Información')}
-            </div>
-          ) : (
-            <div className="transform transition-all duration-300">
-              {renderNormalNavigation()}
-            </div>
-          )}
-        </div>
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-2 sm:px-4 py-2 sm:py-3 z-30 shadow-lg safe-area-bottom">
+        {showAnnouncementsSubmenu ? (
+          <div className="transform transition-all duration-300 animate-slideInRight">
+            {renderSubmenuNavigation(announcementsSubmenuItems, 'Anuncios')}
+          </div>
+        ) : showChatSubmenu ? (
+          <div className="transform transition-all duration-300 animate-slideInRight">
+            {renderSubmenuNavigation(chatSubmenuItems, 'Chat')}
+          </div>
+        ) : (
+          <div className="transform transition-all duration-300">
+            {renderNormalNavigation()}
+          </div>
+        )}
       </div>
     </>
   );

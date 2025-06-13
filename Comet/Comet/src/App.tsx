@@ -6,8 +6,6 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Announcements from './pages/Announcements';
 import Security from './pages/Security';
-import Buses from './pages/Buses';
-import Community from './pages/Community';
 import Layout from './components/Layout';
 
 function AppRoutes() {
@@ -22,11 +20,7 @@ function AppRoutes() {
         return <Announcements />;
       case 'security':
         return <Security />;
-      case 'buses':
-        return <Buses />;
-      case 'community':
-        return <Community />;
-      case 'info':
+      case 'chat':
         return <Dashboard />; // Placeholder for now
       case 'menu':
         return <Dashboard />; // Placeholder for now
