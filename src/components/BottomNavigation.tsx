@@ -25,7 +25,7 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
   ];
 
   const announcementsSubmenuItems = [
-    { id: 'events', icon: Calendar, label: 'Eventos', action: () => console.log('Eventos clicked') },
+    { id: 'events', icon: Calendar, label: 'Eventos', action: () => onTabChange('events') },
     { id: 'notifications', icon: Bell, label: 'Notificaciones', action: () => console.log('Notificaciones clicked') },
     { id: 'community', icon: Users, label: 'Comunidad', action: () => onTabChange('community') }
   ];
@@ -100,7 +100,7 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
       {/* Back button */}
       <button
         onClick={handleBackClick}
-        className="flex flex-col items-center justify-center p-2 sm:p-3 text-gray-400 hover:text-gray-600 hover:scale-105 transition-all duration-300"
+        className="flex flex-col items-center justify-center p-2 sm:p-3 text-gray-400 hover:text-gray-600 hover:scale-105 transition-all duration-300 transform"
       >
         <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
         <span className="text-xs sm:text-sm font-medium">Atrás</span>

@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MapPin, Bus, Mountain } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import UserProfileModal from '../components/UserProfileModal';
 
 export default function Announcements() {
   const { user } = useAuth();
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   return (
     <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 min-h-screen">
+      <UserProfileModal 
+        isOpen={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+      />
+
       {/* Header with background image */}
       <div 
         className="relative h-32 sm:h-40 bg-cover bg-center"
@@ -23,7 +30,10 @@ export default function Announcements() {
                 Aquí puedes conocer más de tu cantón.
               </p>
             </div>
-            <button className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95">
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
+            >
               {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
             </button>
           </div>
@@ -50,9 +60,9 @@ export default function Announcements() {
         <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">¿Sabías qué...</h2>
           <div className="space-y-2 sm:space-y-3">
-            <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover-lift">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]">
               <div className="flex items-center space-x-3">
-                <div className="bg-gray-100 p-2 rounded-full">
+                <div className="bg-gray-100 p-2 rounded-full transform transition-transform duration-200 hover:scale-110">
                   <Bus className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
                 </div>
                 <div>
@@ -62,9 +72,9 @@ export default function Announcements() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover-lift">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]">
               <div className="flex items-center space-x-3">
-                <div className="bg-gray-100 p-2 rounded-full">
+                <div className="bg-gray-100 p-2 rounded-full transform transition-transform duration-200 hover:scale-110">
                   <Mountain className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
                 </div>
                 <div>

@@ -47,7 +47,7 @@ export default function Dashboard() {
             {mockReports.map((report, index) => (
               <div 
                 key={report.id} 
-                className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover-lift"
+                className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp"
                 style={{
                   animationDelay: `${index * 0.1}s`
                 }}
@@ -56,7 +56,7 @@ export default function Dashboard() {
                   <img
                     src={report.image}
                     alt={report.title}
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl object-cover flex-shrink-0"
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl object-cover flex-shrink-0 transition-transform duration-300 hover:scale-110"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
@@ -65,7 +65,7 @@ export default function Dashboard() {
                         <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
                           {report.status}
                         </span>
-                        <button className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1">
+                        <button className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full">
                           <MoreHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
                         </button>
                       </div>
@@ -85,7 +85,7 @@ export default function Dashboard() {
         {/* Important News Section */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">Noticias importantes</h2>
-          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-all duration-300">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]">
             <p className="text-gray-500 text-xs sm:text-sm">No hay noticias disponibles</p>
           </div>
         </section>

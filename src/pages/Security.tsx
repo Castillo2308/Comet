@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus, Shield, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import UserProfileModal from '../components/UserProfileModal';
 
 export default function Security() {
   const { user } = useAuth();
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const dangerousZones = [
     {
@@ -27,11 +29,19 @@ export default function Security() {
 
   return (
     <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 min-h-screen">
+      <UserProfileModal 
+        isOpen={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+      />
+
       {/* Header */}
       <div className="bg-white px-3 sm:px-4 py-3 sm:py-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-lg sm:text-xl font-bold text-blue-600">Seguridad</h1>
-          <button className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95">
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
+          >
             {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
           </button>
         </div>
@@ -54,7 +64,7 @@ export default function Security() {
             {dangerousZones.map((zone) => (
               <div 
                 key={zone.id}
-                className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover-lift"
+                className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
               >
                 <h3 className="font-semibold text-gray-900 mb-1 text-xs sm:text-sm">{zone.name}</h3>
                 <p className="text-gray-600 text-xs mb-2">{zone.description}</p>
@@ -73,10 +83,10 @@ export default function Security() {
               return (
                 <div 
                   key={news.id}
-                  className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 hover-lift"
+                  className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
                 >
                   <div className="flex items-start space-x-3">
-                    <div className="bg-blue-100 p-2 rounded-full">
+                    <div className="bg-blue-100 p-2 rounded-full transform transition-transform duration-200 hover:scale-110">
                       <IconComponent className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
