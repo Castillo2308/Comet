@@ -9,6 +9,7 @@ import Security from './pages/Security';
 import Buses from './pages/Buses';
 import Community from './pages/Community';
 import Events from './pages/Events';
+import RedPoints from './pages/RedPoints';
 import Layout from './components/Layout';
 
 function AppRoutes() {
@@ -29,6 +30,8 @@ function AppRoutes() {
         return <Community />;
       case 'events':
         return <Events />;
+      case 'redpoints':
+        return <RedPoints />;
       case 'info':
         return <Dashboard />; // Placeholder for now
       case 'menu':

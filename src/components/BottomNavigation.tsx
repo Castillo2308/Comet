@@ -32,7 +32,8 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
 
   const infoSubmenuItems = [
     { id: 'security', icon: Users, label: 'Seguridad', action: () => onTabChange('security') },
-    { id: 'buses', icon: Bus, label: 'Buses', action: () => onTabChange('buses') }
+    { id: 'buses', icon: Bus, label: 'Buses', action: () => onTabChange('buses') },
+    { id: 'redpoints', icon: MapPin, label: 'Puntos Rojos', action: () => onTabChange('redpoints') }
   ];
 
   const handleTabClick = (tabId: string, hasSubmenu?: boolean) => {
