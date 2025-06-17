@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Bus, Clock, MapPin, Route, Users, Navigation, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
@@ -51,81 +51,16 @@ const busRoutes = [
 ];
 
 const busStops = [
-  { name: 'Terminal Central', routes: ['401', '402', '403'], lat: 9.9281, lng: -84.0907 },
-  { name: 'Parque Central', routes: ['401', '403'], lat: 9.9285, lng: -84.0912 },
-  { name: 'Hospital Nacional', routes: ['404'], lat: 9.9290, lng: -84.0920 },
-  { name: 'Centro Comercial', routes: ['401', '402'], lat: 9.9275, lng: -84.0900 },
-  { name: 'Escuela Principal', routes: ['403', '404'], lat: 9.9295, lng: -84.0925 }
+  { name: 'Terminal Central', routes: ['401', '402', '403'] },
+  { name: 'Parque Central', routes: ['401', '403'] },
+  { name: 'Hospital Nacional', routes: ['404'] },
+  { name: 'Centro Comercial', routes: ['401', '402'] },
+  { name: 'Escuela Principal', routes: ['403', '404'] }
 ];
 
 export default function Buses() {
   const { user } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [selectedRoute, setSelectedRoute] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Initialize Leaflet map
-    const initMap = async () => {
-      if (typeof window !== 'undefined' && mapRef.current) {
-        // Dynamically import Leaflet to avoid SSR issues
-        const L = (await import('leaflet')).default;
-        
-        // Create map centered on Alajuelita
-        const map = L.map(mapRef.current).setView([9.9281, -84.0907], 15);
-        
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Add bus stops markers
-        busStops.forEach((stop, index) => {
-          const marker = L.marker([stop.lat, stop.lng]).addTo(map);
-          marker.bindPopup(`
-            <div class="p-2">
-              <h3 class="font-semibold text-sm">${stop.name}</h3>
-              <p class="text-xs text-gray-600">Rutas: ${stop.routes.join(', ')}</p>
-            </div>
-          `);
-        });
-
-        // Add animated bus markers
-        busRoutes.forEach((route, index) => {
-          const busIcon = L.divIcon({
-            html: `<div class="w-6 h-6 ${route.color} rounded-full flex items-center justify-center animate-pulse">
-                     <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                       <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-                       <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1V8a1 1 0 00-1-1h-3z"/>
-                     </svg>
-                   </div>`,
-            className: 'bus-marker',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
-          });
-
-          // Random position near Alajuelita for demo
-          const lat = 9.9281 + (Math.random() - 0.5) * 0.01;
-          const lng = -84.0907 + (Math.random() - 0.5) * 0.01;
-          
-          const busMarker = L.marker([lat, lng], { icon: busIcon }).addTo(map);
-          busMarker.bindPopup(`
-            <div class="p-2">
-              <h3 class="font-semibold text-sm">${route.name}</h3>
-              <p class="text-xs text-gray-600">${route.destination}</p>
-              <p class="text-xs text-green-600">Próxima llegada: ${route.nextArrival}</p>
-            </div>
-          `);
-        });
-
-        return () => {
-          map.remove();
-        };
-      }
-    };
-
-    initMap();
-  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -157,7 +92,7 @@ export default function Buses() {
         <p className="text-gray-600 text-xs sm:text-sm">Información en tiempo real sobre rutas de autobuses en Alajuelita</p>
       </div>
 
-      {/* Real Map Section */}
+      {/* Simulated Map Section */}
       <div className="px-3 sm:px-4 py-3 sm:py-4">
         <section className="animate-fadeInUp mb-4">
           <div className="flex items-center justify-between mb-3">
@@ -174,36 +109,74 @@ export default function Buses() {
           </div>
           
           <div className="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-            {/* Map Container */}
-            <div 
-              ref={mapRef} 
-              className="w-full h-64 sm:h-80 bg-gray-100"
-              style={{ minHeight: '300px' }}
-            />
-            
-            {/* Map Overlay Controls */}
-            <div className="absolute top-3 left-3 bg-white rounded-lg shadow-md p-2">
-              <div className="flex flex-col space-y-1">
-                {busRoutes.map((route) => (
-                  <button
-                    key={route.id}
-                    onClick={() => setSelectedRoute(selectedRoute === route.id ? null : route.id)}
-                    className={`flex items-center space-x-2 px-2 py-1 rounded text-xs transition-all duration-200 transform hover:scale-105 ${
-                      selectedRoute === route.id ? 'bg-blue-100' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className={`w-3 h-3 rounded-full ${route.color}`}></div>
-                    <span className="font-medium">{route.name}</span>
-                  </button>
-                ))}
+            {/* Simulated Map */}
+            <div className="w-full h-64 sm:h-80 bg-gradient-to-br from-green-100 via-blue-50 to-green-50 relative">
+              {/* Grid pattern to simulate map */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="grid grid-cols-8 grid-rows-6 h-full">
+                  {Array.from({ length: 48 }).map((_, i) => (
+                    <div key={i} className="border border-gray-300"></div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Simulated roads */}
+              <div className="absolute top-1/3 left-0 right-0 h-2 bg-gray-300 opacity-60"></div>
+              <div className="absolute top-2/3 left-0 right-0 h-2 bg-gray-300 opacity-60"></div>
+              <div className="absolute top-0 bottom-0 left-1/4 w-2 bg-gray-300 opacity-60"></div>
+              <div className="absolute top-0 bottom-0 right-1/4 w-2 bg-gray-300 opacity-60"></div>
+              
+              {/* Animated bus markers */}
+              {busRoutes.map((route, index) => (
+                <div
+                  key={route.id}
+                  className={`absolute w-6 h-6 ${route.color} rounded-full flex items-center justify-center animate-pulse transform transition-all duration-1000`}
+                  style={{
+                    top: `${20 + (index * 15)}%`,
+                    left: `${15 + (index * 20)}%`,
+                    animation: `float 3s ease-in-out infinite ${index * 0.5}s`
+                  }}
+                >
+                  <Bus className="h-3 w-3 text-white" />
+                </div>
+              ))}
+              
+              {/* Bus stops */}
+              {busStops.map((stop, index) => (
+                <div
+                  key={index}
+                  className="absolute w-4 h-4 bg-white border-2 border-blue-500 rounded-full flex items-center justify-center"
+                  style={{
+                    top: `${25 + (index * 12)}%`,
+                    left: `${30 + (index * 15)}%`
+                  }}
+                >
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+              ))}
+              
+              {/* Location indicator */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-lg animate-ping"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full"></div>
               </div>
             </div>
-
-            {/* Loading indicator for map */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                <span className="text-sm text-gray-600">Cargando mapa...</span>
+            
+            {/* Map legend */}
+            <div className="absolute bottom-3 left-3 bg-white rounded-lg shadow-md p-2">
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center space-x-2 text-xs">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span>Tu ubicación</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs">
+                  <div className="w-3 h-3 bg-blue-500 border border-white rounded-full"></div>
+                  <span>Paradas</span>
+                </div>
+                <div className="flex items-center space-x-2 text-xs">
+                  <Bus className="h-3 w-3 text-gray-600" />
+                  <span>Autobuses</span>
+                </div>
               </div>
             </div>
           </div>
@@ -347,18 +320,27 @@ export default function Buses() {
         </section>
       </div>
 
-      {/* Add Leaflet CSS */}
-      <link 
-        rel="stylesheet" 
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-        crossOrigin=""
-      />
-      <script 
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossOrigin=""
-      ></script>
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
