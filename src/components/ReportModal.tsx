@@ -4,9 +4,10 @@ import { X, Megaphone, Upload } from 'lucide-react';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit?: (report: any) => void;
 }
 
-export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
+export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -26,8 +27,26 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Report submitted:', formData);
+    
+    const newReport = {
+      id: Date.now(),
+      title: formData.title,
+      description: formData.description,
+      type: formData.type,
+      location: formData.location,
+      status: 'Pendiente',
+      date: 'ahora',
+      image: 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
+    };
+
+    // Call the onSubmit callback if provided
+    if (onSubmit) {
+      onSubmit(newReport);
+    }
+
+    console.log('Report submitted:', newReport);
     onClose();
+    
     // Reset form
     setFormData({
       title: '',

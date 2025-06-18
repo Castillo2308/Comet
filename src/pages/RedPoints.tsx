@@ -167,7 +167,7 @@ export default function RedPoints() {
                   placeholder="Ubicación específica"
                   value={newPoint.location}
                   onChange={(e) => setNewPoint({ ...newPoint, location: e.target.value })}
-                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50"
                   required
                 />
 
@@ -176,7 +176,7 @@ export default function RedPoints() {
                   value={newPoint.description}
                   onChange={(e) => setNewPoint({ ...newPoint, description: e.target.value })}
                   rows={3}
-                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 resize-none bg-gray-50"
+                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none bg-gray-50"
                   required
                 />
 
@@ -185,14 +185,14 @@ export default function RedPoints() {
                   placeholder="Horario peligroso (ej: 8:00 PM - 11:00 PM)"
                   value={newPoint.timeRange}
                   onChange={(e) => setNewPoint({ ...newPoint, timeRange: e.target.value })}
-                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50"
                   required
                 />
 
                 <select
                   value={newPoint.riskLevel}
                   onChange={(e) => setNewPoint({ ...newPoint, riskLevel: e.target.value as 'Alto' | 'Medio' | 'Bajo' })}
-                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50"
+                  className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50"
                 >
                   <option value="Bajo">Riesgo Bajo</option>
                   <option value="Medio">Riesgo Medio</option>
@@ -223,7 +223,7 @@ export default function RedPoints() {
       {/* Header */}
       <div className="bg-white px-3 sm:px-4 py-3 sm:py-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-lg sm:text-xl font-bold text-red-600">Puntos Rojos</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-blue-600">Puntos Rojos</h1>
           <button
             onClick={() => setShowProfileModal(true)}
             className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
@@ -237,10 +237,10 @@ export default function RedPoints() {
       {/* Map Section */}
       <div className="px-3 sm:px-4 py-3 sm:py-4">
         <section className="animate-fadeInUp mb-4">
-          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-100 relative overflow-hidden">
             {/* Simulated map background */}
             <div className="absolute inset-0 opacity-10">
-              <div className="w-full h-full bg-gradient-to-br from-red-400 via-orange-400 to-yellow-400"></div>
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600"></div>
             </div>
             
             {/* Map content */}
@@ -248,12 +248,12 @@ export default function RedPoints() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-900">Alajuelita - Zonas Calientes</h3>
                 <div className="bg-white px-3 py-1 rounded-full shadow-sm">
-                  <span className="text-xs font-medium text-red-600">Puntos Rojos</span>
+                  <span className="text-xs font-medium text-blue-600">Puntos Rojos</span>
                 </div>
               </div>
               
               {/* Simulated map with danger points */}
-              <div className="relative h-32 bg-white bg-opacity-50 rounded-lg border border-red-200">
+              <div className="relative h-32 bg-white bg-opacity-50 rounded-lg border border-blue-200">
                 {/* Danger points */}
                 <div className="absolute top-2 left-4 w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-lg"></div>
                 <div className="absolute top-6 right-6 w-3 h-3 bg-yellow-500 rounded-full animate-pulse shadow-lg"></div>
@@ -262,8 +262,8 @@ export default function RedPoints() {
                 
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <MapPin className="h-6 w-6 text-red-500 mx-auto mb-1" />
-                    <span className="text-xs text-red-600 font-medium">Zonas Calientes</span>
+                    <MapPin className="h-6 w-6 text-blue-500 mx-auto mb-1" />
+                    <span className="text-xs text-blue-600 font-medium">Zonas Calientes</span>
                   </div>
                 </div>
               </div>
@@ -305,8 +305,8 @@ export default function RedPoints() {
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-start space-x-3">
-                    <div className="bg-red-100 w-10 h-10 rounded-full flex items-center justify-center">
-                      <MapPin className="h-5 w-5 text-red-500" />
+                    <div className="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center">
+                      <MapPin className="h-5 w-5 text-blue-500" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 text-sm">{point.location}</h3>

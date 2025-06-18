@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, User, Clock } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Send, User, Clock, Camera, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
@@ -101,6 +101,8 @@ export default function Community() {
   const [expandedPost, setExpandedPost] = useState<number | null>(null);
   const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
   const [newPost, setNewPost] = useState('');
+  const [newPostImage, setNewPostImage] = useState<File | null>(null);
+  const [newPostImagePreview, setNewPostImagePreview] = useState<string | null>(null);
   const [showNewPost, setShowNewPost] = useState(false);
 
   const handleLikePost = (postId: number) => {
@@ -158,6 +160,23 @@ export default function Community() {
     setNewComment(prev => ({ ...prev, [postId]: '' }));
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewPostImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setNewPostImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setNewPostImage(null);
+    setNewPostImagePreview(null);
+  };
+
   const handleAddPost = () => {
     if (!newPost.trim()) return;
 
@@ -167,6 +186,7 @@ export default function Community() {
       avatar: `${user?.name?.charAt(0)}${user?.lastName?.charAt(0)}`,
       time: 'ahora',
       content: newPost,
+      image: newPostImagePreview || undefined,
       likes: 0,
       comments: 0,
       isLiked: false
@@ -174,6 +194,8 @@ export default function Community() {
 
     setPosts([newPostObj, ...posts]);
     setNewPost('');
+    setNewPostImage(null);
+    setNewPostImagePreview(null);
     setShowNewPost(false);
   };
 
@@ -224,6 +246,7 @@ export default function Community() {
                 <span className="text-gray-500 text-xs">Publicando ahora</span>
               </div>
             </div>
+            
             <textarea
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
@@ -231,20 +254,55 @@ export default function Community() {
               className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200"
               rows={3}
             />
-            <div className="flex justify-end space-x-2 mt-3">
-              <button
-                onClick={() => setShowNewPost(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleAddPost}
-                disabled={!newPost.trim()}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
-              >
-                Publicar
-              </button>
+
+            {/* Image Preview */}
+            {newPostImagePreview && (
+              <div className="mt-3 relative">
+                <img
+                  src={newPostImagePreview}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <button
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors duration-200"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mt-3">
+              <label className="flex items-center space-x-2 text-blue-500 hover:text-blue-600 cursor-pointer transition-colors duration-200">
+                <Camera className="h-5 w-5" />
+                <span className="text-sm font-medium">Añadir foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+              
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    setShowNewPost(false);
+                    setNewPost('');
+                    removeImage();
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleAddPost}
+                  disabled={!newPost.trim()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
+                >
+                  Publicar
+                </button>
+              </div>
             </div>
           </section>
         )}

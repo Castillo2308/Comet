@@ -7,9 +7,10 @@ import SideMenu from './SideMenu';
 interface BottomNavigationProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onReportSubmit?: (report: any) => void;
 }
 
-export default function BottomNavigation({ activeTab, onTabChange }: BottomNavigationProps) {
+export default function BottomNavigation({ activeTab, onTabChange, onReportSubmit }: BottomNavigationProps) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showAnnouncementsSubmenu, setShowAnnouncementsSubmenu] = useState(false);
   const [showInfoSubmenu, setShowInfoSubmenu] = useState(false);
@@ -63,6 +64,12 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
   const handleBackClick = () => {
     setShowAnnouncementsSubmenu(false);
     setShowInfoSubmenu(false);
+  };
+
+  const handleReportSubmit = (report: any) => {
+    if (onReportSubmit) {
+      onReportSubmit(report);
+    }
   };
 
   const renderNormalNavigation = () => (
@@ -135,7 +142,8 @@ export default function BottomNavigation({ activeTab, onTabChange }: BottomNavig
     <>
       <ReportModal 
         isOpen={showReportModal} 
-        onClose={() => setShowReportModal(false)} 
+        onClose={() => setShowReportModal(false)}
+        onSubmit={handleReportSubmit}
       />
 
       <SideMenu 
