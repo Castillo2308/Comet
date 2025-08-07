@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Moon, Sun, Palette, Bell, Shield, Globe, Smartphone } from 'lucide-react';
+import { X, Moon, Sun, Palette, Bell, Shield, Globe, Smartphone, Settings } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;

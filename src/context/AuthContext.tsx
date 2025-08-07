@@ -6,11 +6,13 @@ interface User {
   email: string;
   lastName: string;
   cedula: string;
+  role: 'user' | 'admin';
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (name: string, lastName: string, cedula: string, email: string, password: string) => Promise<boolean>;
   signOut: () => void;
@@ -23,13 +25,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
     // Mock authentication - replace with real API call
-    if (email && password) {
+    if (email === 'admin' && password === 'admin') {
+      setUser({
+        id: 'admin',
+        name: 'Administrador',
+        email: 'admin@comet.com',
+        lastName: 'Sistema',
+        cedula: '000000000',
+        role: 'admin'
+      });
+      return true;
+    } else if (email && password) {
       setUser({
         id: '1',
         name: 'Usuario',
         email: email,
         lastName: 'Demo',
-        cedula: '123456789'
+        cedula: '123456789',
+        role: 'user'
       });
       return true;
     }
@@ -44,7 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name,
         email,
         lastName,
-        cedula
+        cedula,
+        role: 'user'
       });
       return true;
     }
@@ -59,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       isAuthenticated: !!user,
+      isAdmin: user?.role === 'admin',
       signIn,
       signUp,
       signOut

@@ -38,7 +38,10 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
       icon: Settings,
       label: 'Configuración',
       description: 'Ajusta tus preferencias',
-      action: () => setShowSettingsModal(true)
+      action: () => {
+        setShowSettingsModal(true);
+        onClose();
+      }
     },
     {
       id: 'about',

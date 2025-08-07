@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Announcements from './pages/Announcements';
 import Security from './pages/Security';
 import Buses from './pages/Buses';
@@ -13,8 +14,17 @@ import RedPoints from './pages/RedPoints';
 import Layout from './components/Layout';
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
+
+  // If user is admin, show admin interface
+  if (isAuthenticated && isAdmin) {
+    return (
+      <Routes>
+        <Route path="*" element={<AdminDashboard />} />
+      </Routes>
+    );
+  }
 
   const renderPageContent = () => {
     switch (activeTab) {
