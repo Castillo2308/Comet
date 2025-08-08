@@ -1,14 +1,13 @@
 import React from 'react';
 import { X, HelpCircle, MessageSquare, Bot, Settings, Info, Phone, Mail } from 'lucide-react';
-import SettingsModal from './SettingsModal';
 
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenSettings: () => void;
 }
 
-export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
-  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
+export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuProps) {
 
   const menuItems = [
     {
@@ -39,7 +38,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
       label: 'Configuración',
       description: 'Ajusta tus preferencias',
       action: () => {
-        setShowSettingsModal(true);
+        onOpenSettings();
         onClose();
       }
     },
@@ -63,11 +62,6 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
 
   return (
     <>
-      <SettingsModal 
-        isOpen={showSettingsModal} 
-        onClose={() => setShowSettingsModal(false)} 
-      />
-      
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 z-40 animate-fadeIn"

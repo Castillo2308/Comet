@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, FileText, AlertTriangle, Bus, Calendar, MessageSquare, BarChart3, Settings, Trash2, Edit, Eye, Plus, Search, Filter } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Bus, Calendar, MessageSquare, BarChart3, Settings, Trash2, Edit, Eye, Plus, Search, Filter, Download, Upload, RefreshCw, TrendingUp, Activity, Bell, CheckCircle, XCircle, Clock, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Report {
@@ -12,6 +12,7 @@ interface Report {
   date: string;
   user: string;
   priority: 'Alta' | 'Media' | 'Baja';
+  image?: string;
 }
 
 interface User {
@@ -22,6 +23,7 @@ interface User {
   status: 'Activo' | 'Inactivo';
   joinDate: string;
   reportsCount: number;
+  lastActivity: string;
 }
 
 interface Event {
@@ -31,6 +33,8 @@ interface Event {
   location: string;
   attendees: number;
   status: 'Programado' | 'En Curso' | 'Finalizado' | 'Cancelado';
+  category: string;
+  description: string;
 }
 
 const mockReports: Report[] = [
@@ -43,7 +47,8 @@ const mockReports: Report[] = [
     status: 'Pendiente',
     date: '2024-02-15',
     user: 'María González',
-    priority: 'Alta'
+    priority: 'Alta',
+    image: 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
   },
   {
     id: 2,
@@ -55,6 +60,17 @@ const mockReports: Report[] = [
     date: '2024-02-14',
     user: 'Carlos Rodríguez',
     priority: 'Media'
+  },
+  {
+    id: 3,
+    title: 'Semáforo dañado',
+    description: 'Semáforo intermitente en intersección principal',
+    type: 'Infraestructura',
+    location: 'Avenida Central',
+    status: 'Resuelto',
+    date: '2024-02-13',
+    user: 'Ana Jiménez',
+    priority: 'Alta'
   }
 ];
 
@@ -66,7 +82,8 @@ const mockUsers: User[] = [
     role: 'user',
     status: 'Activo',
     joinDate: '2024-01-15',
-    reportsCount: 5
+    reportsCount: 5,
+    lastActivity: 'hace 2 horas'
   },
   {
     id: 2,
@@ -75,7 +92,18 @@ const mockUsers: User[] = [
     role: 'user',
     status: 'Activo',
     joinDate: '2024-01-20',
-    reportsCount: 3
+    reportsCount: 3,
+    lastActivity: 'hace 1 día'
+  },
+  {
+    id: 3,
+    name: 'Ana Jiménez',
+    email: 'ana@email.com',
+    role: 'user',
+    status: 'Inactivo',
+    joinDate: '2024-01-10',
+    reportsCount: 8,
+    lastActivity: 'hace 1 semana'
   }
 ];
 
@@ -86,7 +114,9 @@ const mockEvents: Event[] = [
     date: '2024-02-20',
     location: 'Centro Comunal',
     attendees: 45,
-    status: 'Programado'
+    status: 'Programado',
+    category: 'Comercio',
+    description: 'Feria mensual de emprendedores locales'
   },
   {
     id: 2,
@@ -94,7 +124,9 @@ const mockEvents: Event[] = [
     date: '2024-02-25',
     location: 'Parque Central',
     attendees: 120,
-    status: 'Programado'
+    status: 'Programado',
+    category: 'Cultural',
+    description: 'Celebración de la cultura local'
   }
 ];
 
@@ -106,6 +138,9 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState<Event[]>(mockEvents);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Todos');
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   const handleUpdateReportStatus = (reportId: number, newStatus: Report['status']) => {
     setReports(reports.map(report =>
@@ -125,28 +160,41 @@ export default function AdminDashboard() {
     setEvents(events.filter(event => event.id !== eventId));
   };
 
+  const handleBulkAction = (action: string) => {
+    if (action === 'delete') {
+      if (activeTab === 'reports') {
+        setReports(reports.filter(report => !selectedItems.includes(report.id)));
+      } else if (activeTab === 'users') {
+        setUsers(users.filter(user => !selectedItems.includes(user.id)));
+      } else if (activeTab === 'events') {
+        setEvents(events.filter(event => !selectedItems.includes(event.id)));
+      }
+      setSelectedItems([]);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pendiente': return 'bg-yellow-100 text-yellow-600';
-      case 'En Proceso': return 'bg-blue-100 text-blue-600';
-      case 'Resuelto': return 'bg-green-100 text-green-600';
-      case 'Rechazado': return 'bg-red-100 text-red-600';
-      case 'Activo': return 'bg-green-100 text-green-600';
-      case 'Inactivo': return 'bg-red-100 text-red-600';
-      case 'Programado': return 'bg-blue-100 text-blue-600';
-      case 'En Curso': return 'bg-orange-100 text-orange-600';
-      case 'Finalizado': return 'bg-green-100 text-green-600';
-      case 'Cancelado': return 'bg-red-100 text-red-600';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'Pendiente': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'En Proceso': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'Resuelto': return 'bg-green-100 text-green-700 border-green-200';
+      case 'Rechazado': return 'bg-red-100 text-red-700 border-red-200';
+      case 'Activo': return 'bg-green-100 text-green-700 border-green-200';
+      case 'Inactivo': return 'bg-red-100 text-red-700 border-red-200';
+      case 'Programado': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'En Curso': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'Finalizado': return 'bg-green-100 text-green-700 border-green-200';
+      case 'Cancelado': return 'bg-red-100 text-red-700 border-red-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'Alta': return 'bg-red-100 text-red-600';
-      case 'Media': return 'bg-yellow-100 text-yellow-600';
-      case 'Baja': return 'bg-green-100 text-green-600';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'Alta': return 'bg-red-100 text-red-700 border-red-200';
+      case 'Media': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'Baja': return 'bg-green-100 text-green-700 border-green-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
@@ -157,75 +205,131 @@ export default function AdminDashboard() {
     return matchesSearch && matchesFilter;
   });
 
+  const stats = [
+    {
+      title: 'Total Reportes',
+      value: reports.length,
+      change: '+12%',
+      trend: 'up',
+      icon: FileText,
+      color: 'blue',
+      description: 'Reportes este mes'
+    },
+    {
+      title: 'Usuarios Activos',
+      value: users.filter(u => u.status === 'Activo').length,
+      change: '+8%',
+      trend: 'up',
+      icon: Users,
+      color: 'green',
+      description: 'Usuarios registrados'
+    },
+    {
+      title: 'Eventos Programados',
+      value: events.filter(e => e.status === 'Programado').length,
+      change: '+3',
+      trend: 'up',
+      icon: Calendar,
+      color: 'orange',
+      description: 'Próximos eventos'
+    },
+    {
+      title: 'Reportes Pendientes',
+      value: reports.filter(r => r.status === 'Pendiente').length,
+      change: '-5%',
+      trend: 'down',
+      icon: AlertTriangle,
+      color: 'red',
+      description: 'Requieren atención'
+    }
+  ];
+
   const renderDashboard = () => (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Reportes</p>
-              <p className="text-2xl font-bold text-blue-600">{reports.length}</p>
+    <div className="space-y-8">
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, index) => {
+          const IconComponent = stat.icon;
+          return (
+            <div 
+              key={index}
+              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`bg-gradient-to-r ${
+                  stat.color === 'blue' ? 'from-blue-500 to-blue-600' :
+                  stat.color === 'green' ? 'from-green-500 to-green-600' :
+                  stat.color === 'orange' ? 'from-orange-500 to-orange-600' :
+                  'from-red-500 to-red-600'
+                } p-3 rounded-xl shadow-lg`}>
+                  <IconComponent className="h-6 w-6 text-white" />
+                </div>
+                <span className={`text-sm font-bold px-2 py-1 rounded-full ${
+                  stat.trend === 'up' ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
+                }`}>
+                  {stat.change}
+                </span>
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">{stat.title}</p>
+                <p className="text-xs text-gray-500">{stat.description}</p>
+              </div>
             </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <FileText className="h-6 w-6 text-blue-600" />
-            </div>
+          );
+        })}
+      </div>
+
+      {/* Activity Chart Placeholder */}
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <TrendingUp className="h-6 w-6 mr-2 text-blue-600" />
+            Actividad del Sistema
+          </h3>
+          <div className="flex space-x-2">
+            <button className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors duration-200">
+              7 días
+            </button>
+            <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+              30 días
+            </button>
           </div>
         </div>
-        
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Usuarios Activos</p>
-              <p className="text-2xl font-bold text-green-600">{users.filter(u => u.status === 'Activo').length}</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <Users className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Eventos Programados</p>
-              <p className="text-2xl font-bold text-orange-600">{events.filter(e => e.status === 'Programado').length}</p>
-            </div>
-            <div className="bg-orange-100 p-3 rounded-full">
-              <Calendar className="h-6 w-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Reportes Pendientes</p>
-              <p className="text-2xl font-bold text-red-600">{reports.filter(r => r.status === 'Pendiente').length}</p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-full">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-            </div>
+        <div className="h-64 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl flex items-center justify-center">
+          <div className="text-center">
+            <BarChart3 className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+            <p className="text-blue-600 font-medium">Gráfico de actividad</p>
+            <p className="text-blue-500 text-sm">Datos en tiempo real</p>
           </div>
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
-        <div className="space-y-3">
-          {reports.slice(0, 5).map((report) => (
-            <div key={report.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{report.title}</p>
-                  <p className="text-sm text-gray-600">Por {report.user}</p>
-                </div>
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <Activity className="h-6 w-6 mr-2 text-blue-600" />
+            Actividad Reciente
+          </h3>
+          <button className="text-blue-600 hover:text-blue-700 font-medium">Ver todo</button>
+        </div>
+        <div className="space-y-4">
+          {reports.slice(0, 5).map((report, index) => (
+            <div 
+              key={report.id} 
+              className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200 animate-fadeInUp"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="bg-blue-100 p-3 rounded-full">
+                <FileText className="h-5 w-5 text-blue-600" />
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">{report.title}</p>
+                <p className="text-sm text-gray-600">Por {report.user} • {report.location}</p>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(report.status)}`}>
                 {report.status}
               </span>
             </div>
@@ -237,23 +341,41 @@ export default function AdminDashboard() {
 
   const renderReports = () => (
     <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row gap-4">
+      {/* Enhanced Header with Actions */}
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Reportes</h2>
+            <p className="text-gray-600">Administra y da seguimiento a todos los reportes ciudadanos</p>
+          </div>
+          <div className="flex space-x-3">
+            <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center space-x-2">
+              <Download className="h-4 w-4" />
+              <span>Exportar</span>
+            </button>
+            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+              <RefreshCw className="h-4 w-4" />
+              <span>Actualizar</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar reportes..."
+              placeholder="Buscar reportes por título, usuario o ubicación..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
           >
             <option value="Todos">Todos los estados</option>
             <option value="Pendiente">Pendiente</option>
@@ -261,38 +383,99 @@ export default function AdminDashboard() {
             <option value="Resuelto">Resuelto</option>
             <option value="Rechazado">Rechazado</option>
           </select>
+          {selectedItems.length > 0 && (
+            <button
+              onClick={() => handleBulkAction('delete')}
+              className="px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors duration-200 flex items-center space-x-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Eliminar ({selectedItems.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Reports Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Enhanced Reports Table */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporte</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prioridad</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                <th className="px-6 py-4 text-left">
+                  <input
+                    type="checkbox"
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedItems(filteredReports.map(r => r.id));
+                      } else {
+                        setSelectedItems([]);
+                      }
+                    }}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Reporte</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Prioridad</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredReports.map((report) => (
-                <tr key={report.id} className="hover:bg-gray-50 transition-colors duration-200">
+              {filteredReports.map((report, index) => (
+                <tr 
+                  key={report.id} 
+                  className="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
                   <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{report.title}</div>
-                      <div className="text-sm text-gray-500">{report.location}</div>
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.includes(report.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedItems([...selectedItems, report.id]);
+                        } else {
+                          setSelectedItems(selectedItems.filter(id => id !== report.id));
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-3">
+                      {report.image && (
+                        <img
+                          src={report.image}
+                          alt={report.title}
+                          className="w-10 h-10 rounded-lg object-cover"
+                        />
+                      )}
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{report.title}</div>
+                        <div className="text-sm text-gray-500 flex items-center">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {report.location}
+                        </div>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{report.user}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-medium text-blue-600">
+                          {report.user.charAt(0)}
+                        </span>
+                      </div>
+                      <span className="text-sm text-gray-900">{report.user}</span>
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <select
                       value={report.status}
                       onChange={(e) => handleUpdateReportStatus(report.id, e.target.value as Report['status'])}
-                      className={`px-2 py-1 rounded-full text-xs font-medium border-0 ${getStatusColor(report.status)}`}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 ${getStatusColor(report.status)}`}
                     >
                       <option value="Pendiente">Pendiente</option>
                       <option value="En Proceso">En Proceso</option>
@@ -301,22 +484,27 @@ export default function AdminDashboard() {
                     </select>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(report.priority)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(report.priority)}`}>
                       {report.priority}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{report.date}</td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900 flex items-center">
+                      <Clock className="h-3 w-3 mr-1 text-gray-400" />
+                      {report.date}
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                      <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-2 hover:bg-blue-50 rounded-lg">
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-800 transition-colors duration-200">
+                      <button className="text-green-600 hover:text-green-800 transition-colors duration-200 p-2 hover:bg-green-50 rounded-lg">
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteReport(report.id)}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200"
+                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-2 hover:bg-red-50 rounded-lg"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -333,51 +521,76 @@ export default function AdminDashboard() {
 
   const renderUsers = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h2>
+            <p className="text-gray-600">Administra los usuarios registrados en la plataforma</p>
+          </div>
+          <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Nuevo Usuario</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reportes</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Registro</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Reportes</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Última Actividad</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 transition-colors duration-200">
+              {users.map((user, index) => (
+                <tr 
+                  key={user.id} 
+                  className="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
                   <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-blue-600 font-semibold text-sm">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white font-semibold text-sm">
                           {user.name.charAt(0)}
                         </span>
                       </div>
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm text-gray-500">Miembro desde {user.joinDate}</div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{user.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
                       {user.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{user.reportsCount}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{user.joinDate}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-900">{user.reportsCount}</span>
+                      <span className="text-xs text-gray-500">reportes</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{user.lastActivity}</td>
                   <td className="px-6 py-4">
                     <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                      <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-2 hover:bg-blue-50 rounded-lg">
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-800 transition-colors duration-200">
+                      <button className="text-green-600 hover:text-green-800 transition-colors duration-200 p-2 hover:bg-green-50 rounded-lg">
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200"
+                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-2 hover:bg-red-50 rounded-lg"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -394,116 +607,135 @@ export default function AdminDashboard() {
 
   const renderEvents = () => (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">Gestión de Eventos</h2>
-        <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
-          <Plus className="h-4 w-4" />
-          <span>Nuevo Evento</span>
-        </button>
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Eventos</h2>
+            <p className="text-gray-600">Crea y administra eventos comunitarios</p>
+          </div>
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nuevo Evento</span>
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evento</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asistentes</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {events.map((event) => (
-                <tr key={event.id} className="hover:bg-gray-50 transition-colors duration-200">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{event.title}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{event.date}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{event.location}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{event.attendees}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                      {event.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-800 transition-colors duration-200">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteEvent(event.id)}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {events.map((event, index) => (
+          <div 
+            key={event.id}
+            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(event.status)}`}>
+                {event.status}
+              </span>
+              <div className="flex space-x-2">
+                <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteEvent(event.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors duration-200"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{event.title}</h3>
+            <p className="text-gray-600 text-sm mb-4">{event.description}</p>
+            
+            <div className="space-y-2 text-sm text-gray-500">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2" />
+                {event.date}
+              </div>
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                {event.location}
+              </div>
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-2" />
+                {event.attendees} asistentes
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <div className="bg-blue-100 p-2 rounded-full">
-                <Settings className="h-6 w-6 text-blue-600" />
+              <div className="bg-white bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
+                <Settings className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Panel de Administración</h1>
-                <p className="text-sm text-gray-600">Bienvenido, {user?.name}</p>
+                <h1 className="text-2xl font-bold text-white">Panel de Administración</h1>
+                <p className="text-blue-100">Bienvenido, {user?.name} • Sistema Comet</p>
               </div>
             </div>
-            <button
-              onClick={signOut}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200"
-            >
-              Cerrar Sesión
-            </button>
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-10 px-4 py-2 rounded-lg backdrop-blur-sm">
+                <span className="text-white text-sm font-medium">Admin Dashboard</span>
+              </div>
+              <button
+                onClick={signOut}
+                className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <div className="lg:w-64">
-            <nav className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          {/* Enhanced Sidebar */}
+          <div className="lg:w-72">
+            <nav className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-8">
               <div className="space-y-2">
                 {[
-                  { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
-                  { id: 'reports', icon: FileText, label: 'Reportes' },
-                  { id: 'users', icon: Users, label: 'Usuarios' },
-                  { id: 'events', icon: Calendar, label: 'Eventos' },
-                  { id: 'buses', icon: Bus, label: 'Transporte' },
-                  { id: 'community', icon: MessageSquare, label: 'Comunidad' }
+                  { id: 'dashboard', icon: BarChart3, label: 'Dashboard', count: null },
+                  { id: 'reports', icon: FileText, label: 'Reportes', count: reports.length },
+                  { id: 'users', icon: Users, label: 'Usuarios', count: users.length },
+                  { id: 'events', icon: Calendar, label: 'Eventos', count: events.length },
+                  { id: 'buses', icon: Bus, label: 'Transporte', count: null },
+                  { id: 'community', icon: MessageSquare, label: 'Comunidad', count: null }
                 ].map((item) => {
                   const IconComponent = item.icon;
                   return (
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 ${
                         activeTab === item.id
-                          ? 'bg-blue-100 text-blue-600'
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >
-                      <IconComponent className="h-5 w-5" />
-                      <span className="font-medium">{item.label}</span>
+                      <div className="flex items-center space-x-3">
+                        <IconComponent className="h-5 w-5" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      {item.count !== null && (
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          activeTab === item.id ? 'bg-white bg-opacity-20' : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {item.count}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -518,15 +750,27 @@ export default function AdminDashboard() {
             {activeTab === 'users' && renderUsers()}
             {activeTab === 'events' && renderEvents()}
             {activeTab === 'buses' && (
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Gestión de Transporte</h2>
-                <p className="text-gray-600">Panel de control para rutas de autobuses y paradas.</p>
+              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+                <div className="text-center">
+                  <Bus className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Transporte</h2>
+                  <p className="text-gray-600 mb-6">Panel de control para rutas de autobuses y paradas.</p>
+                  <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                    Configurar Rutas
+                  </button>
+                </div>
               </div>
             )}
             {activeTab === 'community' && (
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Moderación de Comunidad</h2>
-                <p className="text-gray-600">Gestión de publicaciones y comentarios de la comunidad.</p>
+              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+                <div className="text-center">
+                  <MessageSquare className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Moderación de Comunidad</h2>
+                  <p className="text-gray-600 mb-6">Gestión de publicaciones y comentarios de la comunidad.</p>
+                  <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                    Ver Publicaciones
+                  </button>
+                </div>
               </div>
             )}
           </div>

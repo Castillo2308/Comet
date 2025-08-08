@@ -3,6 +3,7 @@ import { Home, Megaphone, Plus, Info, MoreHorizontal, Calendar, Bell, Users, Bus
 import { useAuth } from '../context/AuthContext';
 import ReportModal from './ReportModal';
 import SideMenu from './SideMenu';
+import SettingsModal from './SettingsModal';
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -15,6 +16,7 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
   const [showAnnouncementsSubmenu, setShowAnnouncementsSubmenu] = useState(false);
   const [showInfoSubmenu, setShowInfoSubmenu] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const { user } = useAuth();
 
   const navItems = [
@@ -149,6 +151,12 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
       <SideMenu 
         isOpen={showSideMenu} 
         onClose={() => setShowSideMenu(false)} 
+        onOpenSettings={() => setShowSettingsModal(true)}
+      />
+
+      <SettingsModal 
+        isOpen={showSettingsModal} 
+        onClose={() => setShowSettingsModal(false)} 
       />
 
       {/* Bottom Navigation - Fixed for iPhone safe area */}
