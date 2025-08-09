@@ -146,35 +146,35 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
       />
 
       {/* Enhanced Header with Gradient */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-3 sm:px-4 py-6 sm:py-8 shadow-xl">
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-3 sm:px-4 py-4 sm:py-5 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">¡Bienvenido, {user?.name}!</h1>
-            <p className="text-blue-100 text-sm sm:text-base">Aquí puedes conocer más de tu cantón y mantenerte informado.</p>
+            <h1 className="text-lg sm:text-xl font-bold text-white mb-1">¡Bienvenido, {user?.name}!</h1>
+            <p className="text-blue-100 text-xs sm:text-sm">Aquí puedes conocer más de tu cantón y mantenerte informado.</p>
           </div>
           <button
             onClick={() => setShowProfileModal(true)}
-            className="bg-white bg-opacity-20 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center font-semibold text-sm backdrop-blur-sm hover:bg-opacity-30 transition-all duration-200 transform hover:scale-110 active:scale-95 shadow-lg"
+            className="bg-white bg-opacity-20 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm backdrop-blur-sm hover:bg-opacity-30 transition-all duration-200 transform hover:scale-110 active:scale-95 shadow-lg"
           >
             {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
           </button>
         </div>
         
         {/* Quick Stats in Header */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {quickStats.map((stat, index) => {
             const IconComponent = stat.icon;
             return (
               <div 
                 key={stat.id}
-                className="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-3 sm:p-4 hover:bg-opacity-20 transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
+                className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-2 sm:p-3 hover:bg-opacity-20 transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   <span className="text-xs text-green-300 font-medium">{stat.change}</span>
                 </div>
-                <div className="text-xl sm:text-2xl font-bold text-white mb-1">{stat.value}</div>
+                <div className="text-lg sm:text-xl font-bold text-white mb-1">{stat.value}</div>
                 <div className="text-xs text-blue-100">{stat.title}</div>
               </div>
             );
@@ -182,12 +182,12 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-6">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-4">
         {/* Reports Section with Enhanced Design */}
         <section className="animate-fadeInUp">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center">
-              <Activity className="h-6 w-6 mr-2 text-blue-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
+              <Activity className="h-5 w-5 mr-2 text-blue-600" />
               Tus Reportes
             </h2>
             <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
@@ -200,7 +200,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               allReports.map((report, index) => (
                 <div 
                   key={report.id} 
-                  className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp hover-lift"
+                  className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp hover-lift"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-4">
@@ -208,16 +208,16 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                       <img
                         src={report.image}
                         alt={report.title}
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover flex-shrink-0 transition-transform duration-300 hover:scale-110 shadow-md"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0 transition-transform duration-300 hover:scale-110 shadow-md"
                       />
-                      <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+                      <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-lg">
                         {index + 1}
                       </div>
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 text-base sm:text-lg">{report.title}</h3>
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base">{report.title}</h3>
                         <div className="flex items-center space-x-2">
                           <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                             {report.status}
@@ -269,8 +269,8 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         {/* Enhanced Important News Section */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center">
-              <Bell className="h-6 w-6 mr-2 text-blue-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
+              <Bell className="h-5 w-5 mr-2 text-blue-600" />
               Noticias Importantes
             </h2>
             <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
@@ -284,17 +284,17 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               return (
                 <div 
                   key={news.id}
-                  className={`bg-white rounded-2xl p-5 shadow-lg border-l-4 hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${getPriorityColor(news.priority)}`}
+                  className={`bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${getPriorityColor(news.priority)}`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-4">
-                    <div className="bg-white p-3 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200">
-                      <IconComponent className="h-6 w-6 text-gray-600" />
+                    <div className="bg-white p-2 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+                      <IconComponent className="h-5 w-5 text-gray-600" />
                     </div>
                     
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 text-base sm:text-lg">{news.title}</h3>
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base">{news.title}</h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getTypeColor(news.type)}`}>
                           {news.type}
                         </span>
@@ -324,8 +324,8 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
 
         {/* Enhanced Quick Stats */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <TrendingUp className="h-6 w-6 mr-2 text-blue-600" />
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
             Resumen del Cantón
           </h2>
           
@@ -335,7 +335,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               return (
                 <div 
                   key={stat.id}
-                  className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp hover-lift"
+                  className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-105 animate-fadeInUp hover-lift"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -347,7 +347,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                     </span>
                   </div>
                   
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{stat.value}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
                   <div className="text-sm font-medium text-gray-700 mb-1">{stat.title}</div>
                   <div className="text-xs text-gray-500">{stat.description}</div>
                 </div>

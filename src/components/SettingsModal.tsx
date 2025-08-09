@@ -55,17 +55,17 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md transform transition-all duration-300 animate-scaleIn shadow-2xl">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3 animate-fadeIn">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto transform transition-all duration-300 animate-scaleIn shadow-2xl">
+        <div className="p-4">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full">
-                <Settings className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Configuración</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Configuración</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Personaliza tu experiencia</p>
               </div>
             </div>
@@ -80,7 +80,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           {/* Settings Options */}
           <div className="space-y-4">
             {/* Dark Mode Toggle */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                   {darkMode ? (
@@ -111,7 +111,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Notifications */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                   <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -138,7 +138,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Language */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center space-x-3 mb-3">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
                   <Globe className="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -173,7 +173,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Theme */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center space-x-3 mb-3">
                 <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
                   <Palette className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -192,7 +192,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Privacy */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
                   <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -208,7 +208,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* App Info */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg">
                   <Smartphone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -222,7 +222,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
             <button
               onClick={onClose}
               className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 font-medium transform hover:scale-105 active:scale-95"
