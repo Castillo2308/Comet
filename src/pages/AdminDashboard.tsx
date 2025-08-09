@@ -401,7 +401,7 @@ export default function AdminDashboard() {
           <table className="w-full">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-4 text-left">
+                <th className="px-3 py-3 text-left">
                   <input
                     type="checkbox"
                     onChange={(e) => {
@@ -414,12 +414,12 @@ export default function AdminDashboard() {
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Reporte</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Prioridad</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reporte</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">Usuario</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden md:table-cell">Prioridad</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Fecha</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -429,7 +429,7 @@ export default function AdminDashboard() {
                   className="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3">
                     <input
                       type="checkbox"
                       checked={selectedItems.includes(report.id)}
@@ -443,35 +443,35 @@ export default function AdminDashboard() {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3">
                     <div className="flex items-center space-x-3">
                       {report.image && (
                         <img
                           src={report.image}
                           alt={report.title}
-                          className="w-10 h-10 rounded-lg object-cover"
+                          className="w-8 h-8 rounded-lg object-cover"
                         />
                       )}
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{report.title}</div>
-                        <div className="text-sm text-gray-500 flex items-center">
+                        <div className="text-xs font-medium text-gray-900">{report.title}</div>
+                        <div className="text-xs text-gray-500 flex items-center">
                           <MapPin className="h-3 w-3 mr-1" />
                           {report.location}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3 hidden sm:table-cell">
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-xs font-medium text-blue-600">
                           {report.user.charAt(0)}
                         </span>
                       </div>
-                      <span className="text-sm text-gray-900">{report.user}</span>
+                      <span className="text-xs text-gray-900">{report.user}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3">
                     <select
                       value={report.status}
                       onChange={(e) => handleUpdateReportStatus(report.id, e.target.value as Report['status'])}
@@ -483,28 +483,37 @@ export default function AdminDashboard() {
                       <option value="Rechazado">Rechazado</option>
                     </select>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3 hidden md:table-cell">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(report.priority)}`}>
                       {report.priority}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 flex items-center">
+                  <td className="px-3 py-3 hidden lg:table-cell">
+                    <div className="text-xs text-gray-900 flex items-center">
                       <Clock className="h-3 w-3 mr-1 text-gray-400" />
                       {report.date}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-2 hover:bg-blue-50 rounded-lg">
+                  <td className="px-3 py-3">
+                    <div className="flex space-x-1">
+                      <button 
+                        onClick={() => setEditingItem(report)}
+                        className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 hover:bg-blue-50 rounded"
+                        title="Ver detalles"
+                      >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-800 transition-colors duration-200 p-2 hover:bg-green-50 rounded-lg">
+                      <button 
+                        onClick={() => setEditingItem(report)}
+                        className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
+                        title="Editar"
+                      >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteReport(report.id)}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-2 hover:bg-red-50 rounded-lg"
+                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
+                        title="Eliminar"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -539,12 +548,12 @@ export default function AdminDashboard() {
           <table className="w-full">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Reportes</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Última Actividad</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">Email</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden md:table-cell">Reportes</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Última Actividad</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -554,43 +563,52 @@ export default function AdminDashboard() {
                   className="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                        <span className="text-white font-semibold text-sm">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-white font-semibold text-xs">
                           {user.name.charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-500">Miembro desde {user.joinDate}</div>
+                        <div className="text-xs font-medium text-gray-900">{user.name}</div>
+                        <div className="text-xs text-gray-500">Desde {user.joinDate}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{user.email}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3 text-xs text-gray-900 hidden sm:table-cell">{user.email}</td>
+                  <td className="px-3 py-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
                       {user.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3 hidden md:table-cell">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-900">{user.reportsCount}</span>
+                      <span className="text-xs font-medium text-gray-900">{user.reportsCount}</span>
                       <span className="text-xs text-gray-500">reportes</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{user.lastActivity}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-2 hover:bg-blue-50 rounded-lg">
+                  <td className="px-3 py-3 text-xs text-gray-500 hidden lg:table-cell">{user.lastActivity}</td>
+                  <td className="px-3 py-3">
+                    <div className="flex space-x-1">
+                      <button 
+                        onClick={() => setEditingItem(user)}
+                        className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 hover:bg-blue-50 rounded"
+                        title="Ver perfil"
+                      >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-800 transition-colors duration-200 p-2 hover:bg-green-50 rounded-lg">
+                      <button 
+                        onClick={() => setEditingItem(user)}
+                        className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
+                        title="Editar usuario"
+                      >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-2 hover:bg-red-50 rounded-lg"
+                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
+                        title="Eliminar usuario"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -627,40 +645,52 @@ export default function AdminDashboard() {
         {events.map((event, index) => (
           <div 
             key={event.id}
-            className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
+            className="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <div className="flex items-center justify-between mb-4">
               <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(event.status)}`}>
                 {event.status}
               </span>
-              <div className="flex space-x-2">
-                <button className="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+              <div className="flex space-x-1">
+                <button 
+                  onClick={() => setEditingItem(event)}
+                  className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 hover:bg-blue-50 rounded"
+                  title="Ver evento"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button 
+                  onClick={() => setEditingItem(event)}
+                  className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
+                  title="Editar evento"
+                >
                   <Edit className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleDeleteEvent(event.id)}
-                  className="text-red-600 hover:text-red-800 transition-colors duration-200"
+                  className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
+                  title="Eliminar evento"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
             
-            <h3 className="text-lg font-bold text-gray-900 mb-2">{event.title}</h3>
-            <p className="text-gray-600 text-sm mb-4">{event.description}</p>
+            <h3 className="text-base font-bold text-gray-900 mb-2">{event.title}</h3>
+            <p className="text-gray-600 text-xs mb-3">{event.description}</p>
             
-            <div className="space-y-2 text-sm text-gray-500">
+            <div className="space-y-1 text-xs text-gray-500">
               <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-3 w-3 mr-2" />
                 {event.date}
               </div>
               <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-2" />
+                <MapPin className="h-3 w-3 mr-2" />
                 {event.location}
               </div>
               <div className="flex items-center">
-                <Users className="h-4 w-4 mr-2" />
+                <Users className="h-3 w-3 mr-2" />
                 {event.attendees} asistentes
               </div>
             </div>
@@ -671,27 +701,27 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
       {/* Enhanced Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+        <div className="w-full px-3 sm:px-4 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-3">
             <div className="flex items-center space-x-4">
               <div className="bg-white bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
-                <Settings className="h-8 w-8 text-white" />
+                <Settings className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Panel de Administración</h1>
-                <p className="text-blue-100">Bienvenido, {user?.name} • Sistema Comet</p>
+                <h1 className="text-lg sm:text-xl font-bold text-white">Panel de Administración</h1>
+                <p className="text-blue-100 text-sm">Bienvenido, {user?.name} • Sistema Comet</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="bg-white bg-opacity-10 px-4 py-2 rounded-lg backdrop-blur-sm">
                 <span className="text-white text-sm font-medium">Admin Dashboard</span>
               </div>
               <button
                 onClick={signOut}
-                className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg"
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg text-sm"
               >
                 Cerrar Sesión
               </button>
@@ -700,11 +730,11 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="w-full px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Enhanced Sidebar */}
-          <div className="lg:w-72">
-            <nav className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-8">
+          <div className="lg:w-64">
+            <nav className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sticky top-4">
               <div className="space-y-2">
                 {[
                   { id: 'dashboard', icon: BarChart3, label: 'Dashboard', count: null },
@@ -719,18 +749,18 @@ export default function AdminDashboard() {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 ${
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 ${
                         activeTab === item.id
                           ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <IconComponent className="h-5 w-5" />
-                        <span className="font-medium">{item.label}</span>
+                        <IconComponent className="h-4 w-4" />
+                        <span className="font-medium text-sm">{item.label}</span>
                       </div>
                       {item.count !== null && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           activeTab === item.id ? 'bg-white bg-opacity-20' : 'bg-blue-100 text-blue-600'
                         }`}>
                           {item.count}
