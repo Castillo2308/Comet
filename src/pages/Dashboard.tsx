@@ -146,35 +146,35 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
       />
 
       {/* Enhanced Header with Gradient */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-3 sm:px-4 py-3 sm:py-4 shadow-xl">
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-3 sm:px-4 py-4 sm:py-5 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-base sm:text-lg font-bold text-white mb-1">¡Bienvenido, {user?.name}!</h1>
-            <p className="text-blue-100 text-xs">Aquí puedes conocer más de tu cantón y mantenerte informado.</p>
+            <h1 className="text-lg sm:text-xl font-bold text-white mb-1">¡Bienvenido, {user?.name}!</h1>
+            <p className="text-blue-100 text-xs sm:text-sm">Aquí puedes conocer más de tu cantón y mantenerte informado.</p>
           </div>
           <button
             onClick={() => setShowProfileModal(true)}
-            className="bg-white bg-opacity-20 text-white w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs backdrop-blur-sm hover:bg-opacity-30 transition-all duration-200 transform hover:scale-110 active:scale-95 shadow-lg"
+            className="bg-white bg-opacity-20 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm backdrop-blur-sm hover:bg-opacity-30 transition-all duration-200 transform hover:scale-110 active:scale-95 shadow-lg"
           >
             {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
           </button>
         </div>
         
         {/* Quick Stats in Header */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {quickStats.map((stat, index) => {
             const IconComponent = stat.icon;
             return (
               <div 
                 key={stat.id}
-                className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-2 hover:bg-opacity-20 transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
+                className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-2 sm:p-3 hover:bg-opacity-20 transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <IconComponent className="h-3 w-3 text-white" />
+                <div className="flex items-center justify-between mb-2">
+                  <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   <span className="text-xs text-green-300 font-medium">{stat.change}</span>
                 </div>
-                <div className="text-sm font-bold text-white mb-1">{stat.value}</div>
+                <div className="text-lg sm:text-xl font-bold text-white mb-1">{stat.value}</div>
                 <div className="text-xs text-blue-100">{stat.title}</div>
               </div>
             );
@@ -182,12 +182,12 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         </div>
       </div>
 
-      <div className="px-3 sm:px-4 py-3 space-y-3">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-4">
         {/* Reports Section with Enhanced Design */}
         <section className="animate-fadeInUp">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-800 flex items-center">
-              <Activity className="h-4 w-4 mr-2 text-blue-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
+              <Activity className="h-5 w-5 mr-2 text-blue-600" />
               Tus Reportes
             </h2>
             <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
@@ -195,12 +195,12 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
             </span>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             {allReports.length > 0 ? (
               allReports.map((report, index) => (
                 <div 
                   key={report.id} 
-                  className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp hover-lift"
+                  className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp hover-lift"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-4">
@@ -208,7 +208,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                       <img
                         src={report.image}
                         alt={report.title}
-                        className="w-12 h-12 rounded-lg object-cover flex-shrink-0 transition-transform duration-300 hover:scale-110 shadow-md"
+                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0 transition-transform duration-300 hover:scale-110 shadow-md"
                       />
                       <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-lg">
                         {index + 1}
@@ -217,7 +217,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 text-sm">{report.title}</h3>
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base">{report.title}</h3>
                         <div className="flex items-center space-x-2">
                           <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                             {report.status}
@@ -228,15 +228,15 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                         </div>
                       </div>
                       
-                      <p className="text-gray-600 text-xs mb-3 line-clamp-2">{report.description}</p>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{report.description}</p>
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className="flex items-center text-blue-500 text-xs font-medium bg-blue-50 px-2 py-1 rounded-lg">
+                          <div className="flex items-center text-blue-500 text-sm font-medium bg-blue-50 px-3 py-1 rounded-lg">
                             <MapPin className="h-4 w-4 mr-1" />
                             {report.location}
                           </div>
-                          <div className="flex items-center text-gray-500 text-xs bg-gray-50 px-2 py-1 rounded-lg">
+                          <div className="flex items-center text-gray-500 text-sm bg-gray-50 px-3 py-1 rounded-lg">
                             <Clock className="h-4 w-4 mr-1" />
                             {report.date}
                           </div>
@@ -258,8 +258,8 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               ))
             ) : (
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 text-center border border-blue-200">
-                <Activity className="h-10 w-10 text-blue-400 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-blue-800 mb-2">No tienes reportes aún</h3>
+                <Activity className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-blue-800 mb-2">No tienes reportes aún</h3>
                 <p className="text-blue-600">¡Usa el botón "+" para reportar tu primer problema!</p>
               </div>
             )}
@@ -269,8 +269,8 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         {/* Enhanced Important News Section */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-800 flex items-center">
-              <Bell className="h-4 w-4 mr-2 text-blue-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
+              <Bell className="h-5 w-5 mr-2 text-blue-600" />
               Noticias Importantes
             </h2>
             <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
@@ -278,32 +278,32 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
             </span>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             {importantNews.map((news, index) => {
               const IconComponent = news.icon;
               return (
                 <div 
                   key={news.id}
-                  className={`bg-white rounded-xl p-3 shadow-sm border-l-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${getPriorityColor(news.priority)}`}
+                  className={`bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${getPriorityColor(news.priority)}`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="flex items-start space-x-3">
+                  <div className="flex items-start space-x-4">
                     <div className="bg-white p-2 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-                      <IconComponent className="h-4 w-4 text-gray-600" />
+                      <IconComponent className="h-5 w-5 text-gray-600" />
                     </div>
                     
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 text-sm">{news.title}</h3>
+                        <h3 className="font-bold text-gray-900 text-sm sm:text-base">{news.title}</h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getTypeColor(news.type)}`}>
                           {news.type}
                         </span>
                       </div>
                       
-                      <p className="text-gray-700 text-xs mb-3 leading-relaxed">{news.description}</p>
+                      <p className="text-gray-700 text-sm mb-3 leading-relaxed">{news.description}</p>
                       
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center text-gray-500 text-xs bg-gray-50 px-2 py-1 rounded-lg">
+                        <div className="flex items-center text-gray-500 text-sm bg-gray-50 px-3 py-1 rounded-lg">
                           <Clock className="h-4 w-4 mr-1" />
                           {news.date}
                         </div>
@@ -324,30 +324,30 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
 
         {/* Enhanced Quick Stats */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
-          <h2 className="text-base font-bold text-gray-800 mb-3 flex items-center">
-            <TrendingUp className="h-4 w-4 mr-2 text-blue-600" />
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
             Resumen del Cantón
           </h2>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {quickStats.map((stat, index) => {
               const IconComponent = stat.icon;
               return (
                 <div 
                   key={stat.id}
-                  className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-105 animate-fadeInUp hover-lift"
+                  className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-105 animate-fadeInUp hover-lift"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <div className={`bg-gradient-to-r ${getStatColor(stat.color)} p-3 rounded-xl shadow-lg`}>
-                      <IconComponent className="h-4 w-4 text-white" />
+                      <IconComponent className="h-6 w-6 text-white" />
                     </div>
                     <span className="text-green-500 text-sm font-bold bg-green-50 px-2 py-1 rounded-full">
                       {stat.change}
                     </span>
                   </div>
                   
-                  <div className="text-lg font-bold text-gray-900 mb-1">{stat.value}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
                   <div className="text-sm font-medium text-gray-700 mb-1">{stat.title}</div>
                   <div className="text-xs text-gray-500">{stat.description}</div>
                 </div>

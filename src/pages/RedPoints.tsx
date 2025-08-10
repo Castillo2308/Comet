@@ -241,116 +241,84 @@ export default function RedPoints() {
             {/* Enhanced Realistic Map Background */}
             <div className="absolute inset-0">
               {/* Base map color */}
-              <div className="w-full h-full bg-gradient-to-br from-green-200 via-green-100 to-blue-100"></div>
+              <div className="w-full h-full bg-gradient-to-br from-green-100 via-blue-50 to-green-100"></div>
               
               {/* Streets and roads */}
               <div className="absolute inset-0">
                 {/* Main horizontal roads */}
-                <div className="absolute top-1/4 left-0 right-0 h-3 bg-gray-600 opacity-90 shadow-sm"></div>
-                <div className="absolute top-1/2 left-0 right-0 h-4 bg-gray-700 opacity-95 shadow-md"></div>
-                <div className="absolute top-3/4 left-0 right-0 h-2 bg-gray-500 opacity-80 shadow-sm"></div>
+                <div className="absolute top-1/4 left-0 right-0 h-2 bg-gray-300 opacity-80 rounded-full"></div>
+                <div className="absolute top-1/2 left-0 right-0 h-3 bg-gray-400 opacity-90 rounded-full"></div>
+                <div className="absolute top-3/4 left-0 right-0 h-2 bg-gray-300 opacity-70 rounded-full"></div>
                 
                 {/* Vertical streets */}
-                <div className="absolute top-0 bottom-0 left-1/4 w-3 bg-gray-600 opacity-90 shadow-sm"></div>
-                <div className="absolute top-0 bottom-0 left-1/2 w-4 bg-gray-700 opacity-95 shadow-md"></div>
-                <div className="absolute top-0 bottom-0 right-1/4 w-2 bg-gray-500 opacity-80 shadow-sm"></div>
+                <div className="absolute top-0 bottom-0 left-1/4 w-2 bg-gray-300 opacity-80 rounded-full"></div>
+                <div className="absolute top-0 bottom-0 left-1/2 w-3 bg-gray-400 opacity-90 rounded-full"></div>
+                <div className="absolute top-0 bottom-0 right-1/4 w-2 bg-gray-300 opacity-70 rounded-full"></div>
                 
-                {/* Buildings with more realistic appearance */}
-                <div className="absolute top-6 left-6 w-8 h-8 bg-gray-400 rounded shadow-lg opacity-80"></div>
-                <div className="absolute top-4 right-8 w-6 h-12 bg-gray-500 rounded shadow-lg opacity-85"></div>
-                <div className="absolute bottom-16 left-12 w-12 h-6 bg-gray-400 rounded shadow-lg opacity-80"></div>
-                <div className="absolute bottom-8 right-12 w-8 h-8 bg-gray-500 rounded shadow-lg opacity-85"></div>
-                <div className="absolute top-12 left-1/3 w-10 h-10 bg-gray-300 rounded shadow-md opacity-75"></div>
-                <div className="absolute bottom-20 right-1/3 w-6 h-14 bg-gray-400 rounded shadow-lg opacity-80"></div>
+                {/* Buildings */}
+                <div className="absolute top-4 left-4 w-6 h-6 bg-gray-200 rounded opacity-60 shadow-sm"></div>
+                <div className="absolute top-8 right-6 w-4 h-8 bg-gray-300 rounded opacity-70 shadow-sm"></div>
+                <div className="absolute bottom-12 left-8 w-8 h-4 bg-gray-200 rounded opacity-60 shadow-sm"></div>
+                <div className="absolute bottom-6 right-8 w-6 h-6 bg-gray-300 rounded opacity-70 shadow-sm"></div>
                 
-                {/* Parks and green areas with better definition */}
-                <div className="absolute top-8 right-16 w-14 h-14 bg-green-400 rounded-full opacity-70 shadow-md"></div>
-                <div className="absolute bottom-12 left-16 w-16 h-10 bg-green-400 rounded-lg opacity-70 shadow-md"></div>
-                <div className="absolute top-16 left-1/4 w-8 h-8 bg-green-300 rounded-full opacity-65 shadow-sm"></div>
+                {/* Parks and green areas */}
+                <div className="absolute top-6 right-12 w-10 h-10 bg-green-200 rounded-full opacity-60 shadow-sm"></div>
+                <div className="absolute bottom-8 left-12 w-12 h-8 bg-green-200 rounded-lg opacity-60 shadow-sm"></div>
                 
-                {/* Water features - rivers */}
-                <div className="absolute top-14 left-1/3 w-20 h-2 bg-blue-400 rounded-full opacity-80 shadow-sm"></div>
-                <div className="absolute bottom-10 right-1/4 w-12 h-1 bg-blue-300 rounded-full opacity-75"></div>
-                
-                {/* Additional urban elements */}
-                <div className="absolute top-1/3 right-1/3 w-4 h-4 bg-yellow-400 rounded opacity-90 shadow-sm"></div>
-                <div className="absolute bottom-1/3 left-1/3 w-3 h-3 bg-red-400 rounded opacity-85 shadow-sm"></div>
+                {/* Water features */}
+                <div className="absolute top-12 left-1/3 w-16 h-1 bg-blue-300 rounded-full opacity-70"></div>
               </div>
             </div>
             
             {/* Map content */}
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 text-sm">Mapa de Zonas de Riesgo</h3>
-                <div className="bg-white bg-opacity-90 px-2 py-1 rounded-full shadow-sm border backdrop-blur-sm">
-                  <span className="text-xs font-medium text-blue-600">GPS Activo</span>
+                <h3 className="font-semibold text-gray-900 text-sm">Alajuelita - Zonas de Riesgo</h3>
+                <div className="bg-white px-2 py-1 rounded-full shadow-sm border">
+                  <span className="text-xs font-medium text-blue-600">Mapa Interactivo</span>
                 </div>
               </div>
               
               {/* Simulated map with danger points */}
-              <div className="relative h-48 bg-white bg-opacity-20 rounded-lg border border-blue-200 backdrop-blur-sm shadow-inner">
+              <div className="relative h-40 bg-white bg-opacity-30 rounded-lg border border-blue-200 backdrop-blur-sm">
                 {/* Enhanced danger points with better positioning */}
-                <div className="absolute top-4 left-8 w-5 h-5 bg-red-500 rounded-full animate-pulse shadow-xl border-3 border-white cursor-pointer hover:scale-150 transition-all duration-300 z-10" title="Parque Central - Alto Riesgo">
-                  <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                </div>
-                <div className="absolute top-12 right-12 w-5 h-5 bg-yellow-500 rounded-full animate-pulse shadow-xl border-3 border-white cursor-pointer hover:scale-150 transition-all duration-300 z-10" title="Puente del Río - Riesgo Medio">
-                  <div className="absolute inset-0 bg-yellow-500 rounded-full animate-ping opacity-75"></div>
-                </div>
-                <div className="absolute bottom-8 left-1/2 w-5 h-5 bg-red-500 rounded-full animate-pulse shadow-xl border-3 border-white cursor-pointer hover:scale-150 transition-all duration-300 z-10" title="Parada de Bus - Alto Riesgo">
-                  <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                </div>
-                <div className="absolute bottom-4 right-8 w-5 h-5 bg-orange-500 rounded-full animate-pulse shadow-xl border-3 border-white cursor-pointer hover:scale-150 transition-all duration-300 z-10" title="Zona Comercial - Riesgo Medio">
-                  <div className="absolute inset-0 bg-orange-500 rounded-full animate-ping opacity-75"></div>
-                </div>
-                <div className="absolute top-1/2 left-6 w-5 h-5 bg-yellow-500 rounded-full animate-pulse shadow-xl border-3 border-white cursor-pointer hover:scale-150 transition-all duration-300 z-10" title="Escuela - Riesgo Bajo">
-                  <div className="absolute inset-0 bg-yellow-500 rounded-full animate-ping opacity-75"></div>
-                </div>
+                <div className="absolute top-3 left-6 w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Parque Central - Alto Riesgo"></div>
+                <div className="absolute top-8 right-8 w-4 h-4 bg-yellow-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Puente del Río - Riesgo Medio"></div>
+                <div className="absolute bottom-6 left-1/2 w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Parada de Bus - Alto Riesgo"></div>
+                <div className="absolute bottom-3 right-6 w-4 h-4 bg-orange-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Zona Comercial - Riesgo Medio"></div>
+                <div className="absolute top-1/2 left-4 w-4 h-4 bg-yellow-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Escuela - Riesgo Bajo"></div>
                 
                 {/* User location indicator */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 bg-blue-600 rounded-full border-3 border-white shadow-xl animate-ping"></div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-blue-600 rounded-full shadow-lg"></div>
+                  <div className="w-3 h-3 bg-blue-600 rounded-full border-2 border-white shadow-lg animate-ping"></div>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-blue-600 rounded-full"></div>
                 </div>
                 
-                {/* Street names overlay */}
-                <div className="absolute top-2 left-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-gray-700 shadow-sm">
-                  Av. Principal
-                </div>
-                <div className="absolute bottom-2 right-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-gray-700 shadow-sm">
-                  Calle Central
-                </div>
-                
-                {/* Compass */}
-                <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
-                  <div className="text-xs font-bold text-gray-700">N</div>
-                  <div className="absolute top-1 w-0 h-0 border-l-2 border-r-2 border-b-3 border-transparent border-b-red-500"></div>
-                </div>
-                
-                {/* Scale indicator */}
-                <div className="absolute bottom-2 left-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-gray-700 shadow-sm">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-4 h-0.5 bg-gray-700"></div>
-                    <span>100m</span>
+                {/* Location labels */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <MapPin className="h-5 w-5 text-blue-600 mx-auto mb-1" />
+                    <span className="text-xs text-blue-700 font-medium bg-white bg-opacity-80 px-2 py-1 rounded-full">Tu ubicación</span>
                   </div>
                 </div>
               </div>
               
               {/* Enhanced Legend */}
-              <div className="flex items-center justify-between mt-3 text-xs bg-white bg-opacity-90 rounded-lg p-3 backdrop-blur-sm shadow-sm">
+              <div className="flex items-center justify-between mt-3 text-xs bg-white bg-opacity-80 rounded-lg p-2 backdrop-blur-sm">
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-red-500 rounded-full shadow-sm"></div>
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   <span className="text-red-700 font-medium">Alto</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full shadow-sm"></div>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                   <span className="text-yellow-700 font-medium">Medio</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-orange-500 rounded-full shadow-sm"></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                   <span className="text-orange-700 font-medium">Bajo</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-blue-600 rounded-full shadow-sm"></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                   <span className="text-blue-700 font-medium">Tu ubicación</span>
                 </div>
               </div>
