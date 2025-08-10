@@ -703,10 +703,279 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
       {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl">
-        <div className="w-full px-3 sm:px-4 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-3">
-            <div className="flex items-center space-x-4">
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl overflow-hidden">
+        <div className="w-full px-4 py-4">
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-white bg-opacity-20 p-2 rounded-xl backdrop-blur-sm">
+                  <Settings className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">Admin Panel</h1>
+                  <p className="text-blue-100 text-sm">{user?.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={signOut}
+                className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 text-sm"
+              >
+                Salir
+              </button>
+            </div>
+            <div className="bg-white bg-opacity-10 px-3 py-2 rounded-lg backdrop-blur-sm">
+              <span className="text-white text-sm font-medium">Sistema Comet - Dashboard</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-full px-4 py-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Enhanced Sidebar */}
+          <div className="lg:w-64">
+            <nav className="bg-white rounded-xl shadow-lg border border-gray-100 p-3 sticky top-4">
+              <div className="space-y-1">
+                {[
+                  { id: 'dashboard', icon: BarChart3, label: 'Dashboard', count: null },
+                  { id: 'reports', icon: FileText, label: 'Reportes', count: reports.length },
+                  { id: 'users', icon: Users, label: 'Usuarios', count: users.length },
+                  { id: 'events', icon: Calendar, label: 'Eventos', count: events.length },
+                  { id: 'buses', icon: Bus, label: 'Transporte', count: null },
+                  { id: 'community', icon: MessageSquare, label: 'Comunidad', count: null }
+                ].map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                        activeTab === item.id
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <IconComponent className="h-4 w-4" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      {item.count !== null && (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          activeTab === item.id ? 'bg-white bg-opacity-20' : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {item.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {activeTab === 'dashboard' && renderDashboard()}
+            {activeTab === 'reports' && renderReports()}
+            {activeTab === 'users' && renderUsers()}
+            {activeTab === 'events' && renderEvents()}
+            {activeTab === 'buses' && (
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div className="text-center">
+                  <Bus className="h-12 w-12 text-blue-400 mx-auto mb-3" />
+                  <h2 className="text-xl font-bold text-gray-900 mb-3">Gestión de Transporte</h2>
+                  <p className="text-gray-600 mb-4 text-sm">Panel de control para rutas de autobuses y paradas.</p>
+                  <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm">
+                    Configurar Rutas
+                  </button>
+                </div>
+              </div>
+            )}
+            {activeTab === 'community' && (
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                <div className="text-center">
+                  <MessageSquare className="h-12 w-12 text-blue-400 mx-auto mb-3" />
+                  <h2 className="text-xl font-bold text-gray-900 mb-3">Moderación de Comunidad</h2>
+                  <p className="text-gray-600 mb-4 text-sm">Gestión de publicaciones y comentarios de la comunidad.</p>
+                  <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm">
+                    Ver Publicaciones
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Edit/Create Modals */}
+      {editingItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-scaleIn">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingItem.id ? 'Editar' : 'Crear'} {
+                    editingItem.title ? 'Reporte' :
+                    editingItem.name ? 'Usuario' : 'Evento'
+                  }
+                </h2>
+                <button
+                  onClick={() => setEditingItem(null)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <form className="space-y-4">
+                {editingItem.title !== undefined && (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Título"
+                      defaultValue={editingItem.title}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <textarea
+                      placeholder="Descripción"
+                      defaultValue={editingItem.description}
+                      rows={3}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Ubicación"
+                      defaultValue={editingItem.location}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </>
+                )}
+                
+                {editingItem.name !== undefined && (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Nombre"
+                      defaultValue={editingItem.name}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      defaultValue={editingItem.email}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </>
+                )}
+                
+                {editingItem.attendees !== undefined && (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Título del evento"
+                      defaultValue={editingItem.title}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="date"
+                      defaultValue={editingItem.date}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Ubicación"
+                      defaultValue={editingItem.location}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </>
+                )}
+                
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(null)}
+                    className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-scaleIn">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Crear Nuevo Evento</h2>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <form className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Título del evento"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <textarea
+                  placeholder="Descripción"
+                  rows={3}
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <input
+                  type="date"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Ubicación"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Seleccionar categoría</option>
+                  <option value="Cultural">Cultural</option>
+                  <option value="Deportes">Deportes</option>
+                  <option value="Comercio">Comercio</option>
+                  <option value="Educativo">Educativo</option>
+                </select>
+                
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium"
+                  >
+                    Crear Evento
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
               <div className="bg-white bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
                 <Settings className="h-6 w-6 text-white" />
               </div>
