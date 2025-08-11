@@ -11,7 +11,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   const { user, signOut } = useAuth();
   const [formData, setFormData] = useState({
     name: user?.name || '',
-    lastName: user?.lastName || '',
+    lastname: user?.lastname || '',
     email: user?.email || ''
   });
 
@@ -48,7 +48,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-3">
               <User className="h-10 w-10 text-blue-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">{user?.name} {user?.lastName}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{user?.name} {user?.lastname}</h3>
             <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
               logout &gt;
             </span>
@@ -72,8 +72,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
               <input
                 type="text"
                 placeholder="Modificar el apellido"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                value={formData.lastname}
+                onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
             </div>

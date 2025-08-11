@@ -94,7 +94,7 @@ export default function Buses() {
             onClick={() => setShowProfileModal(true)}
             className="bg-white bg-opacity-20 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-semibold text-sm backdrop-blur-sm hover:bg-opacity-30 transition-all duration-200 transform hover:scale-110 active:scale-95"
           >
-            {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+            {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
           </button>
         </div>
         <p className="text-blue-100 text-sm">Información en tiempo real sobre rutas de autobuses en Alajuelita</p>

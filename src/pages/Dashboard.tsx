@@ -156,7 +156,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
             onClick={() => setShowProfileModal(true)}
             className="bg-white bg-opacity-20 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm backdrop-blur-sm hover:bg-opacity-30 transition-all duration-200 transform hover:scale-110 active:scale-95 shadow-lg"
           >
-            {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+            {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
           </button>
         </div>
         

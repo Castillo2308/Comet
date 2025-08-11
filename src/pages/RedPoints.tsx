@@ -102,7 +102,7 @@ export default function RedPoints() {
     const point: RedPoint = {
       id: Date.now(),
       ...newPoint,
-      author: `${user?.name} ${user?.lastName}`,
+      author: `${user?.name} ${user?.lastname}`,
       date: 'ahora',
       comments: []
     };
@@ -117,7 +117,7 @@ export default function RedPoints() {
 
     const comment: Comment = {
       id: Date.now(),
-      author: `${user?.name} ${user?.lastName}`,
+      author: `${user?.name} ${user?.lastname}`,
       content: commentText,
       date: 'ahora'
     };
@@ -228,7 +228,7 @@ export default function RedPoints() {
             onClick={() => setShowProfileModal(true)}
             className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
           >
-            {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+            {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
           </button>
         </div>
         <p className="text-gray-600 text-xs sm:text-sm">Aquí puedes mantenerte al tanto sobre la seguridad del cantón.</p>
@@ -408,7 +408,7 @@ export default function RedPoints() {
                   <div className="flex items-center space-x-2">
                     <div className="bg-blue-100 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-blue-600 font-medium text-xs">
-                        {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+                        {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
                       </span>
                     </div>
                     <div className="flex-1 flex items-center space-x-2">

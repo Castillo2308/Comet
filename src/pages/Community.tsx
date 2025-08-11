@@ -138,8 +138,8 @@ export default function Community() {
 
     const newCommentObj: Comment = {
       id: Date.now(),
-      author: `${user?.name} ${user?.lastName}`,
-      avatar: `${user?.name?.charAt(0)}${user?.lastName?.charAt(0)}`,
+      author: `${user?.name} ${user?.lastname}`,
+      avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
       time: 'ahora',
       content: commentText,
       likes: 0,
@@ -182,8 +182,8 @@ export default function Community() {
 
     const newPostObj: Post = {
       id: Date.now(),
-      author: `${user?.name} ${user?.lastName}`,
-      avatar: `${user?.name?.charAt(0)}${user?.lastName?.charAt(0)}`,
+      author: `${user?.name} ${user?.lastname}`,
+      avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
       time: 'ahora',
       content: newPost,
       image: newPostImagePreview || undefined,
@@ -214,7 +214,7 @@ export default function Community() {
             onClick={() => setShowProfileModal(true)}
             className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
           >
-            {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+            {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
           </button>
         </div>
         <p className="text-gray-600 text-xs sm:text-sm">Conecta con tu comunidad local</p>
@@ -238,11 +238,11 @@ export default function Community() {
             <div className="flex items-start space-x-3 mb-3">
               <div className="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center">
                 <span className="text-blue-600 font-semibold text-sm">
-                  {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+                  {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
                 </span>
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 text-sm">{user?.name} {user?.lastName}</h3>
+                <h3 className="font-semibold text-gray-900 text-sm">{user?.name} {user?.lastname}</h3>
                 <span className="text-gray-500 text-xs">Publicando ahora</span>
               </div>
             </div>
@@ -408,7 +408,7 @@ export default function Community() {
                   <div className="flex items-center space-x-2">
                     <div className="bg-blue-100 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-blue-600 font-medium text-xs">
-                        {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+                        {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
                       </span>
                     </div>
                     <div className="flex-1 flex items-center space-x-2">

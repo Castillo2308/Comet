@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 export default function Register() {
   const [formData, setFormData] = useState({
     name: '',
-    lastName: '',
+    lastname: '',
     cedula: '',
     email: '',
     password: ''
@@ -31,7 +31,7 @@ export default function Register() {
     try {
       const success = await signUp(
         formData.name,
-        formData.lastName,
+        formData.lastname,
         formData.cedula,
         formData.email,
         formData.password
@@ -85,9 +85,9 @@ export default function Register() {
               </div>
               <input
                 type="text"
-                name="lastName"
+                name="lastname"
                 required
-                value={formData.lastName}
+                value={formData.lastname}
                 onChange={handleChange}
                 className="appearance-none relative block w-full pl-10 pr-3 py-4 border border-gray-200 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                 placeholder="Apellidos"

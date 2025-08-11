@@ -4,7 +4,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  lastName: string;
+  lastname: string;
   cedula: string;
   role: 'user' | 'admin';
 }
@@ -14,7 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<boolean>;
-  signUp: (name: string, lastName: string, cedula: string, email: string, password: string) => Promise<boolean>;
+  signUp: (name: string, lastname: string, cedula: string, email: string, password: string) => Promise<boolean>;
   signOut: () => void;
 }
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: 'admin',
         name: 'Administrador',
         email: 'admin@comet.com',
-        lastName: 'Sistema',
+        lastname: 'Sistema',
         cedula: '000000000',
         role: 'admin'
       });
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: '1',
         name: 'Usuario',
         email: email,
-        lastName: 'Demo',
+        lastname: 'Demo',
         cedula: '123456789',
         role: 'user'
       });
@@ -49,20 +49,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const signUp = async (name: string, lastName: string, cedula: string, email: string, password: string): Promise<boolean> => {
-    // Mock registration - replace with real API call
-    if (name && lastName && cedula && email && password) {
-      setUser({
-        id: '1',
-        name,
-        email,
-        lastName,
-        cedula,
-        role: 'user'
+  const signUp = async (name: string, lastname: string, cedula: string, email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, lastname, cedula, email, password })
       });
-      return true;
+      if (response.ok) {
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const signOut = () => {
