@@ -29,7 +29,6 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
 
   const announcementsSubmenuItems = [
     { id: 'events', icon: Calendar, label: 'Eventos', action: () => onTabChange('events') },
-    { id: 'notifications', icon: Bell, label: 'Notificaciones', action: () => console.log('Notificaciones clicked') },
     { id: 'community', icon: Users, label: 'Comunidad', action: () => onTabChange('community') }
   ];
 
@@ -75,7 +74,7 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
   };
 
   const renderNormalNavigation = () => (
-    <nav className="flex items-center justify-around w-full max-w-md mx-auto sm:max-w-2xl">
+    <nav className="flex items-center justify-around w-full max-w-lg mx-auto sm:max-w-3xl px-2">
       {navItems.map((item) => {
         const IconComponent = item.icon;
         const isActive = activeTab === item.id;
@@ -85,19 +84,22 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
           <button
             key={item.id}
             onClick={() => handleTabClick(item.id, item.hasSubmenu)}
-            className={`flex flex-col items-center justify-center p-2 sm:p-3 transition-all duration-300 transform ${
+            className={`flex flex-col items-center justify-center p-3 sm:p-4 transition-all duration-300 transform group ${
               isCenter
-                ? 'bg-blue-500 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 -mt-4 sm:-mt-6 shadow-xl hover:bg-blue-600 hover:scale-110 active:scale-95'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-14 h-14 sm:w-16 sm:h-16 -mt-6 sm:-mt-8 shadow-2xl hover:from-blue-600 hover:to-blue-700 hover:scale-110 active:scale-95 border-4 border-white'
                 : isActive
-                ? 'text-blue-500 scale-110'
-                : 'text-gray-400 hover:text-gray-600 hover:scale-105'
+                ? 'text-blue-500 scale-110 bg-blue-50 rounded-xl px-3 py-2'
+                : 'text-gray-400 hover:text-blue-500 hover:scale-105 hover:bg-gray-50 rounded-xl px-3 py-2'
             }`}
           >
             <IconComponent 
-              className={`${isCenter ? 'h-5 w-5 sm:h-6 sm:w-6' : 'h-4 w-4 sm:h-5 sm:w-5'} ${isCenter ? '' : 'mb-1'} transition-transform duration-200`} 
+              className={`${isCenter ? 'h-6 w-6 sm:h-7 sm:w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} ${isCenter ? '' : 'mb-1'} transition-all duration-200 ${!isCenter ? 'group-hover:scale-110' : ''}`} 
             />
             {!isCenter && (
-              <span className="text-xs sm:text-sm font-medium transition-all duration-200">{item.label}</span>
+              <span className="text-xs sm:text-sm font-semibold transition-all duration-200 group-hover:text-blue-600">{item.label}</span>
+            )}
+            {isActive && !isCenter && (
+              <div className="absolute -bottom-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
             )}
           </button>
         );
@@ -106,37 +108,37 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
   );
 
   const renderSubmenuNavigation = (submenuItems: any[], title: string) => (
-    <nav className="flex items-center justify-between w-full max-w-md mx-auto sm:max-w-2xl px-4">
+    <nav className="flex items-center justify-between w-full max-w-lg mx-auto sm:max-w-3xl px-4">
       {/* Back button */}
       <button
         onClick={handleBackClick}
-        className="flex flex-col items-center justify-center p-2 sm:p-3 text-gray-400 hover:text-gray-600 hover:scale-105 transition-all duration-300 transform"
+        className="flex flex-col items-center justify-center p-3 sm:p-4 text-gray-400 hover:text-blue-500 hover:scale-105 transition-all duration-300 transform hover:bg-gray-50 rounded-xl"
       >
-        <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mb-1" />
-        <span className="text-xs sm:text-sm font-medium">Atrás</span>
+        <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
+        <span className="text-xs sm:text-sm font-semibold">Atrás</span>
       </button>
 
       {/* Submenu items */}
-      <div className="flex items-center justify-center space-x-4 sm:space-x-8 flex-1">
+      <div className="flex items-center justify-center space-x-6 sm:space-x-10 flex-1">
         {submenuItems.map((item) => {
           const IconComponent = item.icon;
           return (
             <button
               key={item.id}
               onClick={() => handleSubmenuItemClick(item.action)}
-              className="flex flex-col items-center justify-center p-2 sm:p-3 text-gray-600 hover:text-blue-500 hover:scale-110 transition-all duration-300 transform active:scale-95"
+              className="flex flex-col items-center justify-center p-3 sm:p-4 text-gray-600 hover:text-blue-500 hover:scale-110 transition-all duration-300 transform active:scale-95 group hover:bg-blue-50 rounded-xl"
             >
-              <div className="bg-gray-100 hover:bg-blue-100 p-2 sm:p-3 rounded-full mb-1 transition-colors duration-200">
-                <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div className="bg-gradient-to-r from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200 p-3 sm:p-4 rounded-2xl mb-2 transition-all duration-200 shadow-sm group-hover:shadow-md">
+                <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform duration-200" />
               </div>
-              <span className="text-xs sm:text-sm font-medium">{item.label}</span>
+              <span className="text-xs sm:text-sm font-semibold group-hover:text-blue-600 transition-colors duration-200">{item.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* Placeholder for balance */}
-      <div className="w-12 sm:w-16"></div>
+      <div className="w-16 sm:w-20"></div>
     </nav>
   );
 
@@ -160,18 +162,18 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
       />
 
       {/* Bottom Navigation - Fixed for iPhone safe area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-2 sm:px-4 py-2 sm:py-3 z-30 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-3 sm:px-6 py-3 sm:py-4 z-30 shadow-2xl">
         <div className="pb-safe">
           {showAnnouncementsSubmenu ? (
-            <div className="transform transition-all duration-300 animate-slideInRight">
+            <div className="transform transition-all duration-500 animate-slideInRight">
               {renderSubmenuNavigation(announcementsSubmenuItems, 'Anuncios')}
             </div>
           ) : showInfoSubmenu ? (
-            <div className="transform transition-all duration-300 animate-slideInRight">
+            <div className="transform transition-all duration-500 animate-slideInRight">
               {renderSubmenuNavigation(infoSubmenuItems, 'Información')}
             </div>
           ) : (
-            <div className="transform transition-all duration-300">
+            <div className="transform transition-all duration-500">
               {renderNormalNavigation()}
             </div>
           )}
