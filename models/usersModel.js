@@ -10,6 +10,7 @@ export const createUser = async ({ name, lastname, cedula, email, password }) =>
   
   const insertResult = await neonClient.query(insertQuery, insertValues);
   
+  
 
   // Select the newly created user
   const selectQuery = `

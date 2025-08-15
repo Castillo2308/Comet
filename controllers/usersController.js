@@ -29,7 +29,7 @@ const registerUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-  console.log('Login attempt:', req.body.email);
+  
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -39,7 +39,7 @@ const loginUser = async (req, res) => {
   try {
     // Here you would typically fetch the user from the database
     const user = await getUserByEmail(email);
-    console.log('getUserByEmail result:', user);
+    
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
