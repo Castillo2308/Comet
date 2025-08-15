@@ -30,18 +30,16 @@ export const createUser = async ({ name, lastname, cedula, email, password }) =>
 
 export const getUserByEmail = async (email) => {
   const query = `
-    SELECT id, name, lastname, cedula, email
+    SELECT name, lastname, cedula, email, password
     FROM users
     WHERE email = $1;
   `;
-
-  const values = [email];
-
-  // Execute the query using the neonClient.
+  const values = [email.trim()];
   const result = await neonClient.query(query, values);
-
-  // Return the user record if found.
-  return result.rows[0];
+  if (result) {
+    return result[0];
+  }
+  return null;
 };
 
 

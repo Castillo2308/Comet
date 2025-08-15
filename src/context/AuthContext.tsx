@@ -24,29 +24,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
-    // Mock authentication - replace with real API call
-    if (email === 'admin@1' && password === 'admin') {
-      setUser({
-        id: 'admin',
-        name: 'Administrador',
-        email: 'admin@comet.com',
-        lastname: 'Sistema',
-        cedula: '000000000',
-        role: 'admin'
+    try {
+      const response = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
-      return true;
-    } else if (email && password) {
-      setUser({
-        id: '1',
-        name: 'Usuario',
-        email: email,
-        lastname: 'Demo',
-        cedula: '123456789',
-        role: 'user'
-      });
-      return true;
+      if (response.ok) {
+        // Get user data from backend response
+        const data = await response.json();
+        setUser(data.user); // <-- Set the user in context
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const signUp = async (name: string, lastname: string, cedula: string, email: string, password: string): Promise<boolean> => {

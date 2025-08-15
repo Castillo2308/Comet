@@ -1,4 +1,4 @@
-import { createUser } from '../models/usersModel.js';
+import { createUser, getUserByEmail } from '../models/usersModel.js';
 import bcrypt from 'bcryptjs';    // Same as const bcrypt = require('bcryptjs');
 
 const registerUser = async (req, res) => {
@@ -28,4 +28,35 @@ const registerUser = async (req, res) => {
   }
 };
 
-export default { registerUser };    // Same as module.exports = { registerUser };
+const loginUser = async (req, res) => {
+  console.log('Login attempt:', req.body.email);
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' });
+  }
+
+  try {
+    // Here you would typically fetch the user from the database
+    const user = await getUserByEmail(email);
+    console.log('getUserByEmail result:', user);
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    // If login is successful, return the user data (excluding password)
+    const { password: _, ...userData } = user;
+    res.status(200).json({ message: 'Login successful!', user: userData });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Failed to login.' });
+  }
+};
+
+export default { registerUser, loginUser };    // Same as module.exports = { registerUser };

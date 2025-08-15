@@ -20,7 +20,7 @@ export default function SignIn() {
     try {
       const success = await signIn(email, password);
       if (success) {
-        navigate('/dashboard');
+        navigate('/');
       } else {
         setError('Credenciales inválidas');
       }
