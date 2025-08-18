@@ -137,60 +137,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </button>
             </div>
 
-            {/* Language */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                  <Globe className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Idioma</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Selecciona tu idioma preferido</p>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleLanguageChange('es')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    language === 'es'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-500'
-                  }`}
-                >
-                  Español
-                </button>
-                <button
-                  onClick={() => handleLanguageChange('en')}
-                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    language === 'en'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-500'
-                  }`}
-                >
-                  English
-                </button>
-              </div>
-            </div>
-
-            {/* Theme */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                  <Palette className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Tema de Color</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Personaliza los colores</p>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200"></div>
-                <div className="w-8 h-8 bg-green-500 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 opacity-50"></div>
-                <div className="w-8 h-8 bg-purple-500 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 opacity-50"></div>
-                <div className="w-8 h-8 bg-red-500 rounded-full border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200 opacity-50"></div>
-              </div>
-            </div>
-
             {/* Privacy */}
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
               <div className="flex items-center space-x-3">

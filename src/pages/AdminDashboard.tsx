@@ -142,6 +142,14 @@ export default function AdminDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
+  const adminNavItems = [
+    { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
+    { id: 'reports', icon: FileText, label: 'Reportes' },
+    { id: 'users', icon: Users, label: 'Usuarios' },
+    { id: 'events', icon: Calendar, label: 'Eventos' },
+    { id: 'settings', icon: Settings, label: 'Config' }
+  ];
+
   const handleUpdateReportStatus = (reportId: number, newStatus: Report['status']) => {
     setReports(reports.map(report =>
       report.id === reportId ? { ...report, status: newStatus } : report
@@ -701,110 +709,100 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden pb-20">
       {/* Enhanced Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl">
-        <div className="w-full px-3 sm:px-4 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-3">
+        <div className="w-full px-4">
+          <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <div className="bg-white bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
                 <Settings className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white">Panel de Administración</h1>
+                <h1 className="text-xl font-bold text-white">Admin Panel</h1>
                 <p className="text-blue-100 text-sm">Bienvenido, {user?.name} • Sistema Comet</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="bg-white bg-opacity-10 px-4 py-2 rounded-lg backdrop-blur-sm">
-                <span className="text-white text-sm font-medium">Admin Dashboard</span>
-              </div>
+            <div className="flex items-center space-x-2">
               <button
                 onClick={signOut}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg text-sm"
+                className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg text-sm"
               >
-                Cerrar Sesión
+                Salir
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="w-full px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-          {/* Enhanced Sidebar */}
-          <div className="lg:w-64">
-            <nav className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 sticky top-4">
-              <div className="space-y-2">
-                {[
-                  { id: 'dashboard', icon: BarChart3, label: 'Dashboard', count: null },
-                  { id: 'reports', icon: FileText, label: 'Reportes', count: reports.length },
-                  { id: 'users', icon: Users, label: 'Usuarios', count: users.length },
-                  { id: 'events', icon: Calendar, label: 'Eventos', count: events.length },
-                  { id: 'buses', icon: Bus, label: 'Transporte', count: null },
-                  { id: 'community', icon: MessageSquare, label: 'Comunidad', count: null }
-                ].map((item) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 ${
-                        activeTab === item.id
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <IconComponent className="h-4 w-4" />
-                        <span className="font-medium text-sm">{item.label}</span>
-                      </div>
-                      {item.count !== null && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          activeTab === item.id ? 'bg-white bg-opacity-20' : 'bg-blue-100 text-blue-600'
-                        }`}>
-                          {item.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </nav>
-          </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
+      {/* Main Content */}
+      <div className="w-full px-4 py-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {activeTab === 'dashboard' && 'Dashboard Principal'}
+              {activeTab === 'reports' && 'Gestión de Reportes'}
+              {activeTab === 'users' && 'Gestión de Usuarios'}
+              {activeTab === 'events' && 'Gestión de Eventos'}
+              {activeTab === 'settings' && 'Configuración del Sistema'}
+            </h2>
+            <p className="text-gray-600">
+              {activeTab === 'dashboard' && 'Vista general del sistema y estadísticas'}
+              {activeTab === 'reports' && 'Administra todos los reportes ciudadanos'}
+              {activeTab === 'users' && 'Gestiona usuarios registrados'}
+              {activeTab === 'events' && 'Crea y administra eventos comunitarios'}
+              {activeTab === 'settings' && 'Configuración general del sistema'}
+            </p>
+          </div>
+          
+          <div>
             {activeTab === 'dashboard' && renderDashboard()}
             {activeTab === 'reports' && renderReports()}
             {activeTab === 'users' && renderUsers()}
             {activeTab === 'events' && renderEvents()}
-            {activeTab === 'buses' && (
+            {activeTab === 'settings' && (
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                 <div className="text-center">
-                  <Bus className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Transporte</h2>
-                  <p className="text-gray-600 mb-6">Panel de control para rutas de autobuses y paradas.</p>
+                  <Settings className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Configuración del Sistema</h2>
+                  <p className="text-gray-600 mb-6">Ajustes generales y configuración de la plataforma.</p>
                   <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
-                    Configurar Rutas
-                  </button>
-                </div>
-              </div>
-            )}
-            {activeTab === 'community' && (
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-                <div className="text-center">
-                  <MessageSquare className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Moderación de Comunidad</h2>
-                  <p className="text-gray-600 mb-6">Gestión de publicaciones y comentarios de la comunidad.</p>
-                  <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
-                    Ver Publicaciones
+                    Abrir Configuración
                   </button>
                 </div>
               </div>
             )}
           </div>
         </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-30 shadow-lg">
+        <nav className="flex items-center justify-around max-w-md mx-auto">
+          {adminNavItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = activeTab === item.id;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex flex-col items-center justify-center p-2 transition-all duration-300 transform ${
+                  isActive
+                    ? 'text-blue-500 scale-110'
+                    : 'text-gray-400 hover:text-gray-600 hover:scale-105'
+                }`}
+              >
+                <IconComponent className="h-5 w-5 mb-1 transition-transform duration-200" />
+                <span className="text-xs font-medium transition-all duration-200">{item.label}</span>
+                {isActive && (
+                  <div className="absolute -bottom-1 w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );
