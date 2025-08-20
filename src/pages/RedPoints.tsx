@@ -102,7 +102,7 @@ export default function RedPoints() {
     const point: RedPoint = {
       id: Date.now(),
       ...newPoint,
-      author: `${user?.name} ${user?.lastName}`,
+      author: 'Usuario Anónimo',
       date: 'ahora',
       comments: []
     };
@@ -117,7 +117,7 @@ export default function RedPoints() {
 
     const comment: Comment = {
       id: Date.now(),
-      author: `${user?.name} ${user?.lastName}`,
+      author: 'Usuario Anónimo',
       content: commentText,
       date: 'ahora'
     };
