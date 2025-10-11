@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Plus, Shield, AlertTriangle, FileText, Clock, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Shield, AlertTriangle, FileText, MapPin, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
+import ReportModal from '../components/ReportModal';
 
 interface Complaint {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   type: string;
@@ -13,17 +14,30 @@ interface Complaint {
   status: string;
 }
 
+interface DangerZone {
+  id: string;
+  name: string;
+  description: string;
+  date: string;
+  riskLevel: 'Alto' | 'Medio' | 'Bajo';
+  location?: string;
+}
+
 export default function Security() {
   const { user } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [dangerousAreas, setDangerousAreas] = useState<DangerZone[]>([]);
+  const [news, setNews] = useState<any[]>([]);
+  const [securityNews, setSecurityNews] = useState<any[]>([]);
   const [complaintForm, setComplaintForm] = useState({
     title: '',
     description: '',
     type: '',
     location: ''
   });
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const complaintTypes = [
     'Robo',
@@ -34,53 +48,98 @@ export default function Security() {
     'Otro'
   ];
 
-  const dangerousZones = [
-    {
-      id: 1,
-      name: 'Parque Central',
-      description: 'Las noches en este parque pueden ser un poco peligrosas.',
-      date: '23 de abril de 2024',
-      riskLevel: 'Medio'
-    },
-    {
-      id: 2,
-      name: 'Puente del Río',
-      description: 'Zona con poca iluminación, reportes de robos.',
-      date: '20 de abril de 2024',
-      riskLevel: 'Alto'
-    }
-  ];
+  // Load complaints (for this user), hotspots, dangerous areas and news
+  useEffect(() => {
+    // Dangerous areas from Postgres
+    fetch('/api/dangerous-areas')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        if (!Array.isArray(rows)) return;
+        const riskMap: Record<string, DangerZone['riskLevel']> = { high: 'Alto', medium: 'Medio', low: 'Bajo', alto: 'Alto', medio: 'Medio', bajo: 'Bajo' };
+        const mapped: DangerZone[] = rows.map((d: any) => ({
+          id: String(d.id),
+          name: d.title || 'Zona',
+          description: d.description || '',
+          date: new Date(d.date).toLocaleDateString('es-ES'),
+          riskLevel: riskMap[(d.dangerlevel || '').toLowerCase()] || 'Medio',
+          location: d.location || d.title || ''
+        }));
+        setDangerousAreas(mapped);
+      })
+      .catch(() => {});
 
-  const latestNews = [
-    {
-      id: 1,
-      type: 'Policía',
-      title: 'Vigilancia aumentada en el parque',
-      description: 'Los oficiales patrullarán el parque este fin de semana a pie.',
-      date: '22 de abril de 2024',
-      icon: Shield
-    },
-    {
-      id: 2,
-      type: 'Policía',
-      title: 'Advertencia de estafas telefónicas',
-      description: 'Se han reportado varios casos de estafas telefónicas en nuestro cantón.',
-      date: '21 de abril de 2024',
-      icon: AlertTriangle
-    }
-  ];
+    // Complaints from Postgres (filter by author)
+    fetch('/api/complaints')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        if (!Array.isArray(rows)) return;
+        const my = rows.filter(rp => !user?.cedula || rp.author === user?.cedula);
+        const mapped: Complaint[] = my.map((rp: any) => ({
+          id: rp.id,
+          title: rp.title,
+          description: rp.description,
+          type: rp.type,
+          location: rp.location,
+          date: new Date(rp.date).toLocaleDateString('es-ES'),
+          status: rp.status || 'Pendiente',
+        }));
+        setComplaints(mapped);
+      })
+      .catch(() => {});
 
-  const handleSubmitComplaint = (e: React.FormEvent) => {
+    // Municipal news
+    fetch('/api/news')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        if (!Array.isArray(rows)) return;
+        setNews(rows.slice(0, 5));
+      })
+      .catch(() => {});
+
+    // Security news
+    fetch('/api/security-news')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => { if (Array.isArray(rows)) setSecurityNews(rows.slice(0,5)); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.cedula]);
+
+  const handleSubmitComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newComplaint: Complaint = {
-      id: Date.now(),
-      ...complaintForm,
-      date: new Date().toLocaleDateString('es-ES'),
-      status: 'Pendiente'
+    const payload = {
+      type: complaintForm.type,
+      title: complaintForm.title,
+      description: complaintForm.description,
+      location: complaintForm.location,
+      date: new Date().toISOString(),
+      status: 'pending',
+      photo_link: null,
+      author: user?.cedula || 'anon'
     };
-    setComplaints([newComplaint, ...complaints]);
-    setComplaintForm({ title: '', description: '', type: '', location: '' });
-    setShowComplaintModal(false);
+    try {
+      const res = await fetch('/api/complaints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const mapped: Complaint = {
+          id: created.id,
+          title: created.title,
+          description: created.description,
+          type: created.type,
+          location: created.location,
+          date: new Date(created.date).toLocaleDateString('es-ES'),
+          status: created.status || 'Pendiente'
+        };
+        setComplaints(prev => [mapped, ...prev]);
+        setComplaintForm({ title: '', description: '', type: '', location: '' });
+        setShowComplaintModal(false);
+      }
+    } catch {
+      // swallow
+    }
   };
 
   const getRiskLevelColor = (level: string) => {
@@ -90,6 +149,15 @@ export default function Security() {
       case 'Bajo': return 'bg-green-100 text-green-600';
       default: return 'bg-gray-100 text-gray-600';
     }
+  };
+
+  const getStatusPill = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s.includes('pend')) return 'bg-yellow-100 text-yellow-700';
+    if (s.includes('proce')) return 'bg-blue-100 text-blue-700';
+    if (s.includes('resuel') || s.includes('resol')) return 'bg-green-100 text-green-700';
+    if (s.includes('rechaz')) return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-700';
   };
 
   return (
@@ -207,10 +275,18 @@ export default function Security() {
             <FileText className="h-4 w-4" />
             <span>Presentar Queja</span>
           </button>
-          <button className="bg-blue-500 text-white py-3 px-4 rounded-xl font-semibold text-sm hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center space-x-2">
+          <button onClick={() => setShowReportModal(true)} className="bg-blue-500 text-white py-3 px-4 rounded-xl font-semibold text-sm hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Añadir Reporte</span>
           </button>
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={() => {
+          // Dashboard consumes “Tus Reportes”. Here we just close the modal.
+          setShowReportModal(false);
+        }}
+      />
         </section>
 
         {/* My Complaints */}
@@ -225,7 +301,7 @@ export default function Security() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-gray-900 text-sm">{complaint.title}</h3>
-                    <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs font-medium">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusPill(complaint.status)}`}>
                       {complaint.status}
                     </span>
                   </div>
@@ -240,43 +316,44 @@ export default function Security() {
           </section>
         )}
 
-        {/* Dangerous Zones */}
-        <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
-          <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">Zonas Peligrosas</h2>
-          <div className="space-y-2 sm:space-y-3">
-            {dangerousZones.map((zone) => (
-              <div 
-                key={zone.id}
-                className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900 mb-1 text-xs sm:text-sm">{zone.name}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskLevelColor(zone.riskLevel)}`}>
-                    {zone.riskLevel}
-                  </span>
-                </div>
-                <p className="text-gray-600 text-xs mb-2">{zone.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-xs">{zone.date}</span>
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="h-3 w-3 text-blue-500" />
-                    <span className="text-blue-500 text-xs">Ver en mapa</span>
+        {/* Hotspots (Puntos Rojos) are shown only in the dedicated tab, not here */}
+
+        {/* Dangerous Areas from Postgres */}
+        {dangerousAreas.length > 0 && (
+          <section className="animate-fadeInUp" style={{ animationDelay: '0.25s' }}>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">Áreas Peligrosas (Municipalidad)</h2>
+            <div className="space-y-2 sm:space-y-3">
+              {dangerousAreas.map((zone) => (
+                <div key={zone.id} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900 mb-1 text-xs sm:text-sm">{zone.name}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskLevelColor(zone.riskLevel)}`}>{zone.riskLevel}</span>
+                  </div>
+                  <p className="text-gray-600 text-xs mb-2">{zone.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400 text-xs">{zone.date}</span>
+                    <a className="flex items-center space-x-1 text-blue-500 text-xs hover:underline" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(zone.location || zone.name)}`} target="_blank" rel="noreferrer">
+                      <MapPin className="h-3 w-3" />
+                      <span>Ver en mapa</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Latest News */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
           <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">Noticias</h2>
           <div className="space-y-2 sm:space-y-3">
-            {latestNews.map((news) => {
-              const IconComponent = news.icon;
+            {news.map((n) => {
+              const isPolice = (n.type || '').toLowerCase() === 'policía' || (n.type || '').toLowerCase() === 'policia';
+              const IconComponent = isPolice ? Shield : AlertTriangle;
               return (
                 <div 
-                  key={news.id}
+                  key={n.id}
                   className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
                 >
                   <div className="flex items-start space-x-3">
@@ -285,18 +362,49 @@ export default function Security() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
-                          {news.type}
-                        </span>
+                        {n.type && (
+                          <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
+                            {n.type}
+                          </span>
+                        )}
                       </div>
-                      <h3 className="font-semibold text-gray-900 mb-1 text-xs sm:text-sm">{news.title}</h3>
-                      <p className="text-gray-600 text-xs mb-2">{news.description}</p>
-                      <span className="text-gray-400 text-xs">{news.date}</span>
+                      <h3 className="font-semibold text-gray-900 mb-1 text-xs sm:text-sm">{n.title}</h3>
+                      <p className="text-gray-600 text-xs mb-2">{n.description}</p>
+                      <span className="text-gray-400 text-xs">{new Date(n.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })}</span>
                     </div>
                   </div>
                 </div>
               );
             })}
+            {news.length === 0 && (
+              <div className="text-center text-xs text-gray-500">Sin noticias por ahora.</div>
+            )}
+          </div>
+        </section>
+
+        {/* Security News */}
+        <section className="animate-fadeInUp" style={{ animationDelay: '0.35s' }}>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">Noticias de Seguridad</h2>
+          <div className="space-y-2 sm:space-y-3">
+            {securityNews.map((n) => (
+              <div key={n.id} className={`bg-white rounded-xl p-3 sm:p-4 shadow-sm border ${n.insurgent ? 'border-red-200' : 'border-gray-100'} hover:shadow-md`}>
+                <div className="flex items-start space-x-3">
+                  <div className="bg-red-100 p-2 rounded-full"><Shield className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" /></div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      {n.type && <span className="bg-red-50 text-red-600 px-2 py-1 rounded-full text-xs font-medium">{n.type}</span>}
+                      {n.insurgent && <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">Urgente</span>}
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-1 text-xs sm:text-sm">{n.title}</h3>
+                    <p className="text-gray-600 text-xs mb-2">{n.description}</p>
+                    <span className="text-gray-400 text-xs">{new Date(n.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {securityNews.length === 0 && (
+              <div className="text-center text-xs text-gray-500">Sin noticias de seguridad.</div>
+            )}
           </div>
         </section>
 

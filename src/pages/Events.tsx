@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, Users, Star, Filter, Search, Heart, Share2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, Clock, MapPin, Users, Filter, Search, Heart, Share2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
@@ -98,6 +98,32 @@ export default function Events() {
   const { user } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [events, setEvents] = useState<Event[]>(mockEvents);
+  useEffect(() => {
+    fetch('/api/events')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const mapped: Event[] = rows.map((e:any) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description,
+            date: new Date(e.date).toISOString().slice(0,10),
+            time: new Date(e.date).toLocaleTimeString(),
+            location: e.location,
+            category: e.type || 'Social',
+            attendees: Number(e.attendants) || 0,
+            image: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
+            organizer: e.host || 'Municipalidad',
+            price: e.price ? `₡${e.price}` : 'Gratis',
+            rating: 4.5,
+            isAttending: false,
+            isFavorite: false,
+          }));
+          setEvents(mapped);
+        }
+      })
+      .catch(()=>{});
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -248,10 +274,6 @@ export default function Events() {
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-bold text-gray-900 text-sm sm:text-base">{event.title}</h3>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                    <span className="text-xs text-gray-600">{event.rating}</span>
-                  </div>
                 </div>
 
                 <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">{event.description}</p>

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, User, Clock, Camera, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Clock, Camera, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
 interface Post {
-  id: number;
+  id: string;
   author: string;
   avatar: string;
   time: string;
@@ -16,7 +16,7 @@ interface Post {
 }
 
 interface Comment {
-  id: number;
+  id: string;
   author: string;
   avatar: string;
   time: string;
@@ -27,7 +27,7 @@ interface Comment {
 
 const mockPosts: Post[] = [
   {
-    id: 1,
+    id: 'mock-1',
     author: 'María González',
     avatar: 'MG',
     time: 'hace 2 horas',
@@ -38,7 +38,7 @@ const mockPosts: Post[] = [
     isLiked: false
   },
   {
-    id: 2,
+    id: 'mock-2',
     author: 'Carlos Rodríguez',
     avatar: 'CR',
     time: 'hace 4 horas',
@@ -48,7 +48,7 @@ const mockPosts: Post[] = [
     isLiked: true
   },
   {
-    id: 3,
+    id: 'mock-3',
     author: 'Ana Jiménez',
     avatar: 'AJ',
     time: 'hace 6 horas',
@@ -59,10 +59,10 @@ const mockPosts: Post[] = [
   }
 ];
 
-const mockComments: { [key: number]: Comment[] } = {
-  1: [
+const mockComments: { [key: string]: Comment[] } = {
+  'mock-1': [
     {
-      id: 1,
+      id: 'mock-c1',
       author: 'Pedro Mora',
       avatar: 'PM',
       time: 'hace 1 hora',
@@ -71,7 +71,7 @@ const mockComments: { [key: number]: Comment[] } = {
       isLiked: false
     },
     {
-      id: 2,
+      id: 'mock-c2',
       author: 'Sofía Castro',
       avatar: 'SC',
       time: 'hace 30 min',
@@ -80,9 +80,9 @@ const mockComments: { [key: number]: Comment[] } = {
       isLiked: true
     }
   ],
-  2: [
+  'mock-2': [
     {
-      id: 3,
+      id: 'mock-c3',
       author: 'Luis Vargas',
       avatar: 'LV',
       time: 'hace 3 horas',
@@ -97,15 +97,54 @@ export default function Community() {
   const { user } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [posts, setPosts] = useState<Post[]>(mockPosts);
-  const [comments, setComments] = useState<{ [key: number]: Comment[] }>(mockComments);
-  const [expandedPost, setExpandedPost] = useState<number | null>(null);
-  const [newComment, setNewComment] = useState<{ [key: number]: string }>({});
+  const [comments, setComments] = useState<{ [key: string]: Comment[] }>(mockComments);
+  const [expandedPost, setExpandedPost] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState<{ [key: string]: string }>({});
   const [newPost, setNewPost] = useState('');
   const [newPostImage, setNewPostImage] = useState<File | null>(null);
   const [newPostImagePreview, setNewPostImagePreview] = useState<string | null>(null);
   const [showNewPost, setShowNewPost] = useState(false);
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
+  const [stats, setStats] = useState<{ users: number; posts: number; comments: number }>({ users: 0, posts: 0, comments: 0 });
 
-  const handleLikePost = (postId: number) => {
+  useEffect(() => {
+    // Load real posts from backend (Mongo)
+    fetch('/api/forum')
+      .then(r => r.ok ? r.json() : [])
+      .then((data) => {
+        if (Array.isArray(data) && data.length) {
+          const mapped: Post[] = data.map((p: any) => ({
+            id: String(p._id || ''),
+            author: p.author,
+            avatar: p.author?.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
+            time: new Date(p.date).toLocaleString(),
+            content: p.content,
+            image: p.photo_link || undefined,
+            likes: p.likes || 0,
+            comments: p.comments_count || 0,
+            isLiked: false,
+          }));
+          setPosts(mapped);
+        }
+      })
+      .catch(()=>{});
+    // Load counts for stats
+    Promise.all([
+      fetch('/api/users').then(r => r.ok ? r.json() : []),
+      fetch('/api/forum').then(r => r.ok ? r.json() : []),
+      fetch('/api/forum').then(r => r.ok ? r.json() : []),
+    ]).then(([usersList, postsList, againPosts]) => {
+      const usersCount = Array.isArray(usersList) ? usersList.length : 0;
+      const postsCount = Array.isArray(postsList) ? postsList.length : 0;
+      let commentsCount = 0;
+      if (Array.isArray(againPosts)) {
+        commentsCount = againPosts.reduce((acc: number, p: any) => acc + (p.comments_count || 0), 0);
+      }
+      setStats({ users: usersCount, posts: postsCount, comments: commentsCount });
+    }).catch(()=>{});
+  }, []);
+
+  const handleLikePost = async (postId: string) => {
     setPosts(posts.map(post => 
       post.id === postId 
         ? { 
@@ -115,9 +154,13 @@ export default function Community() {
           }
         : post
     ));
+    // fire-and-forget call to backend if available
+    try {
+      await fetch(`/api/forum/${postId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decrement: false }) });
+    } catch {}
   };
 
-  const handleLikeComment = (postId: number, commentId: number) => {
+  const handleLikeComment = async (postId: string, commentId: string) => {
     setComments(prev => ({
       ...prev,
       [postId]: prev[postId]?.map(comment =>
@@ -130,14 +173,15 @@ export default function Community() {
           : comment
       ) || []
     }));
+    try { await fetch(`/api/forum/comments/${commentId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }); } catch {}
   };
 
-  const handleAddComment = (postId: number) => {
+  const handleAddComment = async (postId: string) => {
     const commentText = newComment[postId];
     if (!commentText?.trim()) return;
 
     const newCommentObj: Comment = {
-      id: Date.now(),
+      id: `tmp-${Date.now()}`,
       author: `${user?.name} ${user?.lastname}`,
       avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
       time: 'ahora',
@@ -158,6 +202,7 @@ export default function Community() {
     ));
 
     setNewComment(prev => ({ ...prev, [postId]: '' }));
+    try { await fetch(`/api/forum/${postId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: commentText, author: `${user?.name} ${user?.lastname}` }) }); } catch {}
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -177,26 +222,82 @@ export default function Community() {
     setNewPostImagePreview(null);
   };
 
-  const handleAddPost = () => {
+  const handleAddPost = async () => {
     if (!newPost.trim()) return;
 
-    const newPostObj: Post = {
-      id: Date.now(),
-      author: `${user?.name} ${user?.lastname}`,
-      avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
-      time: 'ahora',
-      content: newPost,
-      image: newPostImagePreview || undefined,
-      likes: 0,
-      comments: 0,
-      isLiked: false
-    };
-
-    setPosts([newPostObj, ...posts]);
+    try {
+      const res = await fetch('/api/forum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: newPost,
+          photo_link: newPostImagePreview || undefined,
+          author: `${user?.name} ${user?.lastname}`,
+          date: new Date().toISOString()
+        })
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        const newPostObj: Post = {
+          id: String(saved._id || saved.id || `tmp-${Date.now()}`),
+          author: saved.author ?? `${user?.name} ${user?.lastname}`,
+          avatar: (saved.author ?? `${user?.name} ${user?.lastname}`)?.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
+          time: new Date(saved.date || Date.now()).toLocaleString(),
+          content: saved.content ?? newPost,
+          image: saved.photo_link || newPostImagePreview || undefined,
+          likes: saved.likes ?? 0,
+          comments: saved.comments_count ?? 0,
+          isLiked: false
+        };
+        setPosts([newPostObj, ...posts]);
+      } else {
+        const newPostObj: Post = {
+          id: `tmp-${Date.now()}`,
+          author: `${user?.name} ${user?.lastname}`,
+          avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
+          time: 'ahora',
+          content: newPost,
+          image: newPostImagePreview || undefined,
+          likes: 0,
+          comments: 0,
+          isLiked: false
+        };
+        setPosts([newPostObj, ...posts]);
+      }
+    } catch {
+      const newPostObj: Post = {
+        id: `tmp-${Date.now()}`,
+        author: `${user?.name} ${user?.lastname}`,
+        avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
+        time: 'ahora',
+        content: newPost,
+        image: newPostImagePreview || undefined,
+        likes: 0,
+        comments: 0,
+        isLiked: false
+      };
+      setPosts([newPostObj, ...posts]);
+    }
     setNewPost('');
     setNewPostImage(null);
     setNewPostImagePreview(null);
     setShowNewPost(false);
+  };
+
+  const isOwner = (authorName: string) => {
+    const full = `${user?.name} ${user?.lastname}`.trim();
+    return !!full && !!authorName && full.toLowerCase() === authorName.toLowerCase();
+  };
+
+  const deletePost = async (postId: string) => {
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    try { await fetch(`/api/forum/${postId}`, { method: 'DELETE' }); } catch {}
+  };
+
+  const deleteComment = async (postId: string, commentId: string) => {
+    setComments(prev => ({ ...prev, [postId]: (prev[postId] || []).filter(c => c.id !== commentId) }));
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: Math.max(0, p.comments - 1) } : p));
+    try { await fetch(`/api/forum/comments/${commentId}`, { method: 'DELETE' }); } catch {}
   };
 
   return (
@@ -275,7 +376,7 @@ export default function Community() {
             <div className="flex justify-between items-center mt-3">
               <label className="flex items-center space-x-2 text-blue-500 hover:text-blue-600 cursor-pointer transition-colors duration-200">
                 <Camera className="h-5 w-5" />
-                <span className="text-sm font-medium">Añadir foto</span>
+                <span className="text-sm font-medium">{newPostImage ? 'Cambiar foto' : 'Añadir foto'}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -312,7 +413,7 @@ export default function Community() {
           {posts.map((post, index) => (
             <div
               key={post.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Post Header */}
@@ -323,20 +424,29 @@ export default function Community() {
                       <span className="text-blue-600 font-semibold text-sm">{post.avatar}</span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-sm">{post.author}</h3>
-                      <div className="flex items-center space-x-1 text-gray-500 text-xs">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{post.author}</h3>
+                      <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400 text-xs">
                         <Clock className="h-3 w-3" />
                         <span>{post.time}</span>
                       </div>
                     </div>
                   </div>
-                  <button className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
+                  <div className="relative">
+                    <button onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)} className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors duration-200 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                    {openMenuPostId === post.id && isOwner(post.author) && (
+                      <div className="absolute right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded shadow z-10">
+                        <button onClick={() => deletePost(post.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600">
+                          <Trash2 className="h-4 w-4" /> Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Post Content */}
-                <p className="text-gray-800 text-sm mb-3">{post.content}</p>
+                <p className="text-gray-800 dark:text-gray-200 text-sm mb-3">{post.content}</p>
 
                 {/* Post Image */}
                 {post.image && (
@@ -348,7 +458,7 @@ export default function Community() {
                 )}
 
                 {/* Post Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={() => handleLikePost(post.id)}
@@ -360,7 +470,28 @@ export default function Community() {
                       <span className="text-xs font-medium">{post.likes}</span>
                     </button>
                     <button
-                      onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
+                      onClick={async () => {
+                        const next = expandedPost === post.id ? null : post.id;
+                        setExpandedPost(next);
+                        if (next && !comments[next]) {
+                          try {
+                            const res = await fetch(`/api/forum/${post.id}/comments`);
+                            if (res.ok) {
+                              const data = await res.json();
+                              const mapped: Comment[] = (data || []).map((c:any) => ({
+                                id: String(c._id || c.id || `tmp-${Date.now()}`),
+                                author: c.author,
+                                avatar: c.author?.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
+                                time: new Date(c.date).toLocaleString(),
+                                content: c.content,
+                                likes: c.likes || 0,
+                                isLiked: false
+                              }));
+                              setComments(prev => ({ ...prev, [post.id]: mapped }));
+                            }
+                          } catch {}
+                        }
+                      }}
                       className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-all duration-200 transform hover:scale-110 active:scale-95"
                     >
                       <MessageCircle className="h-4 w-4" />
@@ -376,20 +507,27 @@ export default function Community() {
 
               {/* Comments Section */}
               {expandedPost === post.id && (
-                <div className="border-t border-gray-100 p-4 pt-3 bg-gray-50 animate-slideInRight">
+                <div className="border-t border-gray-100 dark:border-gray-700 p-4 pt-3 bg-gray-50 dark:bg-gray-900 animate-slideInRight">
                   {/* Existing Comments */}
                   <div className="space-y-3 mb-4">
                     {comments[post.id]?.map((comment) => (
                       <div key={comment.id} className="flex items-start space-x-2 animate-fadeInUp">
-                        <div className="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transform transition-transform duration-200 hover:scale-110">
-                          <span className="text-gray-600 font-medium text-xs">{comment.avatar}</span>
+                        <div className="bg-gray-200 dark:bg-gray-700 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transform transition-transform duration-200 hover:scale-110">
+                          <span className="text-gray-600 dark:text-gray-200 font-medium text-xs">{comment.avatar}</span>
                         </div>
-                        <div className="flex-1 bg-white rounded-lg p-3 shadow-sm">
+                        <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-gray-900 text-xs">{comment.author}</span>
-                            <span className="text-gray-500 text-xs">{comment.time}</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100 text-xs">{comment.author}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500 dark:text-gray-400 text-xs">{comment.time}</span>
+                              {isOwner(comment.author) && (
+                                <button onClick={() => deleteComment(post.id, comment.id)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-gray-700 rounded">
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-gray-800 text-xs mb-2">{comment.content}</p>
+                          <p className="text-gray-800 dark:text-gray-200 text-xs mb-2">{comment.content}</p>
                           <button
                             onClick={() => handleLikeComment(post.id, comment.id)}
                             className={`flex items-center space-x-1 transition-all duration-200 transform hover:scale-110 active:scale-95 ${
@@ -440,15 +578,15 @@ export default function Community() {
           <h3 className="font-semibold text-gray-900 mb-3 text-sm">Estadísticas de la Comunidad</h3>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="transform transition-transform duration-200 hover:scale-110">
-              <div className="text-lg font-bold text-blue-600">1,247</div>
+              <div className="text-lg font-bold text-blue-600">{stats.users}</div>
               <div className="text-xs text-gray-600">Miembros</div>
             </div>
             <div className="transform transition-transform duration-200 hover:scale-110">
-              <div className="text-lg font-bold text-green-600">89</div>
+              <div className="text-lg font-bold text-green-600">{stats.posts}</div>
               <div className="text-xs text-gray-600">Publicaciones</div>
             </div>
             <div className="transform transition-transform duration-200 hover:scale-110">
-              <div className="text-lg font-bold text-orange-600">324</div>
+              <div className="text-lg font-bold text-orange-600">{stats.comments}</div>
               <div className="text-xs text-gray-600">Comentarios</div>
             </div>
           </div>

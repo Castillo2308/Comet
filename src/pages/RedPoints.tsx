@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapPin, Clock, AlertTriangle, Plus, MessageCircle, User, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
@@ -21,58 +21,7 @@ interface Comment {
   date: string;
 }
 
-const mockRedPoints: RedPoint[] = [
-  {
-    id: 1,
-    location: 'Parque Central',
-    description: 'Entre las 8:00 PM y 11:00 PM este lugar es muy peligroso, han robado varias veces.',
-    timeRange: '8:00 PM - 11:00 PM',
-    author: 'María González',
-    date: 'hace 2 horas',
-    riskLevel: 'Alto',
-    comments: [
-      {
-        id: 1,
-        author: 'Carlos Rodríguez',
-        content: 'Confirmo, a mi hermano le robaron ahí la semana pasada.',
-        date: 'hace 1 hora'
-      }
-    ]
-  },
-  {
-    id: 2,
-    location: 'Puente del Río',
-    description: 'De madrugada (2:00 AM - 5:00 AM) es peligroso pasar por aquí solo.',
-    timeRange: '2:00 AM - 5:00 AM',
-    author: 'Luis Vargas',
-    date: 'hace 5 horas',
-    riskLevel: 'Medio',
-    comments: []
-  },
-  {
-    id: 3,
-    location: 'Parada de Bus Centro',
-    description: 'Los fines de semana por la noche hay mucha actividad sospechosa.',
-    timeRange: 'Viernes y Sábados 10:00 PM - 2:00 AM',
-    author: 'Ana Jiménez',
-    date: 'hace 1 día',
-    riskLevel: 'Alto',
-    comments: [
-      {
-        id: 2,
-        author: 'Pedro Mora',
-        content: 'Es cierto, mejor evitar esa zona los fines de semana.',
-        date: 'hace 12 horas'
-      },
-      {
-        id: 3,
-        author: 'Sofía Castro',
-        content: 'Deberían poner más iluminación ahí.',
-        date: 'hace 8 horas'
-      }
-    ]
-  }
-];
+const mockRedPoints: RedPoint[] = [];
 
 export default function RedPoints() {
   const { user } = useAuth();
@@ -97,39 +46,112 @@ export default function RedPoints() {
     }
   };
 
-  const handleAddPoint = (e: React.FormEvent) => {
+  const handleAddPoint = async (e: React.FormEvent) => {
     e.preventDefault();
-    const point: RedPoint = {
-      id: Date.now(),
-      ...newPoint,
-      author: `${user?.name} ${user?.lastname}`,
-      date: 'ahora',
-      comments: []
+    const dangerMap: Record<string, string> = { 'Alto': 'high', 'Medio': 'medium', 'Bajo': 'low' };
+    const payload = {
+      title: newPoint.location,
+      description: newPoint.description,
+      dangertime: newPoint.timeRange,
+      dangerlevel: dangerMap[newPoint.riskLevel] || 'medium',
+      date: new Date().toISOString(),
+      author: user?.cedula || `${user?.name} ${user?.lastname}`
     };
-    setRedPoints([point, ...redPoints]);
-    setNewPoint({ location: '', description: '', timeRange: '', riskLevel: 'Medio' });
-    setShowAddModal(false);
+    try {
+      const res = await fetch('/api/security/hotspots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const riskBack: Record<string, RedPoint['riskLevel']> = { high: 'Alto', medium: 'Medio', low: 'Bajo' };
+        const point: RedPoint = {
+          id: (created._id?.toString?.() ?? created._id ?? Date.now()).toString() as any,
+          location: created.title,
+          description: created.description,
+          timeRange: created.dangerTime || newPoint.timeRange,
+          author: user?.cedula || `${user?.name} ${user?.lastname}`,
+          date: new Date(created.date).toLocaleString('es-ES'),
+          riskLevel: riskBack[(created.dangerLevel || '').toLowerCase()] || newPoint.riskLevel,
+          comments: []
+        };
+        setRedPoints(prev => [point, ...prev]);
+        setNewPoint({ location: '', description: '', timeRange: '', riskLevel: 'Medio' });
+        setShowAddModal(false);
+      }
+    } catch {
+      // swallow
+    }
   };
 
-  const handleAddComment = (pointId: number) => {
+  const handleAddComment = async (pointId: any) => {
     const commentText = newComment[pointId];
     if (!commentText?.trim()) return;
-
-    const comment: Comment = {
-      id: Date.now(),
-      author: `${user?.name} ${user?.lastname}`,
-      content: commentText,
-      date: 'ahora'
-    };
-
-    setRedPoints(redPoints.map(point =>
-      point.id === pointId
-        ? { ...point, comments: [...point.comments, comment] }
-        : point
-    ));
-
-    setNewComment(prev => ({ ...prev, [pointId]: '' }));
+    try {
+      const res = await fetch(`/api/security/hotspots/${pointId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: commentText, author: user?.cedula || `${user?.name} ${user?.lastname}` })
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const comment: Comment = {
+          id: (created._id?.toString?.() ?? created._id ?? Date.now()).toString() as any,
+          author: `${user?.name} ${user?.lastname}`,
+          content: created.content,
+          date: new Date(created.date).toLocaleString('es-ES')
+        };
+        setRedPoints(prev => prev.map(point =>
+          point.id === pointId
+            ? { ...point, comments: [...point.comments, comment] }
+            : point
+        ));
+        setNewComment(prev => ({ ...prev, [pointId]: '' }));
+      }
+    } catch {
+      // swallow
+    }
   };
+
+  useEffect(() => {
+    // Load hotspots and comments
+    fetch('/api/security/hotspots')
+      .then(r => r.ok ? r.json() : [])
+      .then(async (rows: any[]) => {
+        if (!Array.isArray(rows)) return;
+        // For each hotspot, load its comments
+        const riskBack: Record<string, RedPoint['riskLevel']> = { high: 'Alto', medium: 'Medio', low: 'Bajo' };
+        const points: RedPoint[] = await Promise.all(rows.map(async (h) => {
+          const id = (h._id?.toString?.() ?? h._id ?? '').toString();
+          let comments: Comment[] = [];
+          try {
+            const cr = await fetch(`/api/security/hotspots/${id}/comments`);
+            if (cr.ok) {
+              const crows = await cr.json();
+              comments = (Array.isArray(crows) ? crows : []).map((c: any) => ({
+                id: (c._id?.toString?.() ?? c._id ?? '').toString(),
+                author: c.author || 'anon',
+                content: c.content,
+                date: new Date(c.date).toLocaleString('es-ES')
+              }));
+            }
+          } catch {}
+          return {
+            id: id as any,
+            location: h.title || 'Zona',
+            description: h.description || '',
+            timeRange: h.dangerTime || '',
+            author: h.author || 'anon',
+            date: new Date(h.date).toLocaleString('es-ES'),
+            riskLevel: riskBack[(h.dangerLevel || '').toLowerCase()] || 'Medio',
+            comments
+          } as RedPoint;
+        }));
+        setRedPoints(points);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex-1 overflow-y-auto pb-20 sm:pb-24 md:pb-28 min-h-screen bg-gray-50">
@@ -354,8 +376,8 @@ export default function RedPoints() {
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 text-sm">{point.location}</h3>
                       <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
-                        <span>Por {point.author}</span>
-                        <span>•</span>
+                        
+                        
                         <span>{point.date}</span>
                       </div>
                     </div>
@@ -395,7 +417,7 @@ export default function RedPoints() {
                         </div>
                         <div className="flex-1 bg-white rounded-lg p-3 shadow-sm">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-gray-900 text-xs">{comment.author}</span>
+                            
                             <span className="text-gray-500 text-xs">{comment.date}</span>
                           </div>
                           <p className="text-gray-800 text-xs">{comment.content}</p>

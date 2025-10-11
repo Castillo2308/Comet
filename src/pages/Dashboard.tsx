@@ -1,63 +1,11 @@
-import React, { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapPin, MoreHorizontal, Calendar, Users, Shield, AlertTriangle, Clock, TrendingUp, Activity, Bell, CheckCircle } from 'lucide-react';
 import UserProfileModal from '../components/UserProfileModal';
 import { useAuth } from '../context/AuthContext';
 
-const mockReports = [
-  {
-    id: 1,
-    title: 'Basura en las calles',
-    description: 'Durante estos días la acumulación de basura ha aumentado significativamente en la zona.',
-    location: 'San Felipe',
-    image: 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
-    status: 'Pendiente',
-    date: 'hace 2 horas',
-    priority: 'Alta'
-  }
-];
+const mockReports: any[] = [];
 
-const importantNews = [
-  {
-    id: 1,
-    title: 'Corte de agua programado',
-    description: 'El próximo martes 20 de febrero habrá corte de agua de 8:00 AM a 4:00 PM en el sector centro para mantenimiento de tuberías principales.',
-    type: 'Servicios',
-    date: 'hace 3 horas',
-    icon: AlertTriangle,
-    priority: 'high',
-    status: 'urgent'
-  },
-  {
-    id: 2,
-    title: 'Nueva ruta de autobús',
-    description: 'Se inaugura la nueva ruta 405 que conectará el centro con la zona industrial, mejorando la conectividad para trabajadores.',
-    type: 'Transporte',
-    date: 'hace 6 horas',
-    icon: Users,
-    priority: 'medium',
-    status: 'info'
-  },
-  {
-    id: 3,
-    title: 'Feria de emprendedores',
-    description: 'Este sábado 17 de febrero se realizará la feria mensual de emprendedores en el parque central de 9:00 AM a 5:00 PM.',
-    type: 'Eventos',
-    date: 'hace 1 día',
-    icon: Calendar,
-    priority: 'low',
-    status: 'event'
-  },
-  {
-    id: 4,
-    title: 'Refuerzo de seguridad',
-    description: 'La policía municipal aumentará las patrullas nocturnas en respuesta a reportes ciudadanos sobre actividad sospechosa.',
-    type: 'Seguridad',
-    date: 'hace 1 día',
-    icon: Shield,
-    priority: 'high',
-    status: 'security'
-  }
-];
+const importantNews: any[] = [];
 
 const quickStats = [
   {
@@ -105,17 +53,61 @@ const quickStats = [
 export default function Dashboard({ userReports = [] }: { userReports?: any[] }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const { user } = useAuth();
+  const [reports, setReports] = useState<any[]>(mockReports);
+  const [news, setNews] = useState<any[]>(importantNews);
+  const [showAllReports, setShowAllReports] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState<number | string | null>(null);
 
-  // Combine mock reports with user reports
-  const allReports = [...userReports, ...mockReports];
+  useEffect(() => {
+    // Fetch user reports from backend
+    fetch('/api/reports')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        if (!Array.isArray(rows)) return;
+        const mine = rows.filter(r => !user?.cedula || r.author === user?.cedula);
+        const mapped = mine.map(r => ({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          location: r.location,
+          image: r.photo_link || 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+          status: r.status === 'pending' ? 'Pendiente' : r.status,
+          date: new Date(r.date).toLocaleString('es-ES'),
+          priority: undefined
+        }));
+        setReports(mapped);
+      }).catch(()=>{});
+    // Fetch municipal news
+    fetch('/api/news')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        if (!Array.isArray(rows)) return;
+        setNews(rows);
+      }).catch(()=>{});
+  }, [user?.cedula]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'border-l-red-500 bg-gradient-to-r from-red-50 to-red-25';
-      case 'medium': return 'border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-25';
-      case 'low': return 'border-l-green-500 bg-gradient-to-r from-green-50 to-green-25';
-      default: return 'border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-25';
-    }
+  // Combine new reports from backend with any local pending user reports (from modal)
+  const allReports = useMemo(() => {
+    // Prefer unique by id; if local has same id, keep local first
+    const map = new Map<string | number, any>();
+    [...userReports, ...reports].forEach(r => {
+      const key = r.id ?? `${r.title}-${r.date}`;
+      if (!map.has(key)) map.set(key, r);
+    });
+    return Array.from(map.values());
+  }, [userReports, reports]);
+  const activeCount = allReports.filter(r => {
+    const s = (r.status || '').toLowerCase();
+    return s.includes('pend') || s.includes('proce');
+  }).length;
+
+  const getStatusPill = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s.includes('pend')) return 'from-yellow-400 to-yellow-500';
+    if (s.includes('proce')) return 'from-blue-400 to-blue-500';
+    if (s.includes('resuel') || s.includes('resol')) return 'from-green-400 to-green-500';
+    if (s.includes('rechaz')) return 'from-red-400 to-red-500';
+    return 'from-gray-400 to-gray-500';
   };
 
   const getTypeColor = (type: string) => {
@@ -125,6 +117,22 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
       case 'Eventos': return 'bg-gradient-to-r from-green-500 to-green-600 text-white';
       case 'Seguridad': return 'bg-gradient-to-r from-orange-500 to-orange-600 text-white';
       default: return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white';
+    }
+  };
+
+  const canDelete = (report: any) => {
+    // Owned by current user if author matches cedula in either raw or formatted form
+    return !user?.cedula || report.author === user?.cedula;
+  };
+
+  const handleDeleteReport = async (id: number | string) => {
+    try {
+      const res = await fetch(`/api/reports/${id}` , { method: 'DELETE' });
+      if (!res.ok) return;
+      setReports(prev => prev.filter(r => r.id !== id));
+      setMenuOpenId(null);
+    } catch {
+      // Optional: toast error
     }
   };
 
@@ -191,13 +199,13 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               Tus Reportes
             </h2>
             <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
-              {allReports.length} activos
+              {activeCount} activos
             </span>
           </div>
           
           <div className="space-y-4">
             {allReports.length > 0 ? (
-              allReports.map((report, index) => (
+              (showAllReports ? allReports : allReports.slice(0,5)).map((report, index) => (
                 <div 
                   key={report.id} 
                   className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp hover-lift"
@@ -218,13 +226,24 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-3">
                         <h3 className="font-bold text-gray-900 text-sm sm:text-base">{report.title}</h3>
-                        <div className="flex items-center space-x-2">
-                          <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                        <div className="flex items-center space-x-2 relative">
+                          <span className={`bg-gradient-to-r ${getStatusPill(report.status)} text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm`}>
                             {report.status}
                           </span>
-                          <button className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full">
+                          <button onClick={() => setMenuOpenId(menuOpenId === report.id ? null : report.id)} className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full">
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
+                          {menuOpenId === report.id && (
+                            <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 w-36">
+                              <button
+                                disabled={!canDelete(report)}
+                                onClick={() => canDelete(report) && handleDeleteReport(report.id)}
+                                className={`w-full text-left px-3 py-2 text-sm ${canDelete(report) ? 'hover:bg-gray-50 text-red-600' : 'text-gray-300 cursor-not-allowed'}`}
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -242,15 +261,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                           </div>
                         </div>
                         
-                        {report.priority && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            report.priority === 'Alta' ? 'bg-red-100 text-red-600' :
-                            report.priority === 'Media' ? 'bg-yellow-100 text-yellow-600' :
-                            'bg-green-100 text-green-600'
-                          }`}>
-                            {report.priority}
-                          </span>
-                        )}
+                        
                       </div>
                     </div>
                   </div>
@@ -264,6 +275,13 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               </div>
             )}
           </div>
+          {allReports.length > 5 && (
+            <div className="flex justify-center pt-2">
+              <button onClick={() => setShowAllReports(!showAllReports)} className="text-blue-600 text-sm hover:underline">
+                {showAllReports ? 'Ver menos' : 'Ver más'}
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Enhanced Important News Section */}
@@ -279,12 +297,13 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
           </div>
           
           <div className="space-y-4">
-            {importantNews.map((news, index) => {
-              const IconComponent = news.icon;
+            {news.map((news, index) => {
+              const type = (news.type || '').toLowerCase();
+              const IconComponent = type.includes('seguridad') ? Shield : type.includes('transporte') ? Users : type.includes('event') ? Calendar : AlertTriangle;
               return (
                 <div 
                   key={news.id}
-                  className={`bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${getPriorityColor(news.priority)}`}
+                  className={`bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${news.insurgent ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-red-25' : 'border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-25'}`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-4">
@@ -305,7 +324,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                       <div className="flex items-center justify-between">
                         <div className="flex items-center text-gray-500 text-sm bg-gray-50 px-3 py-1 rounded-lg">
                           <Clock className="h-4 w-4 mr-1" />
-                          {news.date}
+                          {new Date(news.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })}
                         </div>
                         
                         {news.priority === 'high' && (

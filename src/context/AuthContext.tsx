@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -16,12 +16,17 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<boolean>;
   signUp: (name: string, lastname: string, cedula: string, email: string, password: string) => Promise<boolean>;
   signOut: () => void;
+  updateProfile: (updates: Partial<Pick<User, 'name' | 'lastname' | 'email'>> & { password?: string }) => Promise<boolean>;
+  deleteAccount: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('authUser');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -34,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Get user data from backend response
         const data = await response.json();
         setUser(data.user); // <-- Set the user in context
+        localStorage.setItem('authUser', JSON.stringify(data.user));
         return true;
       }
       return false;
@@ -60,6 +66,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = () => {
     setUser(null);
+    localStorage.removeItem('authUser');
+  };
+
+  const updateProfile: AuthContextType['updateProfile'] = async (updates) => {
+    if (!user) return false;
+    try {
+      const res = await fetch(`/api/users/${user.cedula}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setUser(prev => {
+        const merged = { ...(prev as User), ...data.user };
+        localStorage.setItem('authUser', JSON.stringify(merged));
+        return merged;
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const deleteAccount: AuthContextType['deleteAccount'] = async () => {
+    if (!user) return false;
+    try {
+      const res = await fetch(`/api/users/${user.cedula}`, { method: 'DELETE' });
+      if (!res.ok) return false;
+      signOut();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return (
@@ -69,7 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: user?.role === 'admin',  /////// CHANGE TO isAdmin: true, FOR TESTING /////////////////
       signIn,
       signUp,
-      signOut
+      signOut,
+      updateProfile,
+      deleteAccount
     }}>
       {children}
     </AuthContext.Provider>

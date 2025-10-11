@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Megaphone, Upload } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface ReportModalProps {
 }
 
 export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -25,36 +27,57 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
     'Otro'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newReport = {
-      id: Date.now(),
-      title: formData.title,
-      description: formData.description,
-      type: formData.type,
-      location: formData.location,
-      status: 'Pendiente',
-      date: 'ahora',
-      image: 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1'
-    };
-
-    // Call the onSubmit callback if provided
-    if (onSubmit) {
-      onSubmit(newReport);
+    let photo_link: string | null = null;
+    if (formData.file) {
+      // Keep it simple: convert to base64 (small images recommended)
+      const file = formData.file;
+      photo_link = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
     }
 
-    console.log('Report submitted:', newReport);
-    onClose();
-    
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      type: '',
-      location: '',
-      file: null
-    });
+    const payload = {
+      type: formData.type,
+      title: formData.title,
+      description: formData.description,
+      location: formData.location,
+      date: new Date().toISOString(),
+      status: 'pending',
+      photo_link,
+      author: user?.cedula || 'anon',
+    };
+
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const mapped = {
+          id: created.id,
+          title: created.title,
+          description: created.description,
+          type: created.type,
+          location: created.location,
+          status: created.status === 'pending' ? 'Pendiente' : created.status,
+          date: new Date(created.date).toLocaleString('es-ES'),
+          image: created.photo_link || undefined,
+          priority: 'Media',
+          author: created.author || user?.cedula || 'anon'
+        };
+        onSubmit?.(mapped);
+        onClose();
+        setFormData({ title: '', description: '', type: '', location: '', file: null });
+      }
+    } catch {
+      // swallow; could add toast
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

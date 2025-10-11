@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Users, FileText, AlertTriangle, Bus, Calendar, MessageSquare, BarChart3, Settings, Trash2, Edit, Eye, Plus, Search, Filter, Download, Upload, RefreshCw, TrendingUp, Activity, Bell, CheckCircle, XCircle, Clock, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Report {
@@ -17,6 +17,7 @@ interface Report {
 
 interface User {
   id: number;
+  cedula?: string;
   name: string;
   email: string;
   role: 'user' | 'admin';
@@ -136,15 +137,54 @@ export default function AdminDashboard() {
   const [reports, setReports] = useState<Report[]>(mockReports);
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [events, setEvents] = useState<Event[]>(mockEvents);
+  const [complaints, setComplaints] = useState<any[]>([]);
+  const [hotspots, setHotspots] = useState<any[]>([]);
+  const [dangerous, setDangerous] = useState<any[]>([]);
+  const [hotspotComments, setHotspotComments] = useState<Record<string, any[]>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: '',
+    location: '',
+    category: 'Social',
+    host: 'Municipalidad',
+    price: '',
+    attendants: 0,
+  });
+  const [newsItems, setNewsItems] = useState<any[]>([]);
+  const [newsModalOpen, setNewsModalOpen] = useState(false);
+  const [newsForm, setNewsForm] = useState({ type: '', title: '', description: '', insurgent: false });
+  const [editingNews, setEditingNews] = useState<any>(null);
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userForm, setUserForm] = useState<{ cedula?: string; name: string; lastname: string; email: string }>({ cedula: '', name: '', lastname: '', email: '' });
+  const [complaintModalOpen, setComplaintModalOpen] = useState(false);
+  const [complaintForm, setComplaintForm] = useState<{ type: string; title: string; description: string; location: string; status: string }>({ type: '', title: '', description: '', location: '', status: 'pending' });
+  const [editingComplaint, setEditingComplaint] = useState<any>(null);
+  const [hotspotModalOpen, setHotspotModalOpen] = useState(false);
+  const [hotspotForm, setHotspotForm] = useState<{ title: string; description: string; date: string; time: string; dangerlevel: 'low' | 'medium' | 'high'; dangertime?: string }>({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' });
+  const [editingHotspot, setEditingHotspot] = useState<any>(null);
+  const [dangerModalOpen, setDangerModalOpen] = useState(false);
+  const [dangerForm, setDangerForm] = useState<{ title: string; description: string; location: string; date: string; dangerlevel: 'low' | 'medium' | 'high' }>({ title: '', description: '', location: '', date: '', dangerlevel: 'medium' });
+  const [editingDanger, setEditingDanger] = useState<any>(null);
+  const [securityNews, setSecurityNews] = useState<any[]>([]);
+  const [securityNewsModalOpen, setSecurityNewsModalOpen] = useState(false);
+  const [securityNewsForm, setSecurityNewsForm] = useState({ type: '', title: '', description: '', insurgent: false });
+  const [editingSecurityNews, setEditingSecurityNews] = useState<any>(null);
 
   const adminNavItems = [
     { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
     { id: 'reports', icon: FileText, label: 'Reportes' },
+    { id: 'complaints', icon: AlertTriangle, label: 'Quejas' },
+    { id: 'hotspots', icon: MapPin, label: 'Hotspots' },
+    { id: 'dangerous', icon: AlertTriangle, label: 'Áreas Peligrosas' },
+    { id: 'securityNews', icon: Shield, label: 'Noticias Seguridad' },
+    { id: 'news', icon: Megaphone, label: 'Noticias' },
     { id: 'users', icon: Users, label: 'Usuarios' },
     { id: 'events', icon: Calendar, label: 'Eventos' },
     { id: 'settings', icon: Settings, label: 'Config' }
@@ -154,18 +194,38 @@ export default function AdminDashboard() {
     setReports(reports.map(report =>
       report.id === reportId ? { ...report, status: newStatus } : report
     ));
+    // Persist to backend
+    fetch(`/api/reports/${reportId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus === 'Pendiente' ? 'pending' : newStatus })
+    }).catch(()=>{});
   };
 
   const handleDeleteReport = (reportId: number) => {
     setReports(reports.filter(report => report.id !== reportId));
+    // TODO: call DELETE /api/reports/:id when we add deletion in UI
   };
 
-  const handleDeleteUser = (userId: number) => {
-    setUsers(users.filter(user => user.id !== userId));
+  const handleDeleteUser = async (cedula: string) => {
+    if (!window.confirm('¿Eliminar este usuario y sus registros asociados?')) return;
+    try { await fetch(`/api/users/${cedula}`, { method: 'DELETE' }); } catch {}
+    setUsers(prev => prev.filter(u => (u.cedula || String(u.id)) !== cedula));
+  };
+
+  const handleDeleteComplaint = async (id: number) => {
+    try { await fetch(`/api/complaints/${id}`, { method: 'DELETE' }); } catch {}
+    setComplaints(prev => prev.filter((c:any) => c.id !== id));
+  };
+
+  const handleDeleteHotspot = async (id: string) => {
+    try { await fetch(`/api/security/hotspots/${id}`, { method: 'DELETE' }); } catch {}
+    setHotspots(prev => prev.filter((h:any) => (h._id || h.id) !== id));
   };
 
   const handleDeleteEvent = (eventId: number) => {
     setEvents(events.filter(event => event.id !== eventId));
+    fetch(`/api/events/${eventId}`, { method: 'DELETE' }).catch(()=>{});
   };
 
   const handleBulkAction = (action: string) => {
@@ -197,14 +257,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'Alta': return 'bg-red-100 text-red-700 border-red-200';
-      case 'Media': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'Baja': return 'bg-green-100 text-green-700 border-green-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
+  
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -425,7 +478,7 @@ export default function AdminDashboard() {
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reporte</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">Usuario</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden md:table-cell">Prioridad</th>
+                
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Fecha</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
               </tr>
@@ -491,11 +544,7 @@ export default function AdminDashboard() {
                       <option value="Rechazado">Rechazado</option>
                     </select>
                   </td>
-                  <td className="px-3 py-3 hidden md:table-cell">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getPriorityColor(report.priority)}`}>
-                      {report.priority}
-                    </span>
-                  </td>
+                  
                   <td className="px-3 py-3 hidden lg:table-cell">
                     <div className="text-xs text-gray-900 flex items-center">
                       <Clock className="h-3 w-3 mr-1 text-gray-400" />
@@ -504,13 +553,6 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex space-x-1">
-                      <button 
-                        onClick={() => setEditingItem(report)}
-                        className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 hover:bg-blue-50 rounded"
-                        title="Ver detalles"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
                       <button 
                         onClick={() => setEditingItem(report)}
                         className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
@@ -544,7 +586,7 @@ export default function AdminDashboard() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h2>
             <p className="text-gray-600">Administra los usuarios registrados en la plataforma</p>
           </div>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+          <button onClick={() => { setUserForm({ cedula: '', name: '', lastname: '', email: '' }); setUserModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Nuevo Usuario</span>
           </button>
@@ -600,21 +642,14 @@ export default function AdminDashboard() {
                   <td className="px-3 py-3">
                     <div className="flex space-x-1">
                       <button 
-                        onClick={() => setEditingItem(user)}
-                        className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 hover:bg-blue-50 rounded"
-                        title="Ver perfil"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => setEditingItem(user)}
+                        onClick={() => { setUserForm({ cedula: user.cedula || String(user.id), name: (user.name || '').split(' ')[0] || '', lastname: (user.name || '').split(' ').slice(1).join(' ') || '', email: user.email }); setUserModalOpen(true); }}
                         className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
                         title="Editar usuario"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => handleDeleteUser(user.cedula || String(user.id))}
                         className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
                         title="Eliminar usuario"
                       >
@@ -649,6 +684,99 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {showCreateModal && (
+        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{editingItem ? 'Editar Evento' : 'Crear Evento'}</h3>
+              <button onClick={() => { setShowCreateModal(false); setEditingItem(null); }} className="text-gray-500">×</button>
+            </div>
+            <form
+              className="space-y-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const isoDate = eventForm.date ? `${eventForm.date}T${eventForm.time || '00:00'}:00.000Z` : new Date().toISOString();
+                const payload: any = {
+                  type: eventForm.category,
+                  title: eventForm.title,
+                  description: eventForm.description,
+                  date: isoDate,
+                  location: eventForm.location,
+                  attendants: Number(eventForm.attendants) || 0,
+                  host: eventForm.host,
+                  price: eventForm.price || null,
+                  author: 'admin',
+                };
+                try {
+                  if (editingItem) {
+                    const res = await fetch(`/api/events/${editingItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (res.ok) {
+                      const updated = await res.json();
+                      setEvents(prev => prev.map(ev => ev.id === editingItem.id ? {
+                        id: updated.id,
+                        title: updated.title,
+                        date: new Date(updated.date).toLocaleDateString('es-ES'),
+                        location: updated.location,
+                        attendees: Number(updated.attendants) || 0,
+                        status: 'Programado',
+                        category: updated.type || 'Social',
+                        description: updated.description || ''
+                      } : ev));
+                    }
+                  } else {
+                    const res = await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (res.ok) {
+                      const created = await res.json();
+                      const mapped = {
+                        id: created.id,
+                        title: created.title,
+                        date: new Date(created.date).toLocaleDateString('es-ES'),
+                        location: created.location,
+                        attendees: Number(created.attendants) || 0,
+                        status: 'Programado' as const,
+                        category: created.type || 'Social',
+                        description: created.description || ''
+                      };
+                      setEvents(prev => [mapped, ...prev]);
+                    }
+                  }
+                } finally {
+                  setShowCreateModal(false);
+                  setEditingItem(null);
+                  setEventForm({ title: '', description: '', date: '', time: '', location: '', category: 'Social', host: 'Municipalidad', price: '', attendants: 0 });
+                }
+              }}
+            >
+              <input value={eventForm.title} onChange={e=>setEventForm({...eventForm, title: e.target.value})} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
+              <textarea value={eventForm.description} onChange={e=>setEventForm({...eventForm, description: e.target.value})} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
+              <div className="grid grid-cols-2 gap-2">
+                <input value={eventForm.date} onChange={e=>setEventForm({...eventForm, date: e.target.value})} type="date" className="border rounded-lg px-3 py-2" required />
+                <input value={eventForm.time} onChange={e=>setEventForm({...eventForm, time: e.target.value})} type="time" className="border rounded-lg px-3 py-2" />
+              </div>
+              <input value={eventForm.location} onChange={e=>setEventForm({...eventForm, location: e.target.value})} placeholder="Ubicación" className="w-full border rounded-lg px-3 py-2" />
+              <div className="grid grid-cols-2 gap-2">
+                <select value={eventForm.category} onChange={e=>setEventForm({...eventForm, category: e.target.value})} className="border rounded-lg px-3 py-2">
+                  <option value="Social">Social</option>
+                  <option value="Cultural">Cultural</option>
+                  <option value="Deportes">Deportes</option>
+                  <option value="Comercio">Comercio</option>
+                  <option value="Educativo">Educativo</option>
+                </select>
+                <input value={eventForm.attendants} onChange={e=>setEventForm({...eventForm, attendants: Number(e.target.value)})} type="number" min={0} placeholder="Asistentes" className="border rounded-lg px-3 py-2" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input value={eventForm.host} onChange={e=>setEventForm({...eventForm, host: e.target.value})} placeholder="Organizador" className="border rounded-lg px-3 py-2" />
+                <input value={eventForm.price} onChange={e=>setEventForm({...eventForm, price: e.target.value})} placeholder="Precio (opcional)" className="border rounded-lg px-3 py-2" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={()=>{ setShowCreateModal(false); setEditingItem(null); }} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingItem ? 'Guardar' : 'Crear'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((event, index) => (
           <div 
@@ -662,14 +790,21 @@ export default function AdminDashboard() {
               </span>
               <div className="flex space-x-1">
                 <button 
-                  onClick={() => setEditingItem(event)}
-                  className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 hover:bg-blue-50 rounded"
-                  title="Ver evento"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <button 
-                  onClick={() => setEditingItem(event)}
+                  onClick={() => { 
+                    setEditingItem(event); 
+                    setEventForm({
+                      title: event.title,
+                      description: event.description,
+                      date: new Date(event.date).toISOString().slice(0,10),
+                      time: '',
+                      location: event.location,
+                      category: event.category,
+                      host: 'Municipalidad',
+                      price: '',
+                      attendants: event.attendees,
+                    });
+                    setShowCreateModal(true); 
+                  }}
                   className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
                   title="Editar evento"
                 >
@@ -708,6 +843,598 @@ export default function AdminDashboard() {
     </div>
   );
 
+  // Initial data loads from backend
+  useEffect(() => {
+    // Users
+    fetch('/api/users')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const mapped: User[] = rows.map((u:any) => ({
+            id: Number(u.cedula) || Math.floor(Math.random()*100000),
+            cedula: String(u.cedula || ''),
+            name: `${u.name} ${u.lastname}`,
+            email: u.email,
+            role: 'user',
+            status: 'Activo',
+            joinDate: new Date(u.created_at || Date.now()).toLocaleDateString('es-ES'),
+            reportsCount: 0,
+            lastActivity: 'hace poco'
+          }));
+          setUsers(mapped);
+        }
+      }).catch(()=>{});
+
+    // Events
+    fetch('/api/events')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const mapped: Event[] = rows.map((e:any) => ({
+            id: e.id,
+            title: e.title,
+            date: new Date(e.date).toLocaleDateString('es-ES'),
+            location: e.location,
+            attendees: Number(e.attendants) || 0,
+            status: 'Programado',
+            category: e.type || 'Social',
+            description: e.description || ''
+          }));
+          setEvents(mapped);
+        }
+      }).catch(()=>{});
+
+    // Reports
+    fetch('/api/reports')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const mapped: Report[] = rows.map((r:any) => ({
+            id: r.id,
+            title: r.title,
+            description: r.description,
+            type: r.type || 'General',
+            location: r.location || 'N/A',
+            status: (r.status === 'pending' ? 'Pendiente' : r.status) as Report['status'],
+            date: new Date(r.date).toLocaleDateString('es-ES'),
+            user: r.author || 'Usuario',
+            priority: 'Media',
+            image: r.photo_link || undefined,
+          }));
+          setReports(mapped);
+        }
+      }).catch(()=>{});
+    fetch('/api/news')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows) => { if (Array.isArray(rows)) setNewsItems(rows); })
+      .catch(()=>{});
+
+    // Complaints
+    fetch('/api/complaints')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows:any[]) => {
+        if (Array.isArray(rows)) setComplaints(rows);
+      }).catch(()=>{});
+
+    // Hotspots + load comments per hotspot for admin view
+    fetch('/api/security/hotspots')
+      .then(r => r.ok ? r.json() : [])
+      .then(async (rows:any[]) => {
+        if (Array.isArray(rows)) {
+          setHotspots(rows);
+          const entries: Record<string, any[]> = {};
+          for (const h of rows) {
+            const id = (h._id || h.id);
+            try {
+              const cr = await fetch(`/api/security/hotspots/${id}/comments`);
+              if (cr.ok) {
+                entries[String(id)] = await cr.json();
+              }
+            } catch {}
+          }
+          setHotspotComments(entries);
+        }
+      })
+      .catch(()=>{});
+
+    // Dangerous Areas (Postgres)
+    fetch('/api/dangerous-areas')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows:any[]) => { if (Array.isArray(rows)) setDangerous(rows); })
+      .catch(()=>{});
+
+    // Security News
+    fetch('/api/security-news')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows:any[]) => { if (Array.isArray(rows)) setSecurityNews(rows); })
+      .catch(()=>{});
+  }, []);
+
+  const renderNews = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Noticias</h2>
+            <p className="text-gray-600">Publica anuncios municipales</p>
+          </div>
+          <button onClick={() => { setEditingNews(null); setNewsForm({ type: '', title: '', description: '', insurgent: false }); setNewsModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Nueva Noticia</span>
+          </button>
+        </div>
+      </div>
+
+      {newsModalOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{editingNews ? 'Editar Noticia' : 'Crear Noticia'}</h3>
+              <button onClick={() => setNewsModalOpen(false)} className="text-gray-500">×</button>
+            </div>
+            <form className="space-y-3" onSubmit={async (e) => {
+              e.preventDefault();
+              const payload = { type: newsForm.type, title: newsForm.title, description: newsForm.description, insurgent: !!newsForm.insurgent, date: new Date().toISOString(), author: 'admin' };
+              if (editingNews) {
+                const res = await fetch(`/api/news/${editingNews.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                  const updated = await res.json();
+                  setNewsItems(prev => prev.map(n => n.id === editingNews.id ? updated : n));
+                }
+              } else {
+                const res = await fetch('/api/news', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                  const created = await res.json();
+                  setNewsItems(prev => [created, ...prev]);
+                }
+              }
+              setNewsModalOpen(false);
+              setEditingNews(null);
+              setNewsForm({ type: '', title: '', description: '', insurgent: false });
+            }}>
+              <input value={newsForm.type} onChange={e => setNewsForm({ ...newsForm, type: e.target.value })} placeholder="Tipo" className="w-full border rounded-lg px-3 py-2" />
+              <input value={newsForm.title} onChange={e => setNewsForm({ ...newsForm, title: e.target.value })} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
+              <textarea value={newsForm.description} onChange={e => setNewsForm({ ...newsForm, description: e.target.value })} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!newsForm.insurgent} onChange={e=>setNewsForm({ ...newsForm, insurgent: e.target.checked })} /> Marcar como urgente</label>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setNewsModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingNews ? 'Guardar' : 'Crear'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="divide-y">
+          {newsItems.map((n, idx) => (
+            <div key={n.id ?? idx} className="p-4 flex items-start justify-between">
+              <div className="pr-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">{n.type || 'General'}</span>
+                  {n.insurgent ? <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Urgente</span> : null}
+                  <span className="text-xs text-gray-500">{new Date(n.date).toLocaleDateString('es-ES')}</span>
+                </div>
+                <div className="font-semibold text-gray-900">{n.title}</div>
+                <div className="text-xs text-gray-600">{n.description}</div>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => { setEditingNews(n); setNewsForm({ type: n.type || '', title: n.title || '', description: n.description || '', insurgent: !!n.insurgent }); setNewsModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
+                <button onClick={async () => { const res = await fetch(`/api/news/${n.id}`, { method: 'DELETE' }); if (res.ok) setNewsItems(prev => prev.filter(x => x.id !== n.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+              </div>
+            </div>
+          ))}
+          {newsItems.length === 0 && (
+            <div className="p-6 text-center text-sm text-gray-500">No hay noticias aún.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDangerous = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Áreas Peligrosas</h2>
+            <p className="text-gray-600">Gestiona zonas peligrosas reportadas por la municipalidad</p>
+          </div>
+          <button onClick={() => { setEditingDanger(null); setDangerForm({ title: '', description: '', location: '', date: '', dangerlevel: 'medium' }); setDangerModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Nueva Área</span>
+          </button>
+        </div>
+      </div>
+
+      {dangerModalOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{editingDanger ? 'Editar Área' : 'Crear Área'}</h3>
+              <button onClick={() => setDangerModalOpen(false)} className="text-gray-500">×</button>
+            </div>
+            <form className="space-y-3" onSubmit={async (e) => {
+              e.preventDefault();
+              const payload = { title: dangerForm.title, description: dangerForm.description, location: dangerForm.location, date: dangerForm.date ? new Date(dangerForm.date).toISOString() : new Date().toISOString(), dangerlevel: dangerForm.dangerlevel, author: 'admin' };
+              if (editingDanger) {
+                const res = await fetch(`/api/dangerous-areas/${editingDanger.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                  const updated = await res.json();
+                  setDangerous(prev => prev.map(d => d.id === editingDanger.id ? updated : d));
+                }
+              } else {
+                const res = await fetch('/api/dangerous-areas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                  const created = await res.json();
+                  setDangerous(prev => [created, ...prev]);
+                }
+              }
+              setDangerModalOpen(false);
+              setEditingDanger(null);
+              setDangerForm({ title: '', description: '', location: '', date: '', dangerlevel: 'medium' });
+            }}>
+              <input value={dangerForm.title} onChange={e=>setDangerForm({ ...dangerForm, title: e.target.value })} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
+              <textarea value={dangerForm.description} onChange={e=>setDangerForm({ ...dangerForm, description: e.target.value })} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
+              <input value={dangerForm.location} onChange={e=>setDangerForm({ ...dangerForm, location: e.target.value })} placeholder="Ubicación" className="w-full border rounded-lg px-3 py-2" />
+              <div className="grid grid-cols-2 gap-2">
+                <input value={dangerForm.date} onChange={e=>setDangerForm({ ...dangerForm, date: e.target.value })} type="date" className="border rounded-lg px-3 py-2" />
+                <select value={dangerForm.dangerlevel} onChange={e=>setDangerForm({ ...dangerForm, dangerlevel: e.target.value as any })} className="border rounded-lg px-3 py-2">
+                  <option value="low">Bajo</option>
+                  <option value="medium">Medio</option>
+                  <option value="high">Alto</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={()=>setDangerModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingDanger ? 'Guardar' : 'Crear'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="divide-y">
+          {dangerous.map((d:any, idx:number) => (
+            <div key={d.id ?? idx} className="p-4 flex items-start justify-between">
+              <div className="pr-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">{d.dangerlevel || 'medium'}</span>
+                  <span className="text-xs text-gray-500">{new Date(d.date).toLocaleDateString('es-ES')}</span>
+                </div>
+                <div className="font-semibold text-gray-900">{d.title}</div>
+                <div className="text-xs text-gray-600">{d.description}</div>
+                {d.location && <div className="text-xs text-blue-600">{d.location}</div>}
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => { setEditingDanger(d); setDangerForm({ title: d.title || '', description: d.description || '', location: d.location || '', date: (d.date ? new Date(d.date).toISOString().slice(0,10) : ''), dangerlevel: (d.dangerlevel || 'medium') }); setDangerModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
+                <button onClick={async () => { const res = await fetch(`/api/dangerous-areas/${d.id}`, { method: 'DELETE' }); if (res.ok) setDangerous(prev => prev.filter(x => x.id !== d.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+              </div>
+            </div>
+          ))}
+          {dangerous.length === 0 && (
+            <div className="p-6 text-center text-sm text-gray-500">No hay áreas peligrosas aún.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSecurityNews = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Noticias de Seguridad</h2>
+            <p className="text-gray-600">Publica anuncios relacionados a seguridad</p>
+          </div>
+          <button onClick={() => { setEditingSecurityNews(null); setSecurityNewsForm({ type: '', title: '', description: '', insurgent: false }); setSecurityNewsModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Nueva Noticia</span>
+          </button>
+        </div>
+      </div>
+
+      {securityNewsModalOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{editingSecurityNews ? 'Editar Noticia' : 'Crear Noticia'}</h3>
+              <button onClick={() => setSecurityNewsModalOpen(false)} className="text-gray-500">×</button>
+            </div>
+            <form className="space-y-3" onSubmit={async (e) => {
+              e.preventDefault();
+              const payload = { type: securityNewsForm.type, title: securityNewsForm.title, description: securityNewsForm.description, insurgent: !!securityNewsForm.insurgent, date: new Date().toISOString(), author: 'admin' };
+              if (editingSecurityNews) {
+                const res = await fetch(`/api/security-news/${editingSecurityNews.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                  const updated = await res.json();
+                  setSecurityNews(prev => prev.map(n => n.id === editingSecurityNews.id ? updated : n));
+                }
+              } else {
+                const res = await fetch('/api/security-news', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                  const created = await res.json();
+                  setSecurityNews(prev => [created, ...prev]);
+                }
+              }
+              setSecurityNewsModalOpen(false);
+              setEditingSecurityNews(null);
+              setSecurityNewsForm({ type: '', title: '', description: '', insurgent: false });
+            }}>
+              <input value={securityNewsForm.type} onChange={e => setSecurityNewsForm({ ...securityNewsForm, type: e.target.value })} placeholder="Tipo" className="w-full border rounded-lg px-3 py-2" />
+              <input value={securityNewsForm.title} onChange={e => setSecurityNewsForm({ ...securityNewsForm, title: e.target.value })} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
+              <textarea value={securityNewsForm.description} onChange={e => setSecurityNewsForm({ ...securityNewsForm, description: e.target.value })} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!securityNewsForm.insurgent} onChange={e=>setSecurityNewsForm({ ...securityNewsForm, insurgent: e.target.checked })} /> Marcar como urgente</label>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setSecurityNewsModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingSecurityNews ? 'Guardar' : 'Crear'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="divide-y">
+          {securityNews.map((n, idx) => (
+            <div key={n.id ?? idx} className="p-4 flex items-start justify-between">
+              <div className="pr-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">{n.type || 'General'}</span>
+                  {n.insurgent ? <span className="text-xs bg-red-200 text-red-700 px-2 py-0.5 rounded-full">Urgente</span> : null}
+                  <span className="text-xs text-gray-500">{new Date(n.date).toLocaleDateString('es-ES')}</span>
+                </div>
+                <div className="font-semibold text-gray-900">{n.title}</div>
+                <div className="text-xs text-gray-600">{n.description}</div>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => { setEditingSecurityNews(n); setSecurityNewsForm({ type: n.type || '', title: n.title || '', description: n.description || '', insurgent: !!n.insurgent }); setSecurityNewsModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
+                <button onClick={async () => { const res = await fetch(`/api/security-news/${n.id}`, { method: 'DELETE' }); if (res.ok) setSecurityNews(prev => prev.filter(x => x.id !== n.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+              </div>
+            </div>
+          ))}
+          {securityNews.length === 0 && (
+            <div className="p-6 text-center text-sm text-gray-500">No hay noticias de seguridad aún.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderUsersModal = () => (
+    userModalOpen && (
+      <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+        <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold">{userForm.cedula ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
+            <button onClick={() => setUserModalOpen(false)} className="text-gray-500">×</button>
+          </div>
+          <form className="space-y-3" onSubmit={async (e) => {
+            e.preventDefault();
+            if (!userForm.cedula) return; // Only edit for now
+            const payload:any = { name: userForm.name, lastname: userForm.lastname, email: userForm.email };
+            const res = await fetch(`/api/users/${userForm.cedula}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (res.ok) {
+              setUsers(prev => prev.map(u => (u.cedula === userForm.cedula) ? { ...u, name: `${userForm.name} ${userForm.lastname}`, email: userForm.email } : u));
+            }
+            setUserModalOpen(false);
+          }}>
+            <input value={userForm.cedula} readOnly placeholder="Cédula" className="w-full border rounded-lg px-3 py-2 bg-gray-50" />
+            <input value={userForm.name} onChange={e=>setUserForm({ ...userForm, name: e.target.value })} placeholder="Nombre" className="w-full border rounded-lg px-3 py-2" required />
+            <input value={userForm.lastname} onChange={e=>setUserForm({ ...userForm, lastname: e.target.value })} placeholder="Apellido" className="w-full border rounded-lg px-3 py-2" required />
+            <input value={userForm.email} onChange={e=>setUserForm({ ...userForm, email: e.target.value })} type="email" placeholder="Email" className="w-full border rounded-lg px-3 py-2" required />
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={()=>setUserModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+              <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  );
+
+  const renderComplaints = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Quejas</h2>
+            <p className="text-gray-600">Revisa y actualiza las quejas de seguridad</p>
+          </div>
+          <button onClick={() => { setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'pending' }); setComplaintModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Nueva Queja</span>
+          </button>
+        </div>
+      </div>
+
+      {complaintModalOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{editingComplaint ? 'Editar Queja' : 'Crear Queja'}</h3>
+              <button onClick={() => setComplaintModalOpen(false)} className="text-gray-500">×</button>
+            </div>
+            <form className="space-y-3" onSubmit={async (e) => {
+              e.preventDefault();
+              const payload = { ...complaintForm, date: new Date().toISOString(), author: 'admin' };
+              if (editingComplaint) {
+                const res = await fetch(`/api/complaints/${editingComplaint.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) { const up = await res.json(); setComplaints(prev => prev.map((c:any) => c.id === editingComplaint.id ? up : c)); }
+              } else {
+                const res = await fetch('/api/complaints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) { const created = await res.json(); setComplaints(prev => [created, ...prev]); }
+              }
+              setComplaintModalOpen(false); setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'pending' });
+            }}>
+              <input value={complaintForm.title} onChange={e=>setComplaintForm({ ...complaintForm, title: e.target.value })} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
+              <textarea value={complaintForm.description} onChange={e=>setComplaintForm({ ...complaintForm, description: e.target.value })} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
+              <div className="grid grid-cols-2 gap-2">
+                <input value={complaintForm.type} onChange={e=>setComplaintForm({ ...complaintForm, type: e.target.value })} placeholder="Tipo" className="border rounded-lg px-3 py-2" />
+                <input value={complaintForm.location} onChange={e=>setComplaintForm({ ...complaintForm, location: e.target.value })} placeholder="Ubicación" className="border rounded-lg px-3 py-2" />
+              </div>
+              <select value={complaintForm.status} onChange={e=>setComplaintForm({ ...complaintForm, status: e.target.value })} className="w-full border rounded-lg px-3 py-2">
+                <option value="pending">Pendiente</option>
+                <option value="En Proceso">En Proceso</option>
+                <option value="Resuelto">Resuelto</option>
+                <option value="Rechazado">Rechazado</option>
+              </select>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={()=>setComplaintModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingComplaint ? 'Guardar' : 'Crear'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="divide-y">
+          {complaints.map((c:any, idx:number) => (
+            <div key={c.id ?? idx} className="p-4 flex items-start justify-between">
+              <div className="pr-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">{c.type || 'General'}</span>
+                  <span className="text-xs text-gray-500">{new Date(c.date).toLocaleDateString('es-ES')}</span>
+                  {c.author && <span className="text-xs text-gray-400">por {c.author}</span>}
+                </div>
+                <div className="font-semibold text-gray-900">{c.title}</div>
+                <div className="text-xs text-gray-600">{c.description}</div>
+                <div className="text-[11px] text-gray-500 mt-1">{c.location}</div>
+              </div>
+              <div className="flex gap-1 items-center">
+                <select defaultValue={c.status} onChange={async (e)=>{ const nv = e.target.value; const res = await fetch(`/api/complaints/${c.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: nv }) }); if (res.ok) setComplaints(prev => prev.map((x:any)=> x.id===c.id ? { ...x, status: nv } : x)); }} className="text-xs border rounded px-2 py-1">
+                  <option value="pending">Pendiente</option>
+                  <option value="En Proceso">En Proceso</option>
+                  <option value="Resuelto">Resuelto</option>
+                  <option value="Rechazado">Rechazado</option>
+                </select>
+                <button onClick={() => { setEditingComplaint(c); setComplaintForm({ type: c.type || '', title: c.title || '', description: c.description || '', location: c.location || '', status: c.status || 'pending' }); setComplaintModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
+                <button onClick={() => handleDeleteComplaint(c.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+              </div>
+            </div>
+          ))}
+          {complaints.length === 0 && (
+            <div className="p-6 text-center text-sm text-gray-500">No hay quejas aún.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderHotspots = () => {
+    const toRiskPill = (lvl:string) => lvl==='high' ? 'bg-red-100 text-red-700' : lvl==='medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700';
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Hotspots</h2>
+              <p className="text-gray-600">Crea y administra zonas peligrosas</p>
+            </div>
+            <button onClick={() => { setEditingHotspot(null); setHotspotForm({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' }); setHotspotModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>Nuevo Hotspot</span>
+            </button>
+          </div>
+        </div>
+
+        {hotspotModalOpen && (
+          <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+            <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold">{editingHotspot ? 'Editar Hotspot' : 'Crear Hotspot'}</h3>
+                <button onClick={() => setHotspotModalOpen(false)} className="text-gray-500">×</button>
+              </div>
+              <form className="space-y-3" onSubmit={async (e) => {
+                e.preventDefault();
+                const isoDate = hotspotForm.date ? `${hotspotForm.date}T${hotspotForm.time || '00:00'}:00.000Z` : new Date().toISOString();
+                const payload:any = { title: hotspotForm.title, description: hotspotForm.description, date: isoDate, dangerlevel: hotspotForm.dangerlevel, dangertime: hotspotForm.dangertime, author: 'admin' };
+                if (editingHotspot) {
+                  const id = editingHotspot._id || editingHotspot.id;
+                  const res = await fetch(`/api/security/hotspots/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  if (res.ok) {
+                    const updated = await res.json();
+                    setHotspots(prev => prev.map((h:any) => ((h._id||h.id) === id ? updated : h)));
+                  }
+                } else {
+                  const res = await fetch('/api/security/hotspots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  if (res.ok) { const created = await res.json(); setHotspots(prev => [created, ...prev]); }
+                }
+                setHotspotModalOpen(false); setEditingHotspot(null); setHotspotForm({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' });
+              }}>
+                <input value={hotspotForm.title} onChange={e=>setHotspotForm({ ...hotspotForm, title: e.target.value })} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
+                <textarea value={hotspotForm.description} onChange={e=>setHotspotForm({ ...hotspotForm, description: e.target.value })} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={hotspotForm.date} onChange={e=>setHotspotForm({ ...hotspotForm, date: e.target.value })} type="date" className="border rounded-lg px-3 py-2" required />
+                  <input value={hotspotForm.time} onChange={e=>setHotspotForm({ ...hotspotForm, time: e.target.value })} type="time" className="border rounded-lg px-3 py-2" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={hotspotForm.dangerlevel} onChange={e=>setHotspotForm({ ...hotspotForm, dangerlevel: e.target.value as any })} className="border rounded-lg px-3 py-2">
+                    <option value="low">Bajo</option>
+                    <option value="medium">Medio</option>
+                    <option value="high">Alto</option>
+                  </select>
+                  <input value={hotspotForm.dangertime} onChange={e=>setHotspotForm({ ...hotspotForm, dangertime: e.target.value })} placeholder="Franja horaria (opcional)" className="border rounded-lg px-3 py-2" />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button type="button" onClick={()=>setHotspotModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                  <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingHotspot ? 'Guardar' : 'Crear'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {hotspots.map((h:any, index:number) => {
+            const id = h._id || h.id;
+            const title = h.title || 'Zona';
+            const description = h.description || '';
+            const date = new Date(h.date).toLocaleDateString('es-ES');
+            const level = (h.dangerLevel || h.dangerlevel || 'medium').toLowerCase();
+            return (
+              <div key={String(id)} className="bg-white rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp" style={{ animationDelay: `${index * 0.1}s` }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${toRiskPill(level)}`}>{level === 'high' ? 'Alto' : level === 'medium' ? 'Medio' : 'Bajo'}</span>
+                  <div className="flex space-x-1">
+                    <button onClick={() => { setEditingHotspot(h); setHotspotForm({ title, description, date: new Date(h.date).toISOString().slice(0,10), time: '', dangerlevel: level as any, dangertime: h.dangerTime || h.dangertime || '' }); setHotspotModalOpen(true); }} className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded" title="Editar">
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => handleDeleteHotspot(String(id))} className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded" title="Eliminar">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <h3 className="text-base font-bold text-gray-900 mb-1">{title}</h3>
+                <p className="text-gray-600 text-xs mb-2">{description}</p>
+                <div className="text-xs text-gray-500">{date}</div>
+                  {/* Admin-only comments visibility */}
+                  <div className="mt-3 border-t pt-2">
+                    <div className="text-xs font-semibold text-gray-700 mb-1">Comentarios</div>
+                    {Array.isArray(hotspotComments[String(id)]) && hotspotComments[String(id)].length > 0 ? (
+                      <div className="space-y-2 max-h-32 overflow-auto pr-1">
+                        {hotspotComments[String(id)].map((c:any) => (
+                          <div key={String(c._id || c.id)} className="text-[12px] text-gray-700">
+                            <span className="font-medium text-gray-900">{c.author || 'anon'}:</span> {c.content}
+                            <span className="text-gray-400 ml-2">{new Date(c.date).toLocaleString('es-ES')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[12px] text-gray-400">Sin comentarios</div>
+                    )}
+                  </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden pb-20">
       {/* Enhanced Header */}
@@ -744,6 +1471,11 @@ export default function AdminDashboard() {
               {activeTab === 'dashboard' && 'Dashboard Principal'}
               {activeTab === 'reports' && 'Gestión de Reportes'}
               {activeTab === 'users' && 'Gestión de Usuarios'}
+              {activeTab === 'complaints' && 'Gestión de Quejas'}
+              {activeTab === 'hotspots' && 'Gestión de Hotspots'}
+              {activeTab === 'dangerous' && 'Áreas Peligrosas'}
+              {activeTab === 'securityNews' && 'Noticias de Seguridad'}
+              {activeTab === 'news' && 'Gestión de Noticias'}
               {activeTab === 'events' && 'Gestión de Eventos'}
               {activeTab === 'settings' && 'Configuración del Sistema'}
             </h2>
@@ -751,6 +1483,10 @@ export default function AdminDashboard() {
               {activeTab === 'dashboard' && 'Vista general del sistema y estadísticas'}
               {activeTab === 'reports' && 'Administra todos los reportes ciudadanos'}
               {activeTab === 'users' && 'Gestiona usuarios registrados'}
+              {activeTab === 'complaints' && 'Administra y da seguimiento a quejas de seguridad'}
+              {activeTab === 'hotspots' && 'Crea y administra zonas peligrosas'}
+              {activeTab === 'dangerous' && 'Gestiona zonas peligrosas (fuente municipal)'}
+              {activeTab === 'securityNews' && 'Publica anuncios de seguridad'}
               {activeTab === 'events' && 'Crea y administra eventos comunitarios'}
               {activeTab === 'settings' && 'Configuración general del sistema'}
             </p>
@@ -759,7 +1495,12 @@ export default function AdminDashboard() {
           <div>
             {activeTab === 'dashboard' && renderDashboard()}
             {activeTab === 'reports' && renderReports()}
+            {activeTab === 'news' && renderNews()}
+            {activeTab === 'dangerous' && renderDangerous()}
+            {activeTab === 'securityNews' && renderSecurityNews()}
             {activeTab === 'users' && renderUsers()}
+            {activeTab === 'complaints' && renderComplaints()}
+            {activeTab === 'hotspots' && renderHotspots()}
             {activeTab === 'events' && renderEvents()}
             {activeTab === 'settings' && (
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
@@ -778,6 +1519,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Navigation */}
+      {renderUsersModal()}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-30 shadow-lg">
         <nav className="flex items-center justify-around max-w-md mx-auto">
           {adminNavItems.map((item) => {
