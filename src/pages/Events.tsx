@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Clock, MapPin, Users, Filter, Search, Heart, Share2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Filter, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
@@ -17,8 +17,6 @@ interface Event {
   organizer: string;
   price: string;
   rating: number;
-  isAttending: boolean;
-  isFavorite: boolean;
 }
 
 const mockEvents: Event[] = [
@@ -35,9 +33,7 @@ const mockEvents: Event[] = [
     image: 'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Municipalidad de Alajuelita',
     price: 'Gratis',
-    rating: 4.8,
-    isAttending: false,
-    isFavorite: false
+    rating: 4.8
   },
   {
     id: 2,
@@ -52,9 +48,7 @@ const mockEvents: Event[] = [
     image: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Casa de la Cultura',
     price: 'Gratis',
-    rating: 4.9,
-    isAttending: true,
-    isFavorite: true
+    rating: 4.9
   },
   {
     id: 3,
@@ -69,9 +63,7 @@ const mockEvents: Event[] = [
     image: 'https://images.pexels.com/photos/274506/pexels-photo-274506.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Liga Deportiva Local',
     price: '₡1,000',
-    rating: 4.6,
-    isAttending: false,
-    isFavorite: false
+    rating: 4.6
   },
   {
     id: 4,
@@ -86,9 +78,7 @@ const mockEvents: Event[] = [
     image: 'https://images.pexels.com/photos/3735218/pexels-photo-3735218.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Grupo Ecológico',
     price: 'Gratis',
-    rating: 4.7,
-    isAttending: false,
-    isFavorite: true
+    rating: 4.7
   }
 ];
 
@@ -115,9 +105,7 @@ export default function Events() {
             image: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
             organizer: e.host || 'Municipalidad',
             price: e.price ? `₡${e.price}` : 'Gratis',
-            rating: 4.5,
-            isAttending: false,
-            isFavorite: false,
+            rating: 4.5
           }));
           setEvents(mapped);
         }
@@ -135,25 +123,7 @@ export default function Events() {
     return matchesCategory && matchesSearch;
   });
 
-  const handleAttendEvent = (eventId: number) => {
-    setEvents(events.map(event =>
-      event.id === eventId
-        ? {
-            ...event,
-            isAttending: !event.isAttending,
-            attendees: event.isAttending ? event.attendees - 1 : event.attendees + 1
-          }
-        : event
-    ));
-  };
-
-  const handleFavoriteEvent = (eventId: number) => {
-    setEvents(events.map(event =>
-      event.id === eventId
-        ? { ...event, isFavorite: !event.isFavorite }
-        : event
-    ));
-  };
+  // Interactions disabled by design (no asistir/favoritos/compartir)
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -253,21 +223,7 @@ export default function Events() {
                     {event.category}
                   </span>
                 </div>
-                <div className="absolute top-3 right-3 flex space-x-2">
-                  <button
-                    onClick={() => handleFavoriteEvent(event.id)}
-                    className={`p-2 rounded-full backdrop-blur-sm transition-all duration-200 transform hover:scale-110 ${
-                      event.isFavorite 
-                        ? 'bg-red-500 text-white' 
-                        : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100'
-                    }`}
-                  >
-                    <Heart className={`h-4 w-4 ${event.isFavorite ? 'fill-current' : ''}`} />
-                  </button>
-                  <button className="p-2 rounded-full bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100 backdrop-blur-sm transition-all duration-200 transform hover:scale-110">
-                    <Share2 className="h-4 w-4" />
-                  </button>
-                </div>
+                {/* Interactive buttons removed (favorito/compartir) */}
               </div>
 
               {/* Event Content */}
@@ -309,16 +265,7 @@ export default function Events() {
                     <span className="text-xs text-gray-500">Por {event.organizer}</span>
                     <span className="text-xs font-medium text-green-600">{event.price}</span>
                   </div>
-                  <button
-                    onClick={() => handleAttendEvent(event.id)}
-                    className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                      event.isAttending
-                        ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}
-                  >
-                    {event.isAttending ? 'Asistiré' : 'Asistir'}
-                  </button>
+                  {/* Asistir button removed */}
                 </div>
               </div>
             </div>
@@ -334,22 +281,12 @@ export default function Events() {
           </div>
         )}
 
-        {/* Quick Stats */}
+        {/* Quick Stats simplified: only total events */}
         <section className="animate-fadeInUp bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <h3 className="font-semibold text-gray-900 mb-3 text-sm">Estadísticas de Eventos</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-blue-600">{events.length}</div>
-              <div className="text-xs text-gray-600">Eventos</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-green-600">{events.filter(e => e.isAttending).length}</div>
-              <div className="text-xs text-gray-600">Asistiré</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-red-600">{events.filter(e => e.isFavorite).length}</div>
-              <div className="text-xs text-gray-600">Favoritos</div>
-            </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-blue-600">{events.length}</div>
+            <div className="text-xs text-gray-600">Eventos</div>
           </div>
         </section>
       </div>

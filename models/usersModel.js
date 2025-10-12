@@ -1,9 +1,9 @@
 import { neonClient } from '../lib/neonClient.js';
 
-export const createUser = async ({ name, lastname, cedula, email, password }) => {
+export const createUser = async ({ name, lastname, cedula, email, password, role = 'user' }) => {
   await neonClient`
-    insert into users (name, lastname, cedula, email, password)
-    values (${name}, ${lastname}, ${cedula}, ${email}, ${password})
+    insert into users (name, lastname, cedula, email, password, role)
+    values (${name}, ${lastname}, ${cedula}, ${email}, ${password}, ${role})
     on conflict (cedula) do nothing
   `;
   return { success: true };
@@ -11,7 +11,7 @@ export const createUser = async ({ name, lastname, cedula, email, password }) =>
 
 export const getUserByEmail = async (email) => {
   const rows = await neonClient`
-    select name, lastname, cedula, email, password
+    select name, lastname, cedula, email, password, role
     from users
     where email = ${email.trim()}
   `;
@@ -20,7 +20,7 @@ export const getUserByEmail = async (email) => {
 
 export const getUserByCedula = async (cedula) => {
   const rows = await neonClient`
-    select name, lastname, cedula, email
+    select name, lastname, cedula, email, role
     from users where cedula = ${cedula}
   `;
   return rows?.[0] || null;
@@ -28,22 +28,23 @@ export const getUserByCedula = async (cedula) => {
 
 export const listUsers = async () => {
   const rows = await neonClient`
-    select name, lastname, cedula, email, created_at from users order by created_at desc
+    select name, lastname, cedula, email, role, created_at from users order by created_at desc
   `;
   return rows || [];
 };
 
 export const updateUser = async (cedula, updates) => {
-  const { name, lastname, email, password } = updates;
+  const { name, lastname, email, password, role } = updates;
   const rows = await neonClient`
     update users
     set
       name = coalesce(${name}, name),
       lastname = coalesce(${lastname}, lastname),
       email = coalesce(${email}, email),
-      password = coalesce(${password}, password)
+      password = coalesce(${password}, password),
+      role = coalesce(${role}, role)
     where cedula = ${cedula}
-    returning name, lastname, cedula, email
+    returning name, lastname, cedula, email, role
   `;
   return rows?.[0] || null;
 };

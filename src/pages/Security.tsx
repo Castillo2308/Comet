@@ -38,6 +38,10 @@ export default function Security() {
     location: ''
   });
   const [showReportModal, setShowReportModal] = useState(false);
+  const deleteComplaint = async (id: string | number) => {
+    try { await fetch(`/api/complaints/${id}`, { method: 'DELETE' }); } catch {}
+    setComplaints(prev => prev.filter(c => c.id !== id));
+  };
 
   const complaintTypes = [
     'Robo',
@@ -112,7 +116,7 @@ export default function Security() {
       description: complaintForm.description,
       location: complaintForm.location,
       date: new Date().toISOString(),
-      status: 'pending',
+  status: 'Pendiente',
       photo_link: null,
       author: user?.cedula || 'anon'
     };
@@ -301,9 +305,18 @@ export default function Security() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-gray-900 text-sm">{complaint.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusPill(complaint.status)}`}>
-                      {complaint.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusPill(complaint.status)}`}>
+                        {complaint.status}
+                      </span>
+                      <button
+                        onClick={() => deleteComplaint(complaint.id)}
+                        className="text-red-600 hover:text-red-800 text-xs"
+                        title="Eliminar"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                   <p className="text-gray-600 text-xs mb-2">{complaint.description}</p>
                   <div className="flex items-center justify-between text-xs text-gray-500">

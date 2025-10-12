@@ -1,4 +1,4 @@
-import { listPosts, createPost, toggleLikePost, deletePost, listComments, addComment, likeComment, deleteComment } from '../models/forumModel.js';
+import { listPosts, createPost, toggleLikePost, deletePost, listComments, addComment, likeComment, deleteComment, updatePost } from '../models/forumModel.js';
 
 export default {
   async list(_req, res) {
@@ -12,6 +12,13 @@ export default {
   },
   async remove(req, res) {
     try { const ok = await deletePost(req.params.id); if (!ok) return res.status(404).json({ message: 'Post not found' }); res.json({ message: 'Post deleted' }); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to delete post' }); }
+  },
+  async update(req, res) {
+    try {
+      const updated = await updatePost(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ message: 'Post not found' });
+      res.json(updated);
+    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to update post' }); }
   },
   async listComments(req, res) {
     try { res.json(await listComments(req.params.id)); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to list comments' }); }

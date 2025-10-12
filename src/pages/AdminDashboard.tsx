@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Report {
@@ -20,7 +20,7 @@ interface User {
   cedula?: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'security' | 'news' | 'reports';
   status: 'Activo' | 'Inactivo';
   joinDate: string;
   reportsCount: number;
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [userForm, setUserForm] = useState<{ cedula?: string; name: string; lastname: string; email: string }>({ cedula: '', name: '', lastname: '', email: '' });
   const [complaintModalOpen, setComplaintModalOpen] = useState(false);
-  const [complaintForm, setComplaintForm] = useState<{ type: string; title: string; description: string; location: string; status: string }>({ type: '', title: '', description: '', location: '', status: 'pending' });
+  const [complaintForm, setComplaintForm] = useState<{ type: string; title: string; description: string; location: string; status: string }>({ type: '', title: '', description: '', location: '', status: 'Pendiente' });
   const [editingComplaint, setEditingComplaint] = useState<any>(null);
   const [hotspotModalOpen, setHotspotModalOpen] = useState(false);
   const [hotspotForm, setHotspotForm] = useState<{ title: string; description: string; date: string; time: string; dangerlevel: 'low' | 'medium' | 'high'; dangertime?: string }>({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' });
@@ -176,6 +176,18 @@ export default function AdminDashboard() {
   const [securityNewsModalOpen, setSecurityNewsModalOpen] = useState(false);
   const [securityNewsForm, setSecurityNewsForm] = useState({ type: '', title: '', description: '', insurgent: false });
   const [editingSecurityNews, setEditingSecurityNews] = useState<any>(null);
+  // Comunidad (admin only)
+  const [communityPosts, setCommunityPosts] = useState<any[]>([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communityModalOpen, setCommunityModalOpen] = useState(false);
+  const [editingCommunityPost, setEditingCommunityPost] = useState<any>(null);
+  const [communityForm, setCommunityForm] = useState<{ content: string; photo_link?: string } >({ content: '', photo_link: '' });
+  const [communityComments, setCommunityComments] = useState<Record<string, any[]>>({});
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  // Administrators/Users management state
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [adminEditingUser, setAdminEditingUser] = useState<any>(null);
+  const [adminForm, setAdminForm] = useState<{ cedula: string; name: string; lastname: string; email: string; password: string; role: User['role'] }>({ cedula: '', name: '', lastname: '', email: '', password: '', role: 'user' });
 
   const adminNavItems = [
     { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
@@ -185,10 +197,20 @@ export default function AdminDashboard() {
     { id: 'dangerous', icon: AlertTriangle, label: 'Áreas Peligrosas' },
     { id: 'securityNews', icon: Shield, label: 'Noticias Seguridad' },
     { id: 'news', icon: Megaphone, label: 'Noticias' },
-    { id: 'users', icon: Users, label: 'Usuarios' },
+  { id: 'users', icon: Users, label: 'Usuarios' },
+    { id: 'community', icon: MessageSquare, label: 'Comunidad' },
     { id: 'events', icon: Calendar, label: 'Eventos' },
     { id: 'settings', icon: Settings, label: 'Config' }
   ];
+
+  const role = user?.role || 'user';
+  const visibleTabs = adminNavItems.filter(item => {
+    if (role === 'admin') return true;
+    if (role === 'security') return ['dashboard','complaints','hotspots','dangerous','securityNews'].includes(item.id);
+    if (role === 'news') return ['dashboard','news','events'].includes(item.id);
+    if (role === 'reports') return ['dashboard','reports'].includes(item.id);
+    return false; // users shouldn't see AdminDashboard tabs
+  });
 
   const handleUpdateReportStatus = (reportId: number, newStatus: Report['status']) => {
     setReports(reports.map(report =>
@@ -198,7 +220,7 @@ export default function AdminDashboard() {
     fetch(`/api/reports/${reportId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus === 'Pendiente' ? 'pending' : newStatus })
+      body: JSON.stringify({ status: newStatus })
     }).catch(()=>{});
   };
 
@@ -584,74 +606,125 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h2>
-            <p className="text-gray-600">Administra los usuarios registrados en la plataforma</p>
+            <p className="text-gray-600">Crea usuarios y edita su información</p>
           </div>
-          <button onClick={() => { setUserForm({ cedula: '', name: '', lastname: '', email: '' }); setUserModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+          <button
+            onClick={() => { setAdminEditingUser(null); setAdminForm({ cedula: '', name: '', lastname: '', email: '', password: '', role: 'user' }); setAdminModalOpen(true); }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2"
+          >
             <Plus className="h-4 w-4" />
             <span>Nuevo Usuario</span>
           </button>
         </div>
       </div>
 
+      {adminModalOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{adminEditingUser ? 'Editar Usuario' : 'Crear Usuario'}</h3>
+              <button onClick={() => setAdminModalOpen(false)} className="text-gray-500">×</button>
+            </div>
+            <form
+              className="space-y-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (adminEditingUser) {
+                  const payload: any = { name: adminForm.name, lastname: adminForm.lastname, email: adminForm.email, role: adminForm.role };
+                  if (adminForm.password) payload.password = adminForm.password;
+                  const res = await fetch(`/api/users/${adminForm.cedula}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  if (res.ok) {
+                    await res.json().catch(()=>null);
+                    setUsers(prev => prev.map(u => (String(u.cedula) === String(adminForm.cedula)) ? { ...u, name: `${adminForm.name} ${adminForm.lastname}`, email: adminForm.email, role: adminForm.role } : u));
+                  }
+                } else {
+                  const payload = { name: adminForm.name, lastname: adminForm.lastname, cedula: adminForm.cedula, email: adminForm.email, password: adminForm.password, role: adminForm.role };
+                  const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  if (res.ok) {
+                    const newUser: User = {
+                      id: Number(adminForm.cedula) || Math.floor(Math.random()*100000),
+                      cedula: adminForm.cedula,
+                      name: `${adminForm.name} ${adminForm.lastname}`,
+                      email: adminForm.email,
+                      role: adminForm.role,
+                      status: 'Activo',
+                      joinDate: new Date().toLocaleDateString('es-ES'),
+                      reportsCount: 0,
+                      lastActivity: 'ahora'
+                    };
+                    setUsers(prev => [newUser, ...prev]);
+                  }
+                }
+                setAdminModalOpen(false);
+                setAdminEditingUser(null);
+                setAdminForm({ cedula: '', name: '', lastname: '', email: '', password: '', role: 'user' });
+              }}
+            >
+              {!adminEditingUser && (
+                <input value={adminForm.cedula} onChange={e=>setAdminForm({ ...adminForm, cedula: e.target.value })} placeholder="Cédula" className="w-full border rounded-lg px-3 py-2" required />
+              )}
+              {adminEditingUser && (
+                <input value={adminForm.cedula} readOnly placeholder="Cédula" className="w-full border rounded-lg px-3 py-2 bg-gray-50" />
+              )}
+              <input value={adminForm.name} onChange={e=>setAdminForm({ ...adminForm, name: e.target.value })} placeholder="Nombre" className="w-full border rounded-lg px-3 py-2" required />
+              <input value={adminForm.lastname} onChange={e=>setAdminForm({ ...adminForm, lastname: e.target.value })} placeholder="Apellido" className="w-full border rounded-lg px-3 py-2" required />
+              <input value={adminForm.email} onChange={e=>setAdminForm({ ...adminForm, email: e.target.value })} type="email" placeholder="Email" className="w-full border rounded-lg px-3 py-2" required />
+              <input value={adminForm.password} onChange={e=>setAdminForm({ ...adminForm, password: e.target.value })} type="password" placeholder={adminEditingUser ? 'Nueva contraseña (opcional)' : 'Contraseña'} className="w-full border rounded-lg px-3 py-2" {...(adminEditingUser ? {} : { required: true })} />
+              <select value={adminForm.role} onChange={e=>setAdminForm({ ...adminForm, role: e.target.value as User['role'] })} className="w-full border rounded-lg px-3 py-2">
+                <option value="user">Usuario</option>
+                <option value="admin">Administrador</option>
+                <option value="security">Seguridad</option>
+                <option value="news">Noticias</option>
+                <option value="reports">Reportes</option>
+              </select>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={()=>setAdminModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{adminEditingUser ? 'Guardar' : 'Crear'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Cédula</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">Email</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden md:table-cell">Reportes</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Última Actividad</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rol</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user, index) => (
-                <tr 
-                  key={user.id} 
-                  className="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <td className="px-3 py-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                        <span className="text-white font-semibold text-xs">
-                          {user.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-900">{user.name}</div>
-                        <div className="text-xs text-gray-500">Desde {user.joinDate}</div>
-                      </div>
-                    </div>
+              {users.map((u) => (
+                <tr key={u.cedula || u.id}>
+                  <td className="px-3 py-3 text-xs text-gray-900">{u.cedula || u.id}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900">{u.name}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900 hidden sm:table-cell">{u.email}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium border bg-gray-50">{u.role}</span>
                   </td>
-                  <td className="px-3 py-3 text-xs text-gray-900 hidden sm:table-cell">{user.email}</td>
                   <td className="px-3 py-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 hidden md:table-cell">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-medium text-gray-900">{user.reportsCount}</span>
-                      <span className="text-xs text-gray-500">reportes</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-xs text-gray-500 hidden lg:table-cell">{user.lastActivity}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex space-x-1">
-                      <button 
-                        onClick={() => { setUserForm({ cedula: user.cedula || String(user.id), name: (user.name || '').split(' ')[0] || '', lastname: (user.name || '').split(' ').slice(1).join(' ') || '', email: user.email }); setUserModalOpen(true); }}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const [firstName, ...rest] = (u.name || '').split(' ');
+                          setAdminEditingUser(u);
+                          setAdminForm({ cedula: String(u.cedula || ''), name: firstName || '', lastname: rest.join(' '), email: u.email, password: '', role: u.role });
+                          setAdminModalOpen(true);
+                        }}
                         className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
-                        title="Editar usuario"
+                        title="Editar"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(user.cedula || String(user.id))}
+                        onClick={() => handleDeleteUser(u.cedula || String(u.id))}
                         className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
-                        title="Eliminar usuario"
+                        title="Eliminar"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -665,6 +738,8 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
+
+  // (Removed old administrators view)
 
   const renderEvents = () => (
     <div className="space-y-6">
@@ -843,6 +918,116 @@ export default function AdminDashboard() {
     </div>
   );
 
+  const renderCommunity = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Comunidad (Foro)</h2>
+            <p className="text-gray-600">Modera publicaciones y comentarios de la comunidad</p>
+          </div>
+          <button onClick={() => { setEditingCommunityPost(null); setCommunityForm({ content: '', photo_link: '' }); setCommunityModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Nueva Publicación</span>
+          </button>
+        </div>
+      </div>
+
+      {communityModalOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">{editingCommunityPost ? 'Editar Publicación' : 'Crear Publicación'}</h3>
+              <button onClick={() => setCommunityModalOpen(false)} className="text-gray-500">×</button>
+            </div>
+            <form className="space-y-3" onSubmit={async (e) => {
+              e.preventDefault();
+              if (editingCommunityPost) {
+                const res = await fetch(`/api/forum/${editingCommunityPost._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: communityForm.content, photo_link: communityForm.photo_link }) });
+                if (res.ok) {
+                  const updated = await res.json();
+                  setCommunityPosts(prev => prev.map(p => (p._id === updated._id) ? updated : p));
+                }
+              } else {
+                const payload = { content: communityForm.content, photo_link: communityForm.photo_link, date: new Date().toISOString(), author: user?.cedula || 'admin' } as any;
+                const res = await fetch('/api/forum', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (res.ok) {
+                  const created = await res.json();
+                  setCommunityPosts(prev => [created, ...prev]);
+                }
+              }
+              setCommunityModalOpen(false);
+              setEditingCommunityPost(null);
+              setCommunityForm({ content: '', photo_link: '' });
+            }}>
+              <textarea value={communityForm.content} onChange={e=>setCommunityForm({ ...communityForm, content: e.target.value })} placeholder="Contenido de la publicación" className="w-full border rounded-lg px-3 py-2" rows={4} required />
+              <input value={communityForm.photo_link} onChange={e=>setCommunityForm({ ...communityForm, photo_link: e.target.value })} placeholder="Enlace de imagen (opcional)" className="w-full border rounded-lg px-3 py-2" />
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={()=>setCommunityModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingCommunityPost ? 'Guardar' : 'Crear'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="divide-y">
+          {communityLoading && <div className="p-6 text-center text-sm text-gray-500">Cargando…</div>}
+          {!communityLoading && communityPosts.map((p:any) => (
+            <div key={p._id} className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="pr-4">
+                  <div className="text-sm text-gray-700 mb-1">{new Date(p.date).toLocaleString('es-ES')}</div>
+                  <div className="font-semibold text-gray-900 mb-1">{p.authorName || (typeof p.author === 'string' && p.author.includes(' ') ? p.author : 'Usuario')}</div>
+                  <div className="text-sm text-gray-800 whitespace-pre-wrap">{p.content}</div>
+                  {p.photo_link && <img src={p.photo_link} alt="foto" className="mt-2 max-h-48 rounded-lg border" />}
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => { setEditingCommunityPost(p); setCommunityForm({ content: p.content || '', photo_link: p.photo_link || '' }); setCommunityModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
+                  <button onClick={async () => { const res = await fetch(`/api/forum/${p._id}`, { method: 'DELETE' }); if (res.ok) setCommunityPosts(prev => prev.filter(x => x._id !== p._id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              </div>
+
+              <div className="mt-3 border-t pt-3">
+                <div className="text-xs font-medium text-gray-700 mb-2">Comentarios</div>
+                <div className="space-y-2">
+                  {(communityComments[p._id] || []).map((c:any) => (
+                    <div key={c._id} className="text-xs text-gray-700 flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-semibold text-gray-900">{c.authorName || (typeof c.author === 'string' && c.author.includes(' ') ? c.author : 'Usuario')}</div>
+                        <div>{c.content}</div>
+                        <div className="text-[10px] text-gray-500">{new Date(c.date).toLocaleString('es-ES')}</div>
+                      </div>
+                      <button onClick={async () => { const res = await fetch(`/api/forum/comments/${c._id}`, { method: 'DELETE' }); if (res.ok) setCommunityComments(prev => ({ ...prev, [p._id]: (prev[p._id]||[]).filter(x => x._id !== c._id) })); }} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  ))}
+                </div>
+                <form className="mt-2 flex gap-2" onSubmit={async (e) => {
+                  e.preventDefault();
+                  const content = commentDrafts[p._id] || '';
+                  if (!content.trim()) return;
+                  const res = await fetch(`/api/forum/${p._id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, author: user?.cedula || 'admin' }) });
+                  if (res.ok) {
+                    const created = await res.json();
+                    setCommunityComments(prev => ({ ...prev, [p._id]: [ ...(prev[p._id]||[]), created ] }));
+                    setCommentDrafts(prev => ({ ...prev, [p._id]: '' }));
+                  }
+                }}>
+                  <input value={commentDrafts[p._id] || ''} onChange={e=>setCommentDrafts(prev => ({ ...prev, [p._id]: e.target.value }))} className="flex-1 border rounded-lg px-3 py-2 text-xs" placeholder="Escribe un comentario…" />
+                  <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs">Comentar</button>
+                </form>
+              </div>
+            </div>
+          ))}
+          {!communityLoading && communityPosts.length === 0 && (
+            <div className="p-6 text-center text-sm text-gray-500">No hay publicaciones aún.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   // Initial data loads from backend
   useEffect(() => {
     // Users
@@ -855,7 +1040,7 @@ export default function AdminDashboard() {
             cedula: String(u.cedula || ''),
             name: `${u.name} ${u.lastname}`,
             email: u.email,
-            role: 'user',
+            role: (u.role || 'user'),
             status: 'Activo',
             joinDate: new Date(u.created_at || Date.now()).toLocaleDateString('es-ES'),
             reportsCount: 0,
@@ -948,6 +1133,27 @@ export default function AdminDashboard() {
       .then(r => r.ok ? r.json() : [])
       .then((rows:any[]) => { if (Array.isArray(rows)) setSecurityNews(rows); })
       .catch(()=>{});
+
+    // Comunidad (admin only pre-load)
+    if ((user?.role || 'user') === 'admin') {
+      setCommunityLoading(true);
+      fetch('/api/forum')
+        .then(r => r.ok ? r.json() : [])
+        .then(async (rows:any[]) => {
+          const posts = Array.isArray(rows) ? rows : [];
+          setCommunityPosts(posts);
+          const all: Record<string, any[]> = {};
+          for (const p of posts) {
+            try {
+              const cr = await fetch(`/api/forum/${p._id || p.id}/comments`);
+              if (cr.ok) all[p._id || p.id] = await cr.json();
+            } catch {}
+          }
+          setCommunityComments(all);
+        })
+        .catch(()=>{})
+        .finally(() => setCommunityLoading(false));
+    }
   }, []);
 
   const renderNews = () => (
@@ -1096,11 +1302,15 @@ export default function AdminDashboard() {
 
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="divide-y">
-          {dangerous.map((d:any, idx:number) => (
+          {dangerous.map((d:any, idx:number) => {
+            const lvl = String(d.dangerlevel || 'medium').toLowerCase();
+            const label = lvl === 'high' ? 'Alto' : lvl === 'medium' ? 'Medio' : 'Bajo';
+            const pill = lvl === 'high' ? 'bg-red-100 text-red-700' : lvl === 'medium' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700';
+            return (
             <div key={d.id ?? idx} className="p-4 flex items-start justify-between">
               <div className="pr-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">{d.dangerlevel || 'medium'}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${pill}`}>{label}</span>
                   <span className="text-xs text-gray-500">{new Date(d.date).toLocaleDateString('es-ES')}</span>
                 </div>
                 <div className="font-semibold text-gray-900">{d.title}</div>
@@ -1112,7 +1322,7 @@ export default function AdminDashboard() {
                 <button onClick={async () => { const res = await fetch(`/api/dangerous-areas/${d.id}`, { method: 'DELETE' }); if (res.ok) setDangerous(prev => prev.filter(x => x.id !== d.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
-          ))}
+          );})}
           {dangerous.length === 0 && (
             <div className="p-6 text-center text-sm text-gray-500">No hay áreas peligrosas aún.</div>
           )}
@@ -1243,7 +1453,7 @@ export default function AdminDashboard() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Quejas</h2>
             <p className="text-gray-600">Revisa y actualiza las quejas de seguridad</p>
           </div>
-          <button onClick={() => { setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'pending' }); setComplaintModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+          <button onClick={() => { setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'Pendiente' }); setComplaintModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Nueva Queja</span>
           </button>
@@ -1276,7 +1486,7 @@ export default function AdminDashboard() {
                 <input value={complaintForm.location} onChange={e=>setComplaintForm({ ...complaintForm, location: e.target.value })} placeholder="Ubicación" className="border rounded-lg px-3 py-2" />
               </div>
               <select value={complaintForm.status} onChange={e=>setComplaintForm({ ...complaintForm, status: e.target.value })} className="w-full border rounded-lg px-3 py-2">
-                <option value="pending">Pendiente</option>
+                <option value="Pendiente">Pendiente</option>
                 <option value="En Proceso">En Proceso</option>
                 <option value="Resuelto">Resuelto</option>
                 <option value="Rechazado">Rechazado</option>
@@ -1306,12 +1516,12 @@ export default function AdminDashboard() {
               </div>
               <div className="flex gap-1 items-center">
                 <select defaultValue={c.status} onChange={async (e)=>{ const nv = e.target.value; const res = await fetch(`/api/complaints/${c.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: nv }) }); if (res.ok) setComplaints(prev => prev.map((x:any)=> x.id===c.id ? { ...x, status: nv } : x)); }} className="text-xs border rounded px-2 py-1">
-                  <option value="pending">Pendiente</option>
+                  <option value="Pendiente">Pendiente</option>
                   <option value="En Proceso">En Proceso</option>
                   <option value="Resuelto">Resuelto</option>
                   <option value="Rechazado">Rechazado</option>
                 </select>
-                <button onClick={() => { setEditingComplaint(c); setComplaintForm({ type: c.type || '', title: c.title || '', description: c.description || '', location: c.location || '', status: c.status || 'pending' }); setComplaintModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
+                <button onClick={() => { setEditingComplaint(c); setComplaintForm({ type: c.type || '', title: c.title || '', description: c.description || '', location: c.location || '', status: c.status || 'Pendiente' }); setComplaintModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
                 <button onClick={() => handleDeleteComplaint(c.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
@@ -1476,6 +1686,7 @@ export default function AdminDashboard() {
               {activeTab === 'dangerous' && 'Áreas Peligrosas'}
               {activeTab === 'securityNews' && 'Noticias de Seguridad'}
               {activeTab === 'news' && 'Gestión de Noticias'}
+              {activeTab === 'community' && 'Comunidad (Foro)'}
               {activeTab === 'events' && 'Gestión de Eventos'}
               {activeTab === 'settings' && 'Configuración del Sistema'}
             </h2>
@@ -1487,6 +1698,7 @@ export default function AdminDashboard() {
               {activeTab === 'hotspots' && 'Crea y administra zonas peligrosas'}
               {activeTab === 'dangerous' && 'Gestiona zonas peligrosas (fuente municipal)'}
               {activeTab === 'securityNews' && 'Publica anuncios de seguridad'}
+              {activeTab === 'community' && 'Modera publicaciones y comentarios del foro'}
               {activeTab === 'events' && 'Crea y administra eventos comunitarios'}
               {activeTab === 'settings' && 'Configuración general del sistema'}
             </p>
@@ -1494,14 +1706,16 @@ export default function AdminDashboard() {
           
           <div>
             {activeTab === 'dashboard' && renderDashboard()}
-            {activeTab === 'reports' && renderReports()}
-            {activeTab === 'news' && renderNews()}
-            {activeTab === 'dangerous' && renderDangerous()}
-            {activeTab === 'securityNews' && renderSecurityNews()}
-            {activeTab === 'users' && renderUsers()}
-            {activeTab === 'complaints' && renderComplaints()}
-            {activeTab === 'hotspots' && renderHotspots()}
-            {activeTab === 'events' && renderEvents()}
+            {activeTab === 'reports' && (role==='admin' || role==='reports') && renderReports()}
+            {activeTab === 'news' && (role==='admin' || role==='news') && renderNews()}
+            {activeTab === 'dangerous' && (role==='admin' || role==='security') && renderDangerous()}
+            {activeTab === 'securityNews' && (role==='admin' || role==='security') && renderSecurityNews()}
+            {activeTab === 'users' && role==='admin' && renderUsers()}
+            {/* administrators tab merged into users */}
+            {activeTab === 'community' && role==='admin' && renderCommunity()}
+            {activeTab === 'complaints' && (role==='admin' || role==='security') && renderComplaints()}
+            {activeTab === 'hotspots' && (role==='admin' || role==='security') && renderHotspots()}
+            {activeTab === 'events' && (role==='admin' || role==='news') && renderEvents()}
             {activeTab === 'settings' && (
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                 <div className="text-center">
@@ -1521,8 +1735,8 @@ export default function AdminDashboard() {
       {/* Bottom Navigation */}
       {renderUsersModal()}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-30 shadow-lg">
-        <nav className="flex items-center justify-around max-w-md mx-auto">
-          {adminNavItems.map((item) => {
+        <nav className="flex items-center justify-center gap-6 max-w-3xl mx-auto">
+          {visibleTabs.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
             
@@ -1530,7 +1744,7 @@ export default function AdminDashboard() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex flex-col items-center justify-center p-2 transition-all duration-300 transform ${
+                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform ${
                   isActive
                     ? 'text-blue-500 scale-110'
                     : 'text-gray-400 hover:text-gray-600 hover:scale-105'

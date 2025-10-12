@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get('/', controller.list);
 router.post('/', controller.create);
+router.put('/:id', controller.update);
 router.post('/:id/like', controller.like);
 router.delete('/:id', controller.remove);
 router.get('/:id/comments', controller.listComments);

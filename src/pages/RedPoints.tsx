@@ -8,7 +8,7 @@ interface RedPoint {
   location: string;
   description: string;
   timeRange: string;
-  author: string;
+  author: string; // cedula preferred
   date: string;
   riskLevel: 'Alto' | 'Medio' | 'Bajo';
   comments: Comment[];
@@ -152,6 +152,12 @@ export default function RedPoints() {
       })
       .catch(() => {});
   }, []);
+
+  const canDeletePoint = (p: RedPoint) => !!user?.cedula && (p.author === user.cedula);
+  const deletePoint = async (id: any) => {
+    try { await fetch(`/api/security/hotspots/${id}`, { method: 'DELETE' }); } catch {}
+    setRedPoints(prev => prev.filter(p => String(p.id) !== String(id)));
+  };
 
   return (
     <div className="flex-1 overflow-y-auto pb-20 sm:pb-24 md:pb-28 min-h-screen bg-gray-50">
@@ -382,9 +388,14 @@ export default function RedPoints() {
                       </div>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(point.riskLevel)}`}>
-                    {point.riskLevel}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(point.riskLevel)}`}>
+                      {point.riskLevel}
+                    </span>
+                    {canDeletePoint(point) && (
+                      <button onClick={() => deletePoint(point.id)} className="text-red-600 hover:text-red-800 text-xs" title="Eliminar">Eliminar</button>
+                    )}
+                  </div>
                 </div>
 
                 <p className="text-gray-800 text-sm mb-3">{point.description}</p>

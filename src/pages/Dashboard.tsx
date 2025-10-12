@@ -120,10 +120,6 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
     }
   };
 
-  const canDelete = (report: any) => {
-    // Owned by current user if author matches cedula in either raw or formatted form
-    return !user?.cedula || report.author === user?.cedula;
-  };
 
   const handleDeleteReport = async (id: number | string) => {
     try {
@@ -235,13 +231,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                           </button>
                           {menuOpenId === report.id && (
                             <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 w-36">
-                              <button
-                                disabled={!canDelete(report)}
-                                onClick={() => canDelete(report) && handleDeleteReport(report.id)}
-                                className={`w-full text-left px-3 py-2 text-sm ${canDelete(report) ? 'hover:bg-gray-50 text-red-600' : 'text-gray-300 cursor-not-allowed'}`}
-                              >
-                                Eliminar
-                              </button>
+                              <button onClick={() => handleDeleteReport(report.id)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-red-600">Eliminar</button>
                             </div>
                           )}
                         </div>

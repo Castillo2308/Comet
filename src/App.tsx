@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SignIn from './pages/SignIn';
@@ -14,11 +14,11 @@ import RedPoints from './pages/RedPoints';
 import Layout from './components/Layout';
 
 function AppRoutes() {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
 
-  // If user is admin, show admin interface
-  if (isAuthenticated && isAdmin) {
+  // If user is staff (any non-user role), show admin interface
+  if (isAuthenticated && user && user.role !== 'user') {
     return (
       <Routes>
         <Route path="*" element={<AdminDashboard />} />

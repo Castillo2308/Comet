@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';    // Same as const bcrypt = require('bcryptjs');
 
 const registerUser = async (req, res) => {
   // Extract all five fields from the request body.
-  const { name, lastname, cedula, email, password } = req.body;
+  const { name, lastname, cedula, email, password, role } = req.body;
 
   // Basic validation.
   if (!name || !lastname || !cedula || !email || !password) {
@@ -16,7 +16,7 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Call the model to create a new user with the hashed password
-    const { success, user } = await createUser({ name, lastname, cedula, email, password: hashedPassword });
+  const { success, user } = await createUser({ name, lastname, cedula, email, password: hashedPassword, role: role || 'user' });
     if (success) {
       res.status(201).json({ message: 'User registered successfully!' });
     } else {
@@ -51,9 +51,8 @@ const loginUser = async (req, res) => {
     }
 
     // If login is successful, return the user data (excluding password)
-    const { password: _, ...userData } = user;
-    // Provide a default role until RBAC is implemented
-    res.status(200).json({ message: 'Login successful!', user: { ...userData, role: 'user' } });
+  const { password: _, ...userData } = user;
+  res.status(200).json({ message: 'Login successful!', user: userData });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Failed to login.' });
@@ -62,16 +61,17 @@ const loginUser = async (req, res) => {
 
 const updateUserInfo = async (req, res) => {
   const { cedula } = req.params;
-  const { name, lastname, email, password } = req.body;
+  // Allow updating role as well (for admin panel). Password, if provided, will be hashed.
+  const { name, lastname, email, password, role } = req.body;
   try {
     let hashed = undefined;
     if (password) {
       const salt = await bcrypt.genSalt(10);
       hashed = await bcrypt.hash(password, salt);
     }
-    const updated = await updateUser(cedula, { name, lastname, email, password: hashed });
+    const updated = await updateUser(cedula, { name, lastname, email, password: hashed, role });
     if (!updated) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User updated', user: updated });
+  res.json({ message: 'User updated', user: updated });
   } catch (err) {
     console.error('Update user error:', err);
     res.status(500).json({ message: 'Failed to update user.' });

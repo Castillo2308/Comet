@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, Clock, Camera, X, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, MoreHorizontal, Send, Clock, Camera, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
 interface Post {
   id: string;
-  author: string;
+  author: string; // display name
+  ownerId?: string; // cedula for ownership checks
   avatar: string;
   time: string;
   content: string;
@@ -17,7 +18,8 @@ interface Post {
 
 interface Comment {
   id: string;
-  author: string;
+  author: string; // display name
+  ownerId?: string; // cedula for ownership checks
   avatar: string;
   time: string;
   content: string;
@@ -113,17 +115,22 @@ export default function Community() {
       .then(r => r.ok ? r.json() : [])
       .then((data) => {
         if (Array.isArray(data) && data.length) {
-          const mapped: Post[] = data.map((p: any) => ({
-            id: String(p._id || ''),
-            author: p.author,
-            avatar: p.author?.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
-            time: new Date(p.date).toLocaleString(),
-            content: p.content,
-            image: p.photo_link || undefined,
-            likes: p.likes || 0,
-            comments: p.comments_count || 0,
-            isLiked: false,
-          }));
+          const mapped: Post[] = data.map((p: any) => {
+            const authorRaw = p.author; // could be cedula or display name (legacy)
+            const display = p.authorName || (typeof authorRaw === 'string' && authorRaw.includes(' ') ? authorRaw : 'Usuario');
+            return ({
+              id: String(p._id || ''),
+              author: display,
+              ownerId: typeof authorRaw === 'string' && !authorRaw.includes(' ') ? authorRaw : undefined,
+              avatar: display.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
+              time: new Date(p.date).toLocaleString(),
+              content: p.content,
+              image: p.photo_link || undefined,
+              likes: p.likes || 0,
+              comments: p.comments_count || 0,
+              isLiked: false,
+            });
+          });
           setPosts(mapped);
         }
       })
@@ -183,6 +190,7 @@ export default function Community() {
     const newCommentObj: Comment = {
       id: `tmp-${Date.now()}`,
       author: `${user?.name} ${user?.lastname}`,
+      ownerId: user?.cedula,
       avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
       time: 'ahora',
       content: commentText,
@@ -202,7 +210,13 @@ export default function Community() {
     ));
 
     setNewComment(prev => ({ ...prev, [postId]: '' }));
-    try { await fetch(`/api/forum/${postId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: commentText, author: `${user?.name} ${user?.lastname}` }) }); } catch {}
+    try {
+      await fetch(`/api/forum/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: commentText, author: user?.cedula })
+      });
+    } catch {}
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,7 +246,7 @@ export default function Community() {
         body: JSON.stringify({
           content: newPost,
           photo_link: newPostImagePreview || undefined,
-          author: `${user?.name} ${user?.lastname}`,
+          author: user?.cedula,
           date: new Date().toISOString()
         })
       });
@@ -240,8 +254,9 @@ export default function Community() {
         const saved = await res.json();
         const newPostObj: Post = {
           id: String(saved._id || saved.id || `tmp-${Date.now()}`),
-          author: saved.author ?? `${user?.name} ${user?.lastname}`,
-          avatar: (saved.author ?? `${user?.name} ${user?.lastname}`)?.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
+          author: saved.authorName || `${user?.name} ${user?.lastname}`,
+          ownerId: user?.cedula,
+          avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
           time: new Date(saved.date || Date.now()).toLocaleString(),
           content: saved.content ?? newPost,
           image: saved.photo_link || newPostImagePreview || undefined,
@@ -254,6 +269,7 @@ export default function Community() {
         const newPostObj: Post = {
           id: `tmp-${Date.now()}`,
           author: `${user?.name} ${user?.lastname}`,
+          ownerId: user?.cedula,
           avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
           time: 'ahora',
           content: newPost,
@@ -268,6 +284,7 @@ export default function Community() {
       const newPostObj: Post = {
         id: `tmp-${Date.now()}`,
         author: `${user?.name} ${user?.lastname}`,
+        ownerId: user?.cedula,
         avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
         time: 'ahora',
         content: newPost,
@@ -284,9 +301,13 @@ export default function Community() {
     setShowNewPost(false);
   };
 
-  const isOwner = (authorName: string) => {
-    const full = `${user?.name} ${user?.lastname}`.trim();
-    return !!full && !!authorName && full.toLowerCase() === authorName.toLowerCase();
+  const isOwner = (item: { ownerId?: string; author?: string }) => {
+    if (!user) return false;
+    if (item.ownerId && user.cedula && item.ownerId === user.cedula) return true;
+    // Fallback to name-based match for legacy data
+    const full = `${user.name} ${user.lastname}`.trim().toLowerCase();
+    const disp = (item.author || '').toLowerCase();
+    return !!full && !!disp && full === disp;
   };
 
   const deletePost = async (postId: string) => {
@@ -435,7 +456,7 @@ export default function Community() {
                     <button onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)} className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors duration-200 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
                       <MoreHorizontal className="h-4 w-4" />
                     </button>
-                    {openMenuPostId === post.id && isOwner(post.author) && (
+                    {openMenuPostId === post.id && isOwner(post) && (
                       <div className="absolute right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded shadow z-10">
                         <button onClick={() => deletePost(post.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600">
                           <Trash2 className="h-4 w-4" /> Eliminar
@@ -478,15 +499,20 @@ export default function Community() {
                             const res = await fetch(`/api/forum/${post.id}/comments`);
                             if (res.ok) {
                               const data = await res.json();
-                              const mapped: Comment[] = (data || []).map((c:any) => ({
-                                id: String(c._id || c.id || `tmp-${Date.now()}`),
-                                author: c.author,
-                                avatar: c.author?.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
-                                time: new Date(c.date).toLocaleString(),
-                                content: c.content,
-                                likes: c.likes || 0,
-                                isLiked: false
-                              }));
+                              const mapped: Comment[] = (data || []).map((c:any) => {
+                                const isCed = typeof c.author === 'string' && /^\d{5,12}$/.test(c.author);
+                                const display = c.authorName || (typeof c.author === 'string' && c.author.includes(' ') ? c.author : 'Usuario');
+                                return ({
+                                  id: String(c._id || c.id || `tmp-${Date.now()}`),
+                                  author: display,
+                                  ownerId: isCed ? c.author : undefined,
+                                  avatar: display.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
+                                  time: new Date(c.date).toLocaleString(),
+                                  content: c.content,
+                                  likes: c.likes || 0,
+                                  isLiked: false
+                                });
+                              });
                               setComments(prev => ({ ...prev, [post.id]: mapped }));
                             }
                           } catch {}
@@ -497,10 +523,7 @@ export default function Community() {
                       <MessageCircle className="h-4 w-4" />
                       <span className="text-xs font-medium">{post.comments}</span>
                     </button>
-                    <button className="flex items-center space-x-1 text-gray-500 hover:text-green-500 transition-all duration-200 transform hover:scale-110 active:scale-95">
-                      <Share2 className="h-4 w-4" />
-                      <span className="text-xs font-medium">Compartir</span>
-                    </button>
+                    {/* Compartir eliminado */}
                   </div>
                 </div>
               </div>
@@ -520,7 +543,7 @@ export default function Community() {
                             <span className="font-medium text-gray-900 dark:text-gray-100 text-xs">{comment.author}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-gray-500 dark:text-gray-400 text-xs">{comment.time}</span>
-                              {isOwner(comment.author) && (
+                              {isOwner(comment) && (
                                 <button onClick={() => deleteComment(post.id, comment.id)} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-gray-700 rounded">
                                   <Trash2 className="h-3 w-3" />
                                 </button>

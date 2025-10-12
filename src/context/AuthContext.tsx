@@ -6,7 +6,7 @@ interface User {
   email: string;
   lastname: string;
   cedula: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'security' | 'news' | 'reports';
 }
 
 interface AuthContextType {
@@ -38,8 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         // Get user data from backend response
         const data = await response.json();
-        setUser(data.user); // <-- Set the user in context
-        localStorage.setItem('authUser', JSON.stringify(data.user));
+  setUser(data.user as User); // <-- Set the user in context
+  localStorage.setItem('authUser', JSON.stringify(data.user));
         return true;
       }
       return false;
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, lastname, cedula, email, password })
+        body: JSON.stringify({ name, lastname, cedula, email, password, role: 'user' })
       });
       if (response.ok) {
         return true;
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       isAuthenticated: !!user,
-      isAdmin: user?.role === 'admin',  /////// CHANGE TO isAdmin: true, FOR TESTING /////////////////
+      isAdmin: user?.role === 'admin',
       signIn,
       signUp,
       signOut,
