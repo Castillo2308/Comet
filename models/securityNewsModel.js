@@ -32,3 +32,8 @@ export async function deleteSecurityNews(id) {
   const rows = await neonClient`delete from security_news where id=${id} returning id`;
   return rows?.length > 0;
 }
+
+export async function getSecurityNewsById(id) {
+  const rows = await neonClient`select id, title, description, date, author from security_news where id=${id}`;
+  return rows?.[0] || null;
+}

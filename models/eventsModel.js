@@ -34,3 +34,8 @@ export async function deleteEvent(id) {
   const rows = await neonClient`delete from events where id = ${id} returning id`;
   return rows?.length > 0;
 }
+
+export async function getEventById(id) {
+  const rows = await neonClient`select id, type, title, description, date, location, attendants, host, price, author from events where id=${id}`;
+  return rows?.[0] || null;
+}

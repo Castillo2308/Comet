@@ -111,8 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount: AuthContextType['deleteAccount'] = async () => {
     if (!user) return false;
     try {
+      // Important: send DELETE with current JWT; signOut only after success
       const res = await fetch(`/api/users/${user.cedula}`, { method: 'DELETE' });
       if (!res.ok) return false;
+      // Now, after server confirms deletion, clear local session
       signOut();
       return true;
     } catch {

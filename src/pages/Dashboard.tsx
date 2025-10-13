@@ -61,8 +61,8 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
 
   useEffect(() => {
     // Fetch user reports from backend
-  fetch('/api/reports', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
-      .then(r => r.ok ? r.json() : [])
+  api('/reports')
+    .then(r => r.json())
       .then((rows: any[]) => {
         if (!Array.isArray(rows)) return;
         const mine = rows.filter(r => !user?.cedula || r.author === user?.cedula);
@@ -126,7 +126,23 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
     try {
       const res = await api(`/reports/${id}` , { method: 'DELETE' });
       if (!res.ok) return;
+      // Refresh from server to avoid stale view when filters/sorting apply
       setReports(prev => prev.filter(r => r.id !== id));
+      try {
+        const rr = await api('/reports');
+        const rows: any[] = await rr.json();
+        const mine = rows.filter(r => !user?.cedula || r.author === user?.cedula);
+        setReports(mine.map(r => ({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          location: r.location,
+          image: r.photo_link || 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+          status: r.status === 'pending' ? 'Pendiente' : r.status,
+          date: new Date(r.date).toLocaleString('es-ES'),
+          priority: undefined
+        })));
+      } catch {}
       setMenuOpenId(null);
     } catch {
       // Optional: toast error

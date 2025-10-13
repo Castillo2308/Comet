@@ -32,3 +32,8 @@ export async function deleteComplaint(id) {
   const rows = await neonClient`delete from complaints where id=${id} returning id`;
   return rows?.length > 0;
 }
+
+export async function getComplaintById(id) {
+  const rows = await neonClient`select id, type, title, description, location, date, status, author from complaints where id=${id}`;
+  return rows?.[0] || null;
+}

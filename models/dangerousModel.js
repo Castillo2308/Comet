@@ -31,3 +31,8 @@ export async function deleteDangerous(id) {
   const rows = await neonClient`delete from dangerous_areas where id=${id} returning id`;
   return rows?.length > 0;
 }
+
+export async function getDangerousById(id) {
+  const rows = await neonClient`select id, title, description, location, date, dangerlevel, author from dangerous_areas where id=${id}`;
+  return rows?.[0] || null;
+}

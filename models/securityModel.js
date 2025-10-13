@@ -1,10 +1,26 @@
 import { getDb, ObjectId } from '../lib/mongoClient.js';
 
-const HOTSPOTS_COLL = 'hotSpotsV2';
+const HOTSPOTS_COLL = 'hotSpots';
+const OLD_HOTSPOTS_COLL = 'hotSpotsV2';
 
 export async function listHotspots() {
   const db = await getDb();
   console.log('[securityModel.listHotspots] Using collection:', HOTSPOTS_COLL);
+  // One-time silent migration if old collection has docs and new one is empty
+  try {
+    const target = db.collection(HOTSPOTS_COLL);
+    const old = db.collection(OLD_HOTSPOTS_COLL);
+    const [targetCount, oldCount] = await Promise.all([
+      target.estimatedDocumentCount(),
+      old.estimatedDocumentCount().catch(() => 0)
+    ]);
+    if (targetCount === 0 && oldCount > 0) {
+      const docs = await old.find({}).toArray();
+      if (docs.length) {
+        await target.insertMany(docs, { ordered: false }).catch(() => {});
+      }
+    }
+  } catch {}
   return await db.collection(HOTSPOTS_COLL).find({}).sort({ date: -1 }).toArray();
 }
 

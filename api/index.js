@@ -48,9 +48,14 @@ const sensitiveLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  // Be more permissive in dev to reduce friction; stricter in prod
+  limit: process.env.NODE_ENV === 'development' ? 100 : 20,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  // Don't count successful logins against the limit
+  skipSuccessfulRequests: true,
+  // Scope attempts per IP + email to avoid one-IP (dev proxy) exhausting everyone
+  keyGenerator: (req, _res) => `${req.ip}|${(req.body && req.body.email) || 'unknown'}`,
 });
 
 // Initialize SQL schema at startup (idempotent)

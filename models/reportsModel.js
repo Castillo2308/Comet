@@ -33,3 +33,8 @@ export async function deleteReport(id) {
   const rows = await neonClient`delete from reports where id=${id} returning id`;
   return rows?.length > 0;
 }
+
+export async function getReportById(id) {
+  const rows = await neonClient`select id, type, title, description, location, date, status, photo_link, author from reports where id=${id}`;
+  return rows?.[0] || null;
+}

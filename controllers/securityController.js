@@ -1,4 +1,5 @@
-import { listHotspots, createHotspot, listHotspotComments, addHotspotComment, deleteHotspot, updateHotspot } from '../models/securityModel.js';
+import { listHotspots, createHotspot, listHotspotComments, addHotspotComment, deleteHotspot, updateHotspot, getHotspotById } from '../models/securityModel.js';
+import { isPrivileged } from '../lib/auth.js';
 
 export default {
   async list(_req, res) { try { res.json(await listHotspots()); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to list hotspots' }); } },
@@ -39,6 +40,29 @@ export default {
       res.status(201).json(created);
     } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to add comment' }); }
   },
-  async remove(req, res) { try { const ok = await deleteHotspot(req.params.id); if (!ok) return res.status(404).json({ message: 'Not found' }); res.json({ message: 'Deleted' }); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to delete hotspot' }); } },
-  async update(req, res) { try { const row = await updateHotspot(req.params.id, req.body); if (!row) return res.status(404).json({ message: 'Not found' }); res.json(row); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to update hotspot' }); } },
+  async remove(req, res) {
+    try {
+      const doc = await getHotspotById(req.params.id);
+      if (!doc) return res.status(404).json({ message: 'Not found' });
+  const role = req.user?.role;
+      const cedula = req.user?.cedula;
+  const canDelete = isPrivileged(role) || (cedula && String(doc.author) === String(cedula));
+      if (!canDelete) return res.status(403).json({ message: 'Prohibido' });
+      const ok = await deleteHotspot(req.params.id);
+      if (!ok) return res.status(404).json({ message: 'Not found' });
+      res.json({ message: 'Deleted' });
+    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to delete hotspot' }); }
+  },
+  async update(req, res) {
+    try {
+      const doc = await getHotspotById(req.params.id);
+      if (!doc) return res.status(404).json({ message: 'Not found' });
+  const role = req.user?.role; const cedula = req.user?.cedula;
+  const can = isPrivileged(role) || (cedula && String(doc.author) === String(cedula));
+      if (!can) return res.status(403).json({ message: 'Prohibido' });
+      const row = await updateHotspot(req.params.id, req.body);
+      if (!row) return res.status(404).json({ message: 'Not found' });
+      res.json(row);
+    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to update hotspot' }); }
+  },
 };

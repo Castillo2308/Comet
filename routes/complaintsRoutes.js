@@ -1,11 +1,13 @@
 import express from 'express';
 import controller from '../controllers/complaintsController.js';
+import { requireAuth } from '../lib/auth.js';
 
 const router = express.Router();
 
-router.get('/', controller.list);
-router.post('/', controller.create);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+router.get('/', requireAuth, controller.list);
+router.post('/', requireAuth, controller.create);
+router.put('/:id', requireAuth, controller.update);
+// Only authenticated users can delete; controller enforces owner-or-role
+router.delete('/:id', requireAuth, controller.remove);
 
 export default router;

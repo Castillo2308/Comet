@@ -213,21 +213,26 @@ export default function AdminDashboard() {
     return false; // users shouldn't see AdminDashboard tabs
   });
 
-  const handleUpdateReportStatus = (reportId: number, newStatus: Report['status']) => {
-    setReports(reports.map(report =>
-      report.id === reportId ? { ...report, status: newStatus } : report
-    ));
-    // Persist to backend
-    api(`/reports/${reportId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    }).catch(()=>{});
+  const handleUpdateReportStatus = async (reportId: number, newStatus: Report['status']) => {
+    // Optimistic UI update
+    const prev = reports;
+    setReports(prev.map(report => (report.id === reportId ? { ...report, status: newStatus } : report)));
+    try {
+      await api(`/reports/${reportId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+    } catch {
+      // rollback on failure
+      setReports(prev);
+    }
   };
 
-  const handleDeleteReport = (reportId: number) => {
-    setReports(reports.filter(report => report.id !== reportId));
-    // TODO: call DELETE /api/reports/:id when we add deletion in UI
+  const handleDeleteReport = async (reportId: number) => {
+    const prev = reports;
+    setReports(prev.filter(report => report.id !== reportId));
+    try { await api(`/reports/${reportId}`, { method: 'DELETE' }); } catch { setReports(prev); }
   };
 
   const handleDeleteUser = async (cedula: string) => {
@@ -1072,24 +1077,23 @@ export default function AdminDashboard() {
 
     // Reports
     api('/reports')
-      .then(r => r.ok ? r.json() : [])
+      .then(r => r.json())
       .then((rows) => {
-        if (Array.isArray(rows) && rows.length) {
-          const mapped: Report[] = rows.map((r:any) => ({
-            id: r.id,
-            title: r.title,
-            description: r.description,
-            type: r.type || 'General',
-            location: r.location || 'N/A',
-            status: (r.status === 'pending' ? 'Pendiente' : r.status) as Report['status'],
-            date: new Date(r.date).toLocaleDateString('es-ES'),
-            user: r.author || 'Usuario',
-            priority: 'Media',
-            image: r.photo_link || undefined,
-          }));
-          setReports(mapped);
-        }
-      }).catch(()=>{});
+        const list = Array.isArray(rows) ? rows : [];
+        const mapped: Report[] = list.map((r:any) => ({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          type: r.type || 'General',
+          location: r.location || 'N/A',
+          status: (r.status === 'pending' ? 'Pendiente' : r.status) as Report['status'],
+          date: new Date(r.date).toLocaleDateString('es-ES'),
+          user: r.author || 'Usuario',
+          priority: 'Media',
+          image: r.photo_link || undefined,
+        }));
+        setReports(mapped);
+      }).catch(()=>{ setReports([]); });
     api('/news')
       .then(r => r.ok ? r.json() : [])
       .then((rows) => { if (Array.isArray(rows)) setNewsItems(rows); })
@@ -1364,7 +1368,7 @@ export default function AdminDashboard() {
                   setSecurityNews(prev => prev.map(n => n.id === editingSecurityNews.id ? updated : n));
                 }
               } else {
-                const res = await fetch('/api/security-news', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await api(`/security-news`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (res.ok) {
                   const created = await res.json();
                   setSecurityNews(prev => [created, ...prev]);
@@ -1402,7 +1406,14 @@ export default function AdminDashboard() {
               </div>
               <div className="flex gap-1">
                 <button onClick={() => { setEditingSecurityNews(n); setSecurityNewsForm({ type: n.type || '', title: n.title || '', description: n.description || '', insurgent: !!n.insurgent }); setSecurityNewsModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
-                <button onClick={async () => { const res = await api(`/security-news/${n.id}`, { method: 'DELETE' }); if (res.ok) setSecurityNews(prev => prev.filter(x => x.id !== n.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={async () => {
+                  try {
+                    const res = await api(`/security-news/${n.id}`, { method: 'DELETE' });
+                    if (res.ok) setSecurityNews(prev => prev.filter(x => x.id !== n.id));
+                  } catch (e) {
+                    // Optionally show a toast
+                  }
+                }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           ))}

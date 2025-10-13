@@ -69,6 +69,16 @@ export async function deletePost(id) {
   return res.deletedCount > 0;
 }
 
+export async function getPostById(id) {
+  const db = await getDb();
+  try {
+    const _id = new ObjectId(id);
+    return await db.collection('userPosts').findOne({ _id });
+  } catch {
+    return null;
+  }
+}
+
 export async function updatePost(id, updates) {
   const db = await getDb();
   const _id = new ObjectId(id);
@@ -132,4 +142,14 @@ export async function deleteComment(id) {
     await db.collection('userPosts').updateOne({ _id: new ObjectId(comment.post) }, { $inc: { comments_count: -1 } });
   }
   return true;
+}
+
+export async function getCommentById(id) {
+  const db = await getDb();
+  try {
+    const _id = new ObjectId(id);
+    return await db.collection('comments').findOne({ _id });
+  } catch {
+    return null;
+  }
 }

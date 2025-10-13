@@ -7,9 +7,9 @@ const router = express.Router();
 router.post("/", usersController.registerUser);
 router.post("/login", usersController.loginUser); // Assuming you have a loginUser method in usersController
 // PUT /api/users/:cedula - Update user information
-router.put("/:cedula", requireAuth, requireRole('admin'), usersController.updateUserInfo);
-// DELETE /api/users/:cedula - Delete user
-router.delete("/:cedula", requireAuth, requireRole('admin'), usersController.deleteUserAccount);
+router.put("/:cedula", requireAuth, usersController.updateUserInfo);
+// DELETE /api/users/:cedula - Delete user (self or privileged)
+router.delete("/:cedula", requireAuth, usersController.deleteUserAccount);
 // GET /api/users - List all users
 router.get('/', requireAuth, requireRole('admin','security','news','reports'), listAllUsers);
 

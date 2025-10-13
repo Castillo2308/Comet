@@ -1,4 +1,5 @@
 import { listEvents, createEvent, updateEvent, deleteEvent } from '../models/eventsModel.js';
+import { isPrivileged } from '../lib/auth.js';
 
 export async function getEvents(_req, res) {
   try {
@@ -12,7 +13,9 @@ export async function getEvents(_req, res) {
 
 export async function postEvent(req, res) {
   try {
-    const evt = await createEvent(req.body);
+    const body = { ...req.body };
+    if (!body.author && req.user?.cedula) body.author = req.user.cedula;
+    const evt = await createEvent(body);
     res.status(201).json(evt);
   } catch (e) {
     console.error('postEvent error', e);
@@ -22,6 +25,11 @@ export async function postEvent(req, res) {
 
 export async function putEvent(req, res) {
   try {
+    const existing = await getEventById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'Event not found' });
+  const role = req.user?.role; const cedula = req.user?.cedula;
+  const can = isPrivileged(role) || (cedula && String(existing.author) === String(cedula));
+    if (!can) return res.status(403).json({ message: 'Prohibido' });
     const updated = await updateEvent(req.params.id, req.body);
     if (!updated) return res.status(404).json({ message: 'Event not found' });
     res.json(updated);
@@ -33,6 +41,11 @@ export async function putEvent(req, res) {
 
 export async function removeEvent(req, res) {
   try {
+    const existing = await getEventById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'Event not found' });
+  const role = req.user?.role; const cedula = req.user?.cedula;
+  const can = isPrivileged(role) || (cedula && String(existing.author) === String(cedula));
+    if (!can) return res.status(403).json({ message: 'Prohibido' });
     const ok = await deleteEvent(req.params.id);
     if (!ok) return res.status(404).json({ message: 'Event not found' });
     res.json({ message: 'Event deleted' });
@@ -42,4 +55,5 @@ export async function removeEvent(req, res) {
   }
 }
 
+import { getEventById } from '../models/eventsModel.js';
 export default { getEvents, postEvent, putEvent, removeEvent };

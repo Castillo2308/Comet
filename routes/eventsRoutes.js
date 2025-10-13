@@ -1,11 +1,12 @@
 import express from 'express';
 import eventsController from '../controllers/eventsController.js';
+import { requireAuth } from '../lib/auth.js';
 
 const router = express.Router();
 
-router.get('/', eventsController.getEvents);
-router.post('/', eventsController.postEvent);
-router.put('/:id', eventsController.putEvent);
-router.delete('/:id', eventsController.removeEvent);
+router.get('/', requireAuth, eventsController.getEvents);
+router.post('/', requireAuth, eventsController.postEvent);
+router.put('/:id', requireAuth, eventsController.putEvent);
+router.delete('/:id', requireAuth, eventsController.removeEvent);
 
 export default router;

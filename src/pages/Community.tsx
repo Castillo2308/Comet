@@ -199,6 +199,7 @@ export default function Community() {
       isLiked: false
     };
 
+    // Optimistic add with a temp id, then swap to server id when response returns
     setComments(prev => ({
       ...prev,
       [postId]: [...(prev[postId] || []), newCommentObj]
@@ -212,12 +213,22 @@ export default function Community() {
 
     setNewComment(prev => ({ ...prev, [postId]: '' }));
       try {
-        await api(`/forum/${postId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: commentText, author: user?.cedula })
-      });
-    } catch {}
+        const res = await api(`/forum/${postId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: commentText, author: user?.cedula })
+        });
+        const created = await res.json();
+        // Replace the temporary comment with the persisted one (use real _id)
+        setComments(prev => ({
+          ...prev,
+          [postId]: (prev[postId] || []).map(c => c.id === newCommentObj.id ? {
+            ...c,
+            id: String(created._id || created.id || c.id),
+            time: new Date(created.date || Date.now()).toLocaleString(),
+          } : c)
+        }));
+      } catch {}
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
