@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -27,6 +27,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('authUser');
     return saved ? JSON.parse(saved) : null;
   });
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setUser(null);
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('authToken');
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized as any);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized as any);
+  }, []);
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -38,8 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         // Get user data from backend response
         const data = await response.json();
-  setUser(data.user as User); // <-- Set the user in context
-  localStorage.setItem('authUser', JSON.stringify(data.user));
+        setUser(data.user as User);
+        localStorage.setItem('authUser', JSON.stringify(data.user));
+        if (data.token) localStorage.setItem('authToken', data.token);
         return true;
       }
       return false;
@@ -58,6 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         return true;
       }
+      // Bubble up server-side validation errors
+      try {
+        const data = await response.json();
+        if (data?.violations) {
+          throw new Error(Array.isArray(data.violations) ? data.violations.join('\n') : data.message || 'Error de validación');
+        }
+      } catch {}
       return false;
     } catch {
       return false;
@@ -67,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = () => {
     setUser(null);
     localStorage.removeItem('authUser');
+    localStorage.removeItem('authToken');
   };
 
   const updateProfile: AuthContextType['updateProfile'] = async (updates) => {

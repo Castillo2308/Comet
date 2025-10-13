@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Heart, MessageCircle, MoreHorizontal, Send, Clock, Camera, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
+import { api } from '../lib/api';
 
 interface Post {
   id: string;
@@ -111,7 +112,7 @@ export default function Community() {
 
   useEffect(() => {
     // Load real posts from backend (Mongo)
-    fetch('/api/forum')
+  fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((data) => {
         if (Array.isArray(data) && data.length) {
@@ -137,9 +138,9 @@ export default function Community() {
       .catch(()=>{});
     // Load counts for stats
     Promise.all([
-      fetch('/api/users').then(r => r.ok ? r.json() : []),
-      fetch('/api/forum').then(r => r.ok ? r.json() : []),
-      fetch('/api/forum').then(r => r.ok ? r.json() : []),
+  fetch('/api/users', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } }).then(r => r.ok ? r.json() : []),
+  fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } }).then(r => r.ok ? r.json() : []),
+  fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } }).then(r => r.ok ? r.json() : []),
     ]).then(([usersList, postsList, againPosts]) => {
       const usersCount = Array.isArray(usersList) ? usersList.length : 0;
       const postsCount = Array.isArray(postsList) ? postsList.length : 0;
@@ -162,9 +163,9 @@ export default function Community() {
         : post
     ));
     // fire-and-forget call to backend if available
-    try {
-      await fetch(`/api/forum/${postId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decrement: false }) });
-    } catch {}
+      try {
+        await api(`/forum/${postId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decrement: false }) });
+      } catch {}
   };
 
   const handleLikeComment = async (postId: string, commentId: string) => {
@@ -180,7 +181,7 @@ export default function Community() {
           : comment
       ) || []
     }));
-    try { await fetch(`/api/forum/comments/${commentId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }); } catch {}
+      try { await api(`/forum/comments/${commentId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' } }); } catch {}
   };
 
   const handleAddComment = async (postId: string) => {
@@ -210,8 +211,8 @@ export default function Community() {
     ));
 
     setNewComment(prev => ({ ...prev, [postId]: '' }));
-    try {
-      await fetch(`/api/forum/${postId}/comments`, {
+      try {
+        await api(`/forum/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: commentText, author: user?.cedula })
@@ -312,13 +313,13 @@ export default function Community() {
 
   const deletePost = async (postId: string) => {
     setPosts(prev => prev.filter(p => p.id !== postId));
-    try { await fetch(`/api/forum/${postId}`, { method: 'DELETE' }); } catch {}
+    try { await api(`/forum/${postId}`, { method: 'DELETE' }); } catch {}
   };
 
   const deleteComment = async (postId: string, commentId: string) => {
     setComments(prev => ({ ...prev, [postId]: (prev[postId] || []).filter(c => c.id !== commentId) }));
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: Math.max(0, p.comments - 1) } : p));
-    try { await fetch(`/api/forum/comments/${commentId}`, { method: 'DELETE' }); } catch {}
+    try { await api(`/forum/comments/${commentId}`, { method: 'DELETE' }); } catch {}
   };
 
   return (
@@ -357,7 +358,7 @@ export default function Community() {
         {/* New Post Form */}
         {showNewPost && (
           <section className="animate-slideInRight bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-start space-x-3 mb-3">
+            <div className="flex items-center space-x-3 mb-3">
               <div className="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center">
                 <span className="text-blue-600 font-semibold text-sm">
                   {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
@@ -368,7 +369,7 @@ export default function Community() {
                 <span className="text-gray-500 text-xs">Publicando ahora</span>
               </div>
             </div>
-            
+
             <textarea
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
@@ -418,9 +419,9 @@ export default function Community() {
                   Cancelar
                 </button>
                 <button
-                  onClick={handleAddPost}
                   disabled={!newPost.trim()}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
+                  onClick={handleAddPost}
                 >
                   Publicar
                 </button>
@@ -496,7 +497,7 @@ export default function Community() {
                         setExpandedPost(next);
                         if (next && !comments[next]) {
                           try {
-                            const res = await fetch(`/api/forum/${post.id}/comments`);
+                            const res = await api(`/forum/${post.id}/comments`);
                             if (res.ok) {
                               const data = await res.json();
                               const mapped: Comment[] = (data || []).map((c:any) => {

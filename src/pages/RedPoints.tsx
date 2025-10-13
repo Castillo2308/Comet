@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Clock, AlertTriangle, Plus, MessageCircle, User, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
+import HotspotsMap, { HotspotPoint } from '../components/HotspotsMap';
 import UserProfileModal from '../components/UserProfileModal';
 
 interface RedPoint {
@@ -36,6 +38,9 @@ export default function RedPoints() {
     timeRange: '',
     riskLevel: 'Medio' as 'Alto' | 'Medio' | 'Bajo'
   });
+  const [newPointLatLng, setNewPointLatLng] = useState<{ lat?: number; lng?: number; address?: string; placeId?: string }>({});
+  const [mapPick, setMapPick] = useState<{ lat?: number; lng?: number }>({});
+  const [newPointPlusCode, setNewPointPlusCode] = useState<string | undefined>(undefined);
 
   const getRiskLevelColor = (level: string) => {
     switch (level) {
@@ -48,6 +53,9 @@ export default function RedPoints() {
 
   const handleAddPoint = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!(newPointLatLng.lat && newPointLatLng.lng)) {
+      return; // safety: button should already be disabled
+    }
     const dangerMap: Record<string, string> = { 'Alto': 'high', 'Medio': 'medium', 'Bajo': 'low' };
     const payload = {
       title: newPoint.location,
@@ -55,10 +63,15 @@ export default function RedPoints() {
       dangertime: newPoint.timeRange,
       dangerlevel: dangerMap[newPoint.riskLevel] || 'medium',
       date: new Date().toISOString(),
-      author: user?.cedula || `${user?.name} ${user?.lastname}`
+      author: user?.cedula || `${user?.name} ${user?.lastname}`,
+  lat: typeof newPointLatLng.lat === 'string' ? Number(newPointLatLng.lat) : newPointLatLng.lat,
+  lng: typeof newPointLatLng.lng === 'string' ? Number(newPointLatLng.lng) : newPointLatLng.lng,
+      address: newPointLatLng.address,
+      placeId: newPointLatLng.placeId,
+      plusCode: newPointPlusCode,
     };
     try {
-      const res = await fetch('/api/security/hotspots', {
+      const res = await api('/security/hotspots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -76,9 +89,14 @@ export default function RedPoints() {
           riskLevel: riskBack[(created.dangerLevel || '').toLowerCase()] || newPoint.riskLevel,
           comments: []
         };
+        // Attach lat/lng so the marker shows without reloading
+        (point as any).lat = typeof created.lat === 'number' ? created.lat : newPointLatLng.lat;
+        (point as any).lng = typeof created.lng === 'number' ? created.lng : newPointLatLng.lng;
         setRedPoints(prev => [point, ...prev]);
         setNewPoint({ location: '', description: '', timeRange: '', riskLevel: 'Medio' });
+        setNewPointLatLng({});
         setShowAddModal(false);
+        setNewPointPlusCode(undefined);
       }
     } catch {
       // swallow
@@ -89,7 +107,7 @@ export default function RedPoints() {
     const commentText = newComment[pointId];
     if (!commentText?.trim()) return;
     try {
-      const res = await fetch(`/api/security/hotspots/${pointId}/comments`, {
+      const res = await api(`/security/hotspots/${pointId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: commentText, author: user?.cedula || `${user?.name} ${user?.lastname}` })
@@ -115,8 +133,8 @@ export default function RedPoints() {
   };
 
   useEffect(() => {
-    // Load hotspots and comments
-    fetch('/api/security/hotspots')
+    // Load hotspots and comments (authenticated)
+    api('/security/hotspots')
       .then(r => r.ok ? r.json() : [])
       .then(async (rows: any[]) => {
         if (!Array.isArray(rows)) return;
@@ -126,7 +144,7 @@ export default function RedPoints() {
           const id = (h._id?.toString?.() ?? h._id ?? '').toString();
           let comments: Comment[] = [];
           try {
-            const cr = await fetch(`/api/security/hotspots/${id}/comments`);
+            const cr = await api(`/security/hotspots/${id}/comments`);
             if (cr.ok) {
               const crows = await cr.json();
               comments = (Array.isArray(crows) ? crows : []).map((c: any) => ({
@@ -137,7 +155,7 @@ export default function RedPoints() {
               }));
             }
           } catch {}
-          return {
+          const base: any = {
             id: id as any,
             location: h.title || 'Zona',
             description: h.description || '',
@@ -145,8 +163,19 @@ export default function RedPoints() {
             author: h.author || 'anon',
             date: new Date(h.date).toLocaleString('es-ES'),
             riskLevel: riskBack[(h.dangerLevel || '').toLowerCase()] || 'Medio',
-            comments
-          } as RedPoint;
+            comments,
+          };
+          if (typeof h.lat === 'number' && typeof h.lng === 'number') {
+            base.lat = h.lat; base.lng = h.lng;
+          } else if (h.lat && h.lng) {
+            const nlat = Number(h.lat); const nlng = Number(h.lng);
+            if (Number.isFinite(nlat) && Number.isFinite(nlng)) { base.lat = nlat; base.lng = nlng; }
+          } else if (h.location && Array.isArray(h.location.coordinates) && h.location.coordinates.length === 2) {
+            const [lng, lat] = h.location.coordinates;
+            const nlat = Number(lat); const nlng = Number(lng);
+            if (Number.isFinite(nlat) && Number.isFinite(nlng)) { base.lat = nlat; base.lng = nlng; }
+          }
+          return base as RedPoint;
         }));
         setRedPoints(points);
       })
@@ -155,7 +184,7 @@ export default function RedPoints() {
 
   const canDeletePoint = (p: RedPoint) => !!user?.cedula && (p.author === user.cedula);
   const deletePoint = async (id: any) => {
-    try { await fetch(`/api/security/hotspots/${id}`, { method: 'DELETE' }); } catch {}
+    try { await api(`/security/hotspots/${id}`, { method: 'DELETE' }); } catch {}
     setRedPoints(prev => prev.filter(p => String(p.id) !== String(id)));
   };
 
@@ -192,7 +221,7 @@ export default function RedPoints() {
               <form onSubmit={handleAddPoint} className="space-y-4">
                 <input
                   type="text"
-                  placeholder="Ubicación específica"
+                  placeholder="Nombre del lugar (ej. Parque, barrio)"
                   value={newPoint.location}
                   onChange={(e) => setNewPoint({ ...newPoint, location: e.target.value })}
                   className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50"
@@ -227,6 +256,39 @@ export default function RedPoints() {
                   <option value="Alto">Riesgo Alto</option>
                 </select>
 
+                {/* Mini map picker */}
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-700 font-medium">Selecciona la ubicación en el mapa</label>
+                  <HotspotsMap
+                    apiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY as string}
+                    points={[]}
+                    pickMode
+                    selected={mapPick}
+                    height={220}
+                    showAutocomplete
+                    onPlaceSelected={(place) => {
+                      const lat = place.geometry?.location?.lat?.();
+                      const lng = place.geometry?.location?.lng?.();
+                      setMapPick({ lat, lng });
+                      setNewPointLatLng({ lat, lng, address: place.formatted_address, placeId: place.place_id });
+                      const pc = (place as any).plus_code?.global_code || (place as any).plus_code?.compound_code;
+                      if (pc) setNewPointPlusCode(pc);
+                      if (!newPoint.location && place.name) setNewPoint(prev => ({ ...prev, location: place.name! }));
+                    }}
+                    onSelect={({ lat, lng }) => {
+                      setMapPick({ lat, lng });
+                      setNewPointLatLng(prev => ({ ...prev, lat, lng }));
+                    }}
+                  />
+                  <p className="text-xs text-gray-500">Puedes buscar el lugar o hacer clic en el mapa para seleccionarlo.</p>
+                  {(newPointLatLng.lat && newPointLatLng.lng) && (
+                    <p className="text-xs text-gray-700">Ubicación seleccionada: lat {newPointLatLng.lat?.toFixed(6)}, lng {newPointLatLng.lng?.toFixed(6)}</p>
+                  )}
+                  {newPointPlusCode && (
+                    <p className="text-xs text-gray-700">Plus Code: {newPointPlusCode}</p>
+                  )}
+                </div>
+
                 <div className="flex space-x-3 pt-4">
                   <button
                     type="button"
@@ -237,7 +299,8 @@ export default function RedPoints() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 font-medium transform hover:scale-105 active:scale-95"
+                    className="flex-1 py-3 px-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 font-medium transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!(newPointLatLng.lat && newPointLatLng.lng)}
                   >
                     Añadir Punto
                   </button>
@@ -262,95 +325,25 @@ export default function RedPoints() {
         <p className="text-gray-600 text-xs sm:text-sm">Aquí puedes mantenerte al tanto sobre la seguridad del cantón.</p>
       </div>
 
-      {/* Map Section */}
+      {/* Map Section with Google Maps */}
       <div className="px-3 sm:px-4 py-3 sm:py-4">
         <section className="animate-fadeInUp mb-4">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-100 relative overflow-hidden">
-            {/* Enhanced Realistic Map Background */}
-            <div className="absolute inset-0">
-              {/* Base map color */}
-              <div className="w-full h-full bg-gradient-to-br from-green-100 via-blue-50 to-green-100"></div>
-              
-              {/* Streets and roads */}
-              <div className="absolute inset-0">
-                {/* Main horizontal roads */}
-                <div className="absolute top-1/4 left-0 right-0 h-2 bg-gray-300 opacity-80 rounded-full"></div>
-                <div className="absolute top-1/2 left-0 right-0 h-3 bg-gray-400 opacity-90 rounded-full"></div>
-                <div className="absolute top-3/4 left-0 right-0 h-2 bg-gray-300 opacity-70 rounded-full"></div>
-                
-                {/* Vertical streets */}
-                <div className="absolute top-0 bottom-0 left-1/4 w-2 bg-gray-300 opacity-80 rounded-full"></div>
-                <div className="absolute top-0 bottom-0 left-1/2 w-3 bg-gray-400 opacity-90 rounded-full"></div>
-                <div className="absolute top-0 bottom-0 right-1/4 w-2 bg-gray-300 opacity-70 rounded-full"></div>
-                
-                {/* Buildings */}
-                <div className="absolute top-4 left-4 w-6 h-6 bg-gray-200 rounded opacity-60 shadow-sm"></div>
-                <div className="absolute top-8 right-6 w-4 h-8 bg-gray-300 rounded opacity-70 shadow-sm"></div>
-                <div className="absolute bottom-12 left-8 w-8 h-4 bg-gray-200 rounded opacity-60 shadow-sm"></div>
-                <div className="absolute bottom-6 right-8 w-6 h-6 bg-gray-300 rounded opacity-70 shadow-sm"></div>
-                
-                {/* Parks and green areas */}
-                <div className="absolute top-6 right-12 w-10 h-10 bg-green-200 rounded-full opacity-60 shadow-sm"></div>
-                <div className="absolute bottom-8 left-12 w-12 h-8 bg-green-200 rounded-lg opacity-60 shadow-sm"></div>
-                
-                {/* Water features */}
-                <div className="absolute top-12 left-1/3 w-16 h-1 bg-blue-300 rounded-full opacity-70"></div>
-              </div>
-            </div>
-            
-            {/* Map content */}
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 text-sm">Alajuelita - Zonas de Riesgo</h3>
-                <div className="bg-white px-2 py-1 rounded-full shadow-sm border">
-                  <span className="text-xs font-medium text-blue-600">Mapa Interactivo</span>
-                </div>
-              </div>
-              
-              {/* Simulated map with danger points */}
-              <div className="relative h-40 bg-white bg-opacity-30 rounded-lg border border-blue-200 backdrop-blur-sm">
-                {/* Enhanced danger points with better positioning */}
-                <div className="absolute top-3 left-6 w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Parque Central - Alto Riesgo"></div>
-                <div className="absolute top-8 right-8 w-4 h-4 bg-yellow-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Puente del Río - Riesgo Medio"></div>
-                <div className="absolute bottom-6 left-1/2 w-4 h-4 bg-red-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Parada de Bus - Alto Riesgo"></div>
-                <div className="absolute bottom-3 right-6 w-4 h-4 bg-orange-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Zona Comercial - Riesgo Medio"></div>
-                <div className="absolute top-1/2 left-4 w-4 h-4 bg-yellow-500 rounded-full animate-pulse shadow-lg border-2 border-white cursor-pointer hover:scale-125 transition-transform duration-200" title="Escuela - Riesgo Bajo"></div>
-                
-                {/* User location indicator */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="w-3 h-3 bg-blue-600 rounded-full border-2 border-white shadow-lg animate-ping"></div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-blue-600 rounded-full"></div>
-                </div>
-                
-                {/* Location labels */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-                    <span className="text-xs text-blue-700 font-medium bg-white bg-opacity-80 px-2 py-1 rounded-full">Tu ubicación</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Enhanced Legend */}
-              <div className="flex items-center justify-between mt-3 text-xs bg-white bg-opacity-80 rounded-lg p-2 backdrop-blur-sm">
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span className="text-red-700 font-medium">Alto</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <span className="text-yellow-700 font-medium">Medio</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <span className="text-orange-700 font-medium">Bajo</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                  <span className="text-blue-700 font-medium">Tu ubicación</span>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl p-4 border border-blue-100">
+            <h3 className="font-semibold text-gray-900 text-sm mb-2">Mapa de Zonas de Riesgo</h3>
+            <HotspotsMap
+              apiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY as string}
+              points={redPoints.map<HotspotPoint>(p => ({ id: p.id, title: p.location, lat: (p as any).lat, lng: (p as any).lng, riskLevel: p.riskLevel }))}
+              onPlaceSelected={(place) => {
+                const lat = place.geometry?.location?.lat?.();
+                const lng = place.geometry?.location?.lng?.();
+                setNewPointLatLng({ lat, lng, address: place.formatted_address, placeId: place.place_id });
+                setNewPoint(prev => ({ ...prev, location: place.name || prev.location }));
+              }}
+              onUserLocation={() => {
+                // Optionally prefill new point with user location if desired
+              }}
+            />
+            <p className="text-xs text-gray-500 mt-1">Se solicitará permiso para acceder a tu ubicación si presionas “Mi ubicación”.</p>
           </div>
         </section>
 

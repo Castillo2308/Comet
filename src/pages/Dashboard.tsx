@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { api } from '../lib/api';
 import { MapPin, MoreHorizontal, Calendar, Users, Shield, AlertTriangle, Clock, TrendingUp, Activity, Bell, CheckCircle } from 'lucide-react';
 import UserProfileModal from '../components/UserProfileModal';
 import { useAuth } from '../context/AuthContext';
@@ -60,7 +61,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
 
   useEffect(() => {
     // Fetch user reports from backend
-    fetch('/api/reports')
+  fetch('/api/reports', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((rows: any[]) => {
         if (!Array.isArray(rows)) return;
@@ -78,7 +79,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         setReports(mapped);
       }).catch(()=>{});
     // Fetch municipal news
-    fetch('/api/news')
+  fetch('/api/news', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((rows: any[]) => {
         if (!Array.isArray(rows)) return;
@@ -123,7 +124,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
 
   const handleDeleteReport = async (id: number | string) => {
     try {
-      const res = await fetch(`/api/reports/${id}` , { method: 'DELETE' });
+      const res = await api(`/reports/${id}` , { method: 'DELETE' });
       if (!res.ok) return;
       setReports(prev => prev.filter(r => r.id !== id));
       setMenuOpenId(null);

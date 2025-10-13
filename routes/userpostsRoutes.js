@@ -1,16 +1,17 @@
 import express from 'express';
 import controller from '../controllers/userpostsController.js';
+import { requireAuth } from '../lib/auth.js';
 
 const router = express.Router();
 
-router.get('/', controller.list);
-router.post('/', controller.create);
-router.put('/:id', controller.update);
-router.post('/:id/like', controller.like);
-router.delete('/:id', controller.remove);
-router.get('/:id/comments', controller.listComments);
-router.post('/:id/comments', controller.addComment);
-router.post('/comments/:commentId/like', controller.likeComment);
-router.delete('/comments/:commentId', controller.removeComment);
+router.get('/', requireAuth, controller.list);
+router.post('/', requireAuth, controller.create);
+router.put('/:id', requireAuth, controller.update);
+router.post('/:id/like', requireAuth, controller.like);
+router.delete('/:id', requireAuth, controller.remove);
+router.get('/:id/comments', requireAuth, controller.listComments);
+router.post('/:id/comments', requireAuth, controller.addComment);
+router.post('/comments/:commentId/like', requireAuth, controller.likeComment);
+router.delete('/comments/:commentId', requireAuth, controller.removeComment);
 
 export default router;

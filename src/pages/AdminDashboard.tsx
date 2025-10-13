@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 
 interface Report {
   id: number;
@@ -217,7 +218,7 @@ export default function AdminDashboard() {
       report.id === reportId ? { ...report, status: newStatus } : report
     ));
     // Persist to backend
-    fetch(`/api/reports/${reportId}`, {
+    api(`/reports/${reportId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
@@ -231,23 +232,23 @@ export default function AdminDashboard() {
 
   const handleDeleteUser = async (cedula: string) => {
     if (!window.confirm('¿Eliminar este usuario y sus registros asociados?')) return;
-    try { await fetch(`/api/users/${cedula}`, { method: 'DELETE' }); } catch {}
+  try { await api(`/users/${cedula}`, { method: 'DELETE' }); } catch {}
     setUsers(prev => prev.filter(u => (u.cedula || String(u.id)) !== cedula));
   };
 
   const handleDeleteComplaint = async (id: number) => {
-    try { await fetch(`/api/complaints/${id}`, { method: 'DELETE' }); } catch {}
+  try { await api(`/complaints/${id}`, { method: 'DELETE' }); } catch {}
     setComplaints(prev => prev.filter((c:any) => c.id !== id));
   };
 
   const handleDeleteHotspot = async (id: string) => {
-    try { await fetch(`/api/security/hotspots/${id}`, { method: 'DELETE' }); } catch {}
+  try { await api(`/security/hotspots/${id}`, { method: 'DELETE' }); } catch {}
     setHotspots(prev => prev.filter((h:any) => (h._id || h.id) !== id));
   };
 
   const handleDeleteEvent = (eventId: number) => {
     setEvents(events.filter(event => event.id !== eventId));
-    fetch(`/api/events/${eventId}`, { method: 'DELETE' }).catch(()=>{});
+  api(`/events/${eventId}`, { method: 'DELETE' }).catch(()=>{});
   };
 
   const handleBulkAction = (action: string) => {
@@ -632,7 +633,7 @@ export default function AdminDashboard() {
                 if (adminEditingUser) {
                   const payload: any = { name: adminForm.name, lastname: adminForm.lastname, email: adminForm.email, role: adminForm.role };
                   if (adminForm.password) payload.password = adminForm.password;
-                  const res = await fetch(`/api/users/${adminForm.cedula}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  const res = await api(`/users/${adminForm.cedula}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                   if (res.ok) {
                     await res.json().catch(()=>null);
                     setUsers(prev => prev.map(u => (String(u.cedula) === String(adminForm.cedula)) ? { ...u, name: `${adminForm.name} ${adminForm.lastname}`, email: adminForm.email, role: adminForm.role } : u));
@@ -784,7 +785,7 @@ export default function AdminDashboard() {
                 };
                 try {
                   if (editingItem) {
-                    const res = await fetch(`/api/events/${editingItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const res = await api(`/events/${editingItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (res.ok) {
                       const updated = await res.json();
                       setEvents(prev => prev.map(ev => ev.id === editingItem.id ? {
@@ -943,7 +944,7 @@ export default function AdminDashboard() {
             <form className="space-y-3" onSubmit={async (e) => {
               e.preventDefault();
               if (editingCommunityPost) {
-                const res = await fetch(`/api/forum/${editingCommunityPost._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: communityForm.content, photo_link: communityForm.photo_link }) });
+                const res = await api(`/forum/${editingCommunityPost._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: communityForm.content, photo_link: communityForm.photo_link }) });
                 if (res.ok) {
                   const updated = await res.json();
                   setCommunityPosts(prev => prev.map(p => (p._id === updated._id) ? updated : p));
@@ -985,7 +986,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex gap-1">
                   <button onClick={() => { setEditingCommunityPost(p); setCommunityForm({ content: p.content || '', photo_link: p.photo_link || '' }); setCommunityModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
-                  <button onClick={async () => { const res = await fetch(`/api/forum/${p._id}`, { method: 'DELETE' }); if (res.ok) setCommunityPosts(prev => prev.filter(x => x._id !== p._id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={async () => { const res = await api(`/forum/${p._id}`, { method: 'DELETE' }); if (res.ok) setCommunityPosts(prev => prev.filter(x => x._id !== p._id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
 
@@ -999,7 +1000,7 @@ export default function AdminDashboard() {
                         <div>{c.content}</div>
                         <div className="text-[10px] text-gray-500">{new Date(c.date).toLocaleString('es-ES')}</div>
                       </div>
-                      <button onClick={async () => { const res = await fetch(`/api/forum/comments/${c._id}`, { method: 'DELETE' }); if (res.ok) setCommunityComments(prev => ({ ...prev, [p._id]: (prev[p._id]||[]).filter(x => x._id !== c._id) })); }} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                      <button onClick={async () => { const res = await api(`/forum/comments/${c._id}`, { method: 'DELETE' }); if (res.ok) setCommunityComments(prev => ({ ...prev, [p._id]: (prev[p._id]||[]).filter(x => x._id !== c._id) })); }} className="p-1 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   ))}
                 </div>
@@ -1007,7 +1008,7 @@ export default function AdminDashboard() {
                   e.preventDefault();
                   const content = commentDrafts[p._id] || '';
                   if (!content.trim()) return;
-                  const res = await fetch(`/api/forum/${p._id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, author: user?.cedula || 'admin' }) });
+                  const res = await api(`/forum/${p._id}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, author: user?.cedula || 'admin' }) });
                   if (res.ok) {
                     const created = await res.json();
                     setCommunityComments(prev => ({ ...prev, [p._id]: [ ...(prev[p._id]||[]), created ] }));
@@ -1031,7 +1032,7 @@ export default function AdminDashboard() {
   // Initial data loads from backend
   useEffect(() => {
     // Users
-    fetch('/api/users')
+  fetch('/api/users', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((rows) => {
         if (Array.isArray(rows) && rows.length) {
@@ -1051,7 +1052,7 @@ export default function AdminDashboard() {
       }).catch(()=>{});
 
     // Events
-    fetch('/api/events')
+  fetch('/api/events', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((rows) => {
         if (Array.isArray(rows) && rows.length) {
@@ -1070,7 +1071,7 @@ export default function AdminDashboard() {
       }).catch(()=>{});
 
     // Reports
-    fetch('/api/reports')
+    api('/reports')
       .then(r => r.ok ? r.json() : [])
       .then((rows) => {
         if (Array.isArray(rows) && rows.length) {
@@ -1089,20 +1090,20 @@ export default function AdminDashboard() {
           setReports(mapped);
         }
       }).catch(()=>{});
-    fetch('/api/news')
+    api('/news')
       .then(r => r.ok ? r.json() : [])
       .then((rows) => { if (Array.isArray(rows)) setNewsItems(rows); })
       .catch(()=>{});
 
     // Complaints
-    fetch('/api/complaints')
+  fetch('/api/complaints', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((rows:any[]) => {
         if (Array.isArray(rows)) setComplaints(rows);
       }).catch(()=>{});
 
     // Hotspots + load comments per hotspot for admin view
-    fetch('/api/security/hotspots')
+  fetch('/api/security/hotspots', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then(async (rows:any[]) => {
         if (Array.isArray(rows)) {
@@ -1111,7 +1112,7 @@ export default function AdminDashboard() {
           for (const h of rows) {
             const id = (h._id || h.id);
             try {
-              const cr = await fetch(`/api/security/hotspots/${id}/comments`);
+              const cr = await api(`/security/hotspots/${id}/comments`);
               if (cr.ok) {
                 entries[String(id)] = await cr.json();
               }
@@ -1123,13 +1124,13 @@ export default function AdminDashboard() {
       .catch(()=>{});
 
     // Dangerous Areas (Postgres)
-    fetch('/api/dangerous-areas')
+  fetch('/api/dangerous-areas', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((rows:any[]) => { if (Array.isArray(rows)) setDangerous(rows); })
       .catch(()=>{});
 
     // Security News
-    fetch('/api/security-news')
+  fetch('/api/security-news', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
       .then(r => r.ok ? r.json() : [])
       .then((rows:any[]) => { if (Array.isArray(rows)) setSecurityNews(rows); })
       .catch(()=>{});
@@ -1137,7 +1138,7 @@ export default function AdminDashboard() {
     // Comunidad (admin only pre-load)
     if ((user?.role || 'user') === 'admin') {
       setCommunityLoading(true);
-      fetch('/api/forum')
+  fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
         .then(r => r.ok ? r.json() : [])
         .then(async (rows:any[]) => {
           const posts = Array.isArray(rows) ? rows : [];
@@ -1145,7 +1146,7 @@ export default function AdminDashboard() {
           const all: Record<string, any[]> = {};
           for (const p of posts) {
             try {
-              const cr = await fetch(`/api/forum/${p._id || p.id}/comments`);
+              const cr = await api(`/forum/${p._id || p.id}/comments`);
               if (cr.ok) all[p._id || p.id] = await cr.json();
             } catch {}
           }
@@ -1182,7 +1183,7 @@ export default function AdminDashboard() {
               e.preventDefault();
               const payload = { type: newsForm.type, title: newsForm.title, description: newsForm.description, insurgent: !!newsForm.insurgent, date: new Date().toISOString(), author: 'admin' };
               if (editingNews) {
-                const res = await fetch(`/api/news/${editingNews.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await api(`/news/${editingNews.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (res.ok) {
                   const updated = await res.json();
                   setNewsItems(prev => prev.map(n => n.id === editingNews.id ? updated : n));
@@ -1226,7 +1227,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex gap-1">
                 <button onClick={() => { setEditingNews(n); setNewsForm({ type: n.type || '', title: n.title || '', description: n.description || '', insurgent: !!n.insurgent }); setNewsModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
-                <button onClick={async () => { const res = await fetch(`/api/news/${n.id}`, { method: 'DELETE' }); if (res.ok) setNewsItems(prev => prev.filter(x => x.id !== n.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={async () => { const res = await api(`/news/${n.id}`, { method: 'DELETE' }); if (res.ok) setNewsItems(prev => prev.filter(x => x.id !== n.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           ))}
@@ -1264,7 +1265,7 @@ export default function AdminDashboard() {
               e.preventDefault();
               const payload = { title: dangerForm.title, description: dangerForm.description, location: dangerForm.location, date: dangerForm.date ? new Date(dangerForm.date).toISOString() : new Date().toISOString(), dangerlevel: dangerForm.dangerlevel, author: 'admin' };
               if (editingDanger) {
-                const res = await fetch(`/api/dangerous-areas/${editingDanger.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await api(`/dangerous-areas/${editingDanger.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (res.ok) {
                   const updated = await res.json();
                   setDangerous(prev => prev.map(d => d.id === editingDanger.id ? updated : d));
@@ -1319,7 +1320,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex gap-1">
                 <button onClick={() => { setEditingDanger(d); setDangerForm({ title: d.title || '', description: d.description || '', location: d.location || '', date: (d.date ? new Date(d.date).toISOString().slice(0,10) : ''), dangerlevel: (d.dangerlevel || 'medium') }); setDangerModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
-                <button onClick={async () => { const res = await fetch(`/api/dangerous-areas/${d.id}`, { method: 'DELETE' }); if (res.ok) setDangerous(prev => prev.filter(x => x.id !== d.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={async () => { const res = await api(`/dangerous-areas/${d.id}`, { method: 'DELETE' }); if (res.ok) setDangerous(prev => prev.filter(x => x.id !== d.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           );})}
@@ -1357,7 +1358,7 @@ export default function AdminDashboard() {
               e.preventDefault();
               const payload = { type: securityNewsForm.type, title: securityNewsForm.title, description: securityNewsForm.description, insurgent: !!securityNewsForm.insurgent, date: new Date().toISOString(), author: 'admin' };
               if (editingSecurityNews) {
-                const res = await fetch(`/api/security-news/${editingSecurityNews.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await api(`/security-news/${editingSecurityNews.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (res.ok) {
                   const updated = await res.json();
                   setSecurityNews(prev => prev.map(n => n.id === editingSecurityNews.id ? updated : n));
@@ -1401,7 +1402,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex gap-1">
                 <button onClick={() => { setEditingSecurityNews(n); setSecurityNewsForm({ type: n.type || '', title: n.title || '', description: n.description || '', insurgent: !!n.insurgent }); setSecurityNewsModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
-                <button onClick={async () => { const res = await fetch(`/api/security-news/${n.id}`, { method: 'DELETE' }); if (res.ok) setSecurityNews(prev => prev.filter(x => x.id !== n.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={async () => { const res = await api(`/security-news/${n.id}`, { method: 'DELETE' }); if (res.ok) setSecurityNews(prev => prev.filter(x => x.id !== n.id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           ))}
