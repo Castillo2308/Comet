@@ -35,6 +35,12 @@ export default function SignIn() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50">
       <div className="max-w-md w-full space-y-8 animate-fadeInUp">
         <div className="text-center">
+          {/* COMET Logo */}
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 rounded-full bg-white shadow-lg flex items-center justify-center p-4">
+              <img src="/COMET-isotipo.png" alt="COMET Logo" className="w-full h-full object-contain" />
+            </div>
+          </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Iniciar sesión</h2>
           <p className="text-gray-600">Bienvenido, ingresa para continuar a tu cuenta</p>
         </div>

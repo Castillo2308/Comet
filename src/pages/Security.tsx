@@ -258,7 +258,13 @@ export default function Security() {
       {/* Header */}
       <div className="bg-white px-3 sm:px-4 py-3 sm:py-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-lg sm:text-xl font-bold text-blue-600">Seguridad</h1>
+          <div className="flex items-center gap-3">
+            {/* Police Logo beside title */}
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-lg flex items-center justify-center p-2 border-2 border-blue-100">
+              <img src="/police-logo.svg" alt="Police Logo" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-lg sm:text-xl font-bold text-blue-600">Seguridad</h1>
+          </div>
           <button
             onClick={() => setShowProfileModal(true)}
             className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"

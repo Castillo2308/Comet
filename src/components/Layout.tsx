@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import BottomNavigation from './BottomNavigation';
+import ChatbotToggle from './ChatbotToggle';
+import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +11,7 @@ interface LayoutProps {
 
 export default function Layout({ children, activeTab, onTabChange }: LayoutProps) {
   const [reports, setReports] = useState<any[]>([]);
+  const { user } = useAuth();
 
   const handleReportSubmit = (report: any) => {
     setReports(prev => [report, ...prev]);
@@ -29,6 +32,8 @@ export default function Layout({ children, activeTab, onTabChange }: LayoutProps
         onTabChange={onTabChange}
         onReportSubmit={handleReportSubmit}
       />
+      {/* Show chatbot toggle only for regular users (not admin) */}
+      {user && user.role !== 'admin' && <ChatbotToggle />}
     </div>
   );
 }

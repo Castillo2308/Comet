@@ -169,9 +169,15 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
       {/* Enhanced Header with Gradient */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-3 sm:px-4 py-4 sm:py-5 shadow-xl">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-white mb-1">¡Bienvenido, {user?.name}!</h1>
-            <p className="text-blue-100 text-xs sm:text-sm">Aquí puedes conocer más de tu cantón y mantenerte informado.</p>
+          <div className="flex items-center gap-3">
+            {/* Municipality Logo beside title */}
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-lg flex items-center justify-center p-2">
+              <img src="/municipality-logo.svg" alt="Municipalidad Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-white mb-1">¡Bienvenido, {user?.name}!</h1>
+              <p className="text-blue-100 text-xs sm:text-sm">Aquí puedes conocer más de tu cantón y mantenerte informado.</p>
+            </div>
           </div>
           <button
             onClick={() => setShowProfileModal(true)}
