@@ -10,7 +10,6 @@ export default function Buses() {
   const { user } = useAuth();
   const [active, setActive] = useState<ActiveBus[]>([]);
   const [centerId, setCenterId] = useState<string | null>(null);
-  const [mapKey, setMapKey] = useState(0);
   const [applyOpen, setApplyOpen] = useState(false);
   const [myApp, setMyApp] = useState<any | null>(null);
   const [form, setForm] = useState({ busNumber: '', busId: '', routeStart: '', routeEnd: '', fee: '', driverLicense: '' });
@@ -20,6 +19,7 @@ export default function Buses() {
   const locationWatchRef = useRef<number | null>(null);
   const lastSentRef = useRef<number>(0);
   const cedulaRef = useRef<string | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement | null>(null);
 
   const googleKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string;
 
@@ -48,7 +48,8 @@ export default function Buses() {
 
   useEffect(() => {
     fetchActive();
-    pollRef.current = window.setInterval(fetchActive, 10000) as unknown as number;
+    // Refresh active buses roughly every 20 seconds
+    pollRef.current = window.setInterval(fetchActive, 20000) as unknown as number;
     return () => { if (pollRef.current) window.clearInterval(pollRef.current); };
   }, [fetchActive]);
 
@@ -61,10 +62,7 @@ export default function Buses() {
 
   const points = useMemo(() => active.map((b, i) => ({ id: b._id || String(i), title: b.busNumber ? `Bus ${b.busNumber}` : 'Bus', lat: b.lat, lng: b.lng })), [active]);
 
-  useEffect(() => {
-    // Trigger map recenter if centerId changes
-    if (centerId) setMapKey(k => k + 1);
-  }, [centerId]);
+  // Map now listens to selected prop; no need to force remount
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,8 +90,11 @@ export default function Buses() {
 
   const selected = useMemo(() => {
     const f = active.find(b => b._id === centerId);
-    return f?.lat && f?.lng ? { lat: f.lat, lng: f.lng } : undefined;
+    const hasLat = typeof f?.lat === 'number';
+    const hasLng = typeof f?.lng === 'number';
+    return hasLat && hasLng ? { lat: f!.lat as number, lng: f!.lng as number } : undefined;
   }, [centerId, active]);
+  const selectedId = useMemo(() => centerId ?? undefined, [centerId]);
 
   // Driver helpers
   const getPositionOnce = () => new Promise<GeolocationPosition>((resolve, reject) => {
@@ -281,12 +282,12 @@ export default function Buses() {
             </div>
           </div>
         )}
-        <section>
+  <section ref={mapSectionRef}>
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center"><MapPin className="h-5 w-5 mr-2 text-blue-600"/>Mapa</h2>
             <div className="flex items-center gap-2 text-sm text-green-700"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/> En vivo</div>
           </div>
-          <HotspotsMap key={mapKey} apiKey={googleKey} points={points} selected={selected} height={360} showAutocomplete={false} />
+          <HotspotsMap apiKey={googleKey} points={points} selected={selected} selectedId={selectedId} height={360} showAutocomplete={false} />
         </section>
 
         <section>
@@ -305,7 +306,11 @@ export default function Buses() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setCenterId(b._id)} className="px-3 py-2 rounded bg-blue-500 text-white text-sm flex items-center gap-1"><Navigation className="h-4 w-4"/>Ubicar en el mapa</button>
+                  {(typeof b.lat === 'number' && typeof b.lng === 'number') ? (
+                    <button onClick={() => { setCenterId(b._id); mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-3 py-2 rounded bg-blue-500 text-white text-sm flex items-center gap-1"><Navigation className="h-4 w-4"/>Ubicar en el mapa</button>
+                  ) : (
+                    <span className="text-xs text-gray-500">Sin ubicación</span>
+                  )}
                 </div>
               </div>
             ))}

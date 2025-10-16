@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, Marker, useLoadScript, Autocomplete } from '@react-google-maps/api';
 
 export interface HotspotPoint {
@@ -18,6 +18,8 @@ interface Props {
   // New optional props for picking a single location
   pickMode?: boolean;
   selected?: { lat?: number; lng?: number };
+  // Optional selected point id to highlight a specific marker
+  selectedId?: string | number;
   onSelect?: (coords: { lat: number; lng: number }) => void;
   height?: number; // default 300
   showAutocomplete?: boolean; // default true
@@ -27,11 +29,12 @@ const baseContainerStyle: React.CSSProperties = { width: '100%', height: 300, bo
 
 // You can color markers by risk if desired
 
-export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLocation, pickMode = false, selected, onSelect, height, showAutocomplete = true }: Props) {
+export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLocation, pickMode = false, selected, selectedId, onSelect, height, showAutocomplete = true }: Props) {
   const { isLoaded } = useLoadScript({ googleMapsApiKey: apiKey, libraries: ['places'] as any });
   const [center, setCenter] = useState<{lat: number; lng: number}>({ lat: 9.9118, lng: -84.1012 }); // Default: Alajuelita approx.
   const [zoom, setZoom] = useState(13);
   const autoRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const selectedRef = useRef<{ lat: number; lng: number } | null>(null);
 
   const handleAskLocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -74,6 +77,21 @@ export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLoc
     onSelect?.({ lat, lng });
   }, [pickMode, onSelect]);
 
+  // Recenter map when a new external selected location is provided
+  useEffect(() => {
+    const hasLat = typeof selected?.lat === 'number';
+    const hasLng = typeof selected?.lng === 'number';
+    if (hasLat && hasLng) {
+      const next = { lat: selected!.lat as number, lng: selected!.lng as number };
+      const prev = selectedRef.current;
+      if (!prev || prev.lat !== next.lat || prev.lng !== next.lng) {
+        setCenter(next);
+        setZoom(z => (z < 15 ? 16 : z));
+        selectedRef.current = next;
+      }
+    }
+  }, [selected?.lat, selected?.lng]);
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -93,10 +111,17 @@ export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLoc
       {isLoaded ? (
         <GoogleMap onClick={handleMapClick} mapContainerStyle={containerStyle} center={center} zoom={zoom} options={{ streetViewControl: false, fullscreenControl: false }}>
           {markers.map((p) => (
-            <Marker key={`m-${p.id}`} position={{ lat: p.lat!, lng: p.lng! }} title={p.title} />
+            <Marker
+              key={`m-${p.id}`}
+              position={{ lat: p.lat!, lng: p.lng! }}
+              title={p.title}
+              animation={selectedId !== undefined && p.id === selectedId ? google.maps.Animation.DROP : undefined}
+              zIndex={p.id === selectedId ? 999 : undefined}
+            />
           ))}
-          {pickMode && selected?.lat !== undefined && selected?.lng !== undefined && (
-            <Marker key="selected" position={{ lat: selected.lat, lng: selected.lng }} />
+          {/* Ensure selected location is visible even if not part of markers or when pickMode is active */}
+          {(selected?.lat !== undefined && selected?.lng !== undefined && (!selectedId || !markers.some(m => m.id === selectedId))) && (
+            <Marker key="selected" position={{ lat: selected.lat!, lng: selected.lng! }} animation={google.maps.Animation.BOUNCE} />
           )}
         </GoogleMap>
       ) : (
