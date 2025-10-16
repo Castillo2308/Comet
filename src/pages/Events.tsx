@@ -13,7 +13,6 @@ interface Event {
   category: string;
   attendees: number;
   maxAttendees?: number;
-  image: string;
   organizer: string;
   price: string;
   rating: number;
@@ -30,7 +29,6 @@ const mockEvents: Event[] = [
     category: 'Comercio',
     attendees: 45,
     maxAttendees: 100,
-    image: 'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Municipalidad de Alajuelita',
     price: 'Gratis',
     rating: 4.8
@@ -45,7 +43,6 @@ const mockEvents: Event[] = [
     category: 'Cultural',
     attendees: 120,
     maxAttendees: 200,
-    image: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Casa de la Cultura',
     price: 'Gratis',
     rating: 4.9
@@ -60,7 +57,6 @@ const mockEvents: Event[] = [
     category: 'Deportes',
     attendees: 80,
     maxAttendees: 150,
-    image: 'https://images.pexels.com/photos/274506/pexels-photo-274506.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Liga Deportiva Local',
     price: '₡1,000',
     rating: 4.6
@@ -75,7 +71,6 @@ const mockEvents: Event[] = [
     category: 'Educativo',
     attendees: 25,
     maxAttendees: 40,
-    image: 'https://images.pexels.com/photos/3735218/pexels-photo-3735218.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Grupo Ecológico',
     price: 'Gratis',
     rating: 4.7
@@ -102,7 +97,6 @@ export default function Events() {
             location: e.location,
             category: e.type || 'Social',
             attendees: Number(e.attendants) || 0,
-            image: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
             organizer: e.host || 'Municipalidad',
             price: e.price ? `₡${e.price}` : 'Gratis',
             rating: 4.5
@@ -211,19 +205,14 @@ export default function Events() {
               className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {/* Event Image */}
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                />
-                <div className="absolute top-3 left-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
+              {/* Event Header with Category Badge */}
+              <div className="relative bg-gradient-to-r from-blue-50 to-blue-100 p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
                     {event.category}
                   </span>
+                
                 </div>
-                {/* Interactive buttons removed (favorito/compartir) */}
               </div>
 
               {/* Event Content */}

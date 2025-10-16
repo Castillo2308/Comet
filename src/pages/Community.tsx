@@ -136,20 +136,18 @@ export default function Community() {
         }
       })
       .catch(()=>{});
-    // Load counts for stats
-    Promise.all([
-  fetch('/api/users', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } }).then(r => r.ok ? r.json() : []),
-  fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } }).then(r => r.ok ? r.json() : []),
-  fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } }).then(r => r.ok ? r.json() : []),
-    ]).then(([usersList, postsList, againPosts]) => {
-      const usersCount = Array.isArray(usersList) ? usersList.length : 0;
-      const postsCount = Array.isArray(postsList) ? postsList.length : 0;
-      let commentsCount = 0;
-      if (Array.isArray(againPosts)) {
-        commentsCount = againPosts.reduce((acc: number, p: any) => acc + (p.comments_count || 0), 0);
-      }
-      setStats({ users: usersCount, posts: postsCount, comments: commentsCount });
-    }).catch(()=>{});
+    // Load counts for stats (removed /api/users fetch since it requires admin privileges)
+    fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then((postsList) => {
+        const postsCount = Array.isArray(postsList) ? postsList.length : 0;
+        let commentsCount = 0;
+        if (Array.isArray(postsList)) {
+          commentsCount = postsList.reduce((acc: number, p: any) => acc + (p.comments_count || 0), 0);
+        }
+        setStats({ users: 0, posts: postsCount, comments: commentsCount });
+      })
+      .catch(()=>{});
   }, []);
 
   const handleLikePost = async (postId: string) => {
@@ -611,11 +609,7 @@ export default function Community() {
         {/* Community Stats */}
         <section className="animate-fadeInUp bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <h3 className="font-semibold text-gray-900 mb-3 text-sm">Estadísticas de la Comunidad</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="transform transition-transform duration-200 hover:scale-110">
-              <div className="text-lg font-bold text-blue-600">{stats.users}</div>
-              <div className="text-xs text-gray-600">Miembros</div>
-            </div>
+          <div className="grid grid-cols-2 gap-4 text-center">
             <div className="transform transition-transform duration-200 hover:scale-110">
               <div className="text-lg font-bold text-green-600">{stats.posts}</div>
               <div className="text-xs text-gray-600">Publicaciones</div>
