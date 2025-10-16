@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Square, MapPin } from 'lucide-react';
 import { api } from '../lib/api';
+import { setupLocationResponder, startServiceWorkerPings, stopServiceWorkerPings } from '../lib/swClient';
 import { useAuth } from '../context/AuthContext';
 
 export default function DriverService() {
@@ -12,6 +13,7 @@ export default function DriverService() {
   const lastSentRef = useRef<number>(0);
   const cedulaRef = useRef<string | null>(null);
   const pingIntervalRef = useRef<number | null>(null);
+  const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
 
   // Helper function to resolve and memoize the driver's cedula just like startService expects.
   const getCedula = useCallback(() => {
@@ -60,8 +62,10 @@ export default function DriverService() {
   });
 
   const sendPing = useCallback(async (lat: number, lng: number) => {
+    const timestamp = new Date().toISOString();
+    console.log(`🚌 [PING ATTEMPT] ${timestamp} | Lat: ${lat.toFixed(6)} | Lng: ${lng.toFixed(6)}`);
+    
     try {
-      console.log('[DriverService] sendPing invoked with lat/lng:', lat, lng);
       const cedula = getCedula();
       if (!cedula) throw new Error('No se pudo identificar al conductor');
 
@@ -71,20 +75,19 @@ export default function DriverService() {
         body: JSON.stringify({ cedula, lat, lng })
       });
 
-      console.log('[DriverService] sendPing response status:', r.status);
+      console.log(`✅ [PING SUCCESS] ${timestamp} | Status: ${r.status}`);
       if (!r.ok) {
         const txt = await r.text().catch(() => '');
         setError(txt || 'Fallo al enviar ubicación');
-        console.error('[DriverService] sendPing failed:', txt);
+        console.error(`❌ [PING FAILED] ${timestamp} | ${txt}`);
         return false;
       }
 
       setLastPing(new Date());
       lastSentRef.current = Date.now();
-      console.log('[DriverService] sendPing succeeded');
       return true;
     } catch (e: any) {
-      console.error('[DriverService] sendPing exception:', e);
+      console.error(`❌ [PING ERROR] ${timestamp} | ${e?.message || e}`);
       setError(e?.message || 'Fallo al enviar ubicación');
       return false;
     }
@@ -93,16 +96,15 @@ export default function DriverService() {
   const startWatch = useCallback(() => {
     if (!navigator.geolocation) { setError('Geolocalización no disponible'); return; }
     if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
-    watchIdRef.current = navigator.geolocation.watchPosition(async (p) => {
+    watchIdRef.current = navigator.geolocation.watchPosition((p) => {
       console.log('[DriverService] watchPosition lat/lng:', p.coords.latitude, p.coords.longitude);
-      const now = Date.now();
-      if (now - lastSentRef.current < 10_000) return; // throttle ~10s
-      const ok = await sendPing(p.coords.latitude, p.coords.longitude);
-      if (ok) lastSentRef.current = now;
+      // Just update the position reference - the interval loop will handle sending pings
+      lastPositionRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
     }, (err) => {
+      console.warn('[DriverService] watchPosition error:', err?.message);
       setError(err?.message || 'No se pudo obtener ubicación');
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
-  }, [sendPing]);
+  }, []);
 
   const stopWatch = useCallback(() => {
     if (watchIdRef.current !== null) {
@@ -112,26 +114,22 @@ export default function DriverService() {
   }, []);
 
   const startPingLoop = useCallback(() => {
-    if (pingIntervalRef.current !== null) {
-      window.clearInterval(pingIntervalRef.current);
-    }
-    pingIntervalRef.current = window.setInterval(async () => {
-      console.log('[DriverService] ping loop tick');
-      try {
-        const pos = await getPositionOnce();
-        await sendPing(pos.coords.latitude, pos.coords.longitude);
-      } catch (e) {
-        console.error('[DriverService] ping loop error:', e);
-      }
-    }, 10_000) as unknown as number;
-  }, [sendPing]);
-
-  const stopPingLoop = useCallback(() => {
+    // Prefer SW-driven pings to avoid throttling; keep local timer disabled by default
     if (pingIntervalRef.current !== null) {
       window.clearInterval(pingIntervalRef.current);
       pingIntervalRef.current = null;
-      console.log('[DriverService] ping loop stopped');
     }
+    startServiceWorkerPings(20_000);
+  }, [sendPing]);
+
+  const stopPingLoop = useCallback(() => {
+    // Stop SW-driven pings
+    stopServiceWorkerPings();
+    if (pingIntervalRef.current !== null) {
+      window.clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+    console.log('🛑 [PING LOOP] Stopped');
   }, []);
 
   const startService = useCallback(async () => {
@@ -142,6 +140,7 @@ export default function DriverService() {
 
       const pos = await getPositionOnce();
       console.log('[DriverService] startService initial position:', pos.coords.latitude, pos.coords.longitude);
+      lastPositionRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 
       const r = await api('/buses/driver/start', {
         method: 'POST',
@@ -160,8 +159,8 @@ export default function DriverService() {
       cedulaRef.current = cedula; // Cache cedula once we know start succeeded
       setRunning(true);
       lastSentRef.current = Date.now();
-      startPingLoop();
-      startWatch();
+      startWatch(); // Start watching position (only updates lastPositionRef)
+      startPingLoop(); // Delegate to SW pings
     } catch (e: any) {
       console.error('[DriverService] startService exception:', e);
       setError(e?.message || 'Se requiere tu ubicación para iniciar');
@@ -205,20 +204,41 @@ export default function DriverService() {
     stopWatch();
   }, [stopPingLoop, stopWatch]);
 
-  // Handle visibility changes: pause watch when hidden, resume when visible
+  // Handle visibility changes: keep both GPS watch and ping loop always running when service is active
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState === 'hidden') {
-        stopWatch();
-        stopPingLoop();
+        console.log('👁️ [TAB HIDDEN] Service continues running in background');
+        // Keep both GPS watch and ping loop running for continuous updates
       } else if (document.visibilityState === 'visible' && running) {
-        startWatch();
-        startPingLoop();
+        console.log('👁️ [TAB VISIBLE] Service running');
+        // Ensure everything is still running (should never need to restart)
+        if (pingIntervalRef.current === null) {
+          console.warn('⚠️ Ping loop was stopped unexpectedly, restarting...');
+          startPingLoop();
+        }
+        if (watchIdRef.current === null) {
+          console.warn('⚠️ GPS watch was stopped unexpectedly, restarting...');
+          startWatch();
+        }
       }
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [running, startPingLoop, startWatch, stopPingLoop, stopWatch]);
+  }, [running, startPingLoop, startWatch]);
+
+  // Respond to SW with latest location and credentials (cedula + token)
+  useEffect(() => {
+    const getLatest = () => {
+      const cedula = cedulaRef.current || getCedula() || undefined;
+      const token = localStorage.getItem('authToken') || undefined;
+      if (lastPositionRef.current) {
+        return { lat: lastPositionRef.current.lat, lng: lastPositionRef.current.lng, cedula, token };
+      }
+      return null;
+    };
+    setupLocationResponder(getLatest);
+  }, [getCedula]);
 
   const lastPingText = useMemo(() => lastPing ? `${Math.round((Date.now() - lastPing.getTime())/1000)}s` : '—', [lastPing]);
 
@@ -226,7 +246,7 @@ export default function DriverService() {
     <div className="p-4 space-y-5">
       <div className="bg-white rounded-2xl p-5 border shadow-sm">
         <h1 className="text-xl font-semibold mb-2">Servicio de Conductor</h1>
-        <p className="text-sm text-gray-600">Comparte tu ubicación cada 10 segundos mientras estás en servicio.</p>
+        <p className="text-sm text-gray-600">Comparte tu ubicación cada 20 segundos mientras estás en servicio.</p>
   <p className="text-xs text-gray-500 mt-2">Conductor: {getCedula() || 'No identificado'}</p>
         {error && <div className="mt-2 text-sm text-red-600">{error}</div>}
       </div>
