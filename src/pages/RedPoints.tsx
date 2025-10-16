@@ -206,7 +206,7 @@ export default function RedPoints() {
                     <AlertTriangle className="h-6 w-6 text-red-500" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Añadir Punto Rojo</h2>
+                    <h2 className="text-xl font-bold text-gray-900">Añadir Punto Rojo (Anónimo)</h2>
                     <p className="text-sm text-gray-600">Reporta una zona peligrosa</p>
                   </div>
                 </div>
@@ -354,7 +354,7 @@ export default function RedPoints() {
             className="w-full bg-red-500 text-white py-3 px-4 rounded-xl font-semibold text-sm hover:bg-red-600 transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center space-x-2"
           >
             <Plus className="h-4 w-4" />
-            <span>Añadir Comentario</span>
+            <span>Añadir Punto Rojo</span>
           </button>
         </section>
 

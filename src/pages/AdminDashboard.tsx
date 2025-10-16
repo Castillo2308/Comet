@@ -200,7 +200,7 @@ export default function AdminDashboard() {
     { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
     { id: 'reports', icon: FileText, label: 'Reportes' },
     { id: 'complaints', icon: AlertTriangle, label: 'Quejas' },
-    { id: 'hotspots', icon: MapPin, label: 'Hotspots' },
+    { id: 'hotspots', icon: MapPin, label: 'Puntos Rojos' },
     { id: 'dangerous', icon: AlertTriangle, label: 'Áreas Peligrosas' },
     { id: 'securityNews', icon: Shield, label: 'Noticias Seguridad' },
     { id: 'news', icon: Megaphone, label: 'Noticias' },
@@ -1286,18 +1286,12 @@ export default function AdminDashboard() {
       }
     };
     const approve = async (id: string) => {
-      if (!window.confirm('¿Aprobar esta solicitud? El usuario será promovido a conductor.')) return;
       try {
-        const r = await api(`/buses/${id}/approve`, { method: 'POST' });
-        if (r.ok) {
-          refresh();
-        } else {
-          const error = await r.json().catch(() => ({ message: 'Error al aprobar' }));
-          alert(error.message || 'Error al aprobar la solicitud');
-        }
+        await api(`/buses/${id}/approve`, { method: 'POST' });
       } catch (e) {
         console.error('Error approving:', e);
-        alert('Error al aprobar la solicitud');
+      } finally {
+        refresh();
       }
     };
     return (
@@ -1356,13 +1350,13 @@ export default function AdminDashboard() {
                   {b.status === 'pending' && (
                     <>
                       <button onClick={() => approve(b._id || b.id)} className="px-3 py-2 rounded bg-green-600 text-white text-sm flex items-center gap-1"><Check className="h-4 w-4"/>Aprobar</button>
-                      <button onClick={async ()=>{ const r = await api(`/buses/${b._id || b.id}/reject`, { method: 'POST' }); if (r.ok) refresh(); }} className="px-3 py-2 rounded bg-yellow-600 text-white text-sm">Rechazar</button>
+                      <button onClick={async ()=>{ try { await api(`/buses/${b._id || b.id}/reject`, { method: 'POST' }); } catch(e) { console.error(e); } finally { refresh(); } }} className="px-3 py-2 rounded bg-yellow-600 text-white text-sm">Rechazar</button>
                     </>
                   )}
                   {(typeof b.lat === 'number' && typeof b.lng === 'number') && (
                     <button onClick={() => setBusCenterId(b._id || b.id)} className="px-3 py-2 rounded bg-blue-500 text-white text-sm flex items-center gap-1"><Navigation className="h-4 w-4"/>Ubicar</button>
                   )}
-                  <button onClick={async ()=>{ if (!confirm('¿Eliminar este registro de bus?')) return; const r = await api(`/buses/${b._id || b.id}`, { method: 'DELETE' }); if (r.ok) setAdminBuses(prev=>prev.filter(x=>(x._id||x.id)!==(b._id||b.id))); }} className="px-3 py-2 rounded bg-red-600 text-white text-sm">Eliminar</button>
+                  <button onClick={async ()=>{ try { await api(`/buses/${b._id || b.id}`, { method: 'DELETE' }); } catch(e) { console.error(e); } finally { refresh(); } }} className="px-3 py-2 rounded bg-red-600 text-white text-sm">Eliminar</button>
                 </div>
               </div>
             ))}

@@ -182,7 +182,7 @@ export default function Security() {
                     <FileText className="h-6 w-6 text-red-500" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Presentar Queja</h2>
+                    <h2 className="text-xl font-bold text-gray-900">Presentar Queja Anónima</h2>
                     <p className="text-sm text-gray-600">Reporta un problema de seguridad</p>
                   </div>
                 </div>
@@ -283,7 +283,7 @@ export default function Security() {
             className="bg-red-500 text-white py-3 px-4 rounded-xl font-semibold text-sm hover:bg-red-600 transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center space-x-2"
           >
             <FileText className="h-4 w-4" />
-            <span>Presentar Queja</span>
+            <span>Presentar Queja Anónima</span>
           </button>
           <button onClick={() => setShowReportModal(true)} className="bg-blue-500 text-white py-3 px-4 rounded-xl font-semibold text-sm hover:bg-blue-600 transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center space-x-2">
             <Plus className="h-4 w-4" />

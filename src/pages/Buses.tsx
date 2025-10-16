@@ -75,10 +75,9 @@ export default function Buses() {
       const payload = { ...form, fee: Number(form.fee), cedula };
       const res = await api('/buses/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (res.ok) {
-        setApplyOpen(false);
         setForm({ busNumber: '', busId: '', routeStart: '', routeEnd: '', fee: '', driverLicense: '' });
         fetchMyApp(); // Refresh application status
-        alert('Solicitud enviada. Recibirás un aviso cuando sea aprobada.');
+        setApplyOpen(false); // Close modal on success
       } else {
         const error = await res.json().catch(() => ({ message: 'No se pudo enviar la solicitud.' }));
         alert(error.message || 'No se pudo enviar la solicitud.');
