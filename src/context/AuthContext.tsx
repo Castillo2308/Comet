@@ -6,7 +6,7 @@ interface User {
   email: string;
   lastname: string;
   cedula: string;
-  role: 'user' | 'admin' | 'security' | 'news' | 'reports';
+  role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver';
 }
 
 interface AuthContextType {
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         setUser(data.user as User);
         localStorage.setItem('authUser', JSON.stringify(data.user));
+        localStorage.setItem('cedula', data.user.cedula);
         if (data.token) localStorage.setItem('authToken', data.token);
         return true;
       }
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(prev => {
         const merged = { ...(prev as User), ...data.user };
         localStorage.setItem('authUser', JSON.stringify(merged));
+       
         return merged;
       });
       return true;

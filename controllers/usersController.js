@@ -2,7 +2,7 @@ import { createUser, getUserByEmail, updateUser, deleteUser, getUserByCedula, li
 import bcrypt from 'bcryptjs';    // Same as const bcrypt = require('bcryptjs');
 import { signAccessToken } from '../lib/auth.js';
 
-const allowedRoles = ['user','admin','security','news','reports'];
+const allowedRoles = ['user','admin','security','news','reports','buses','driver'];
 
 function validatePassword(password, context = {}) {
   const violations = [];

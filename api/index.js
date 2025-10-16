@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
-import serverless from 'serverless-http';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import usersRoutes from '../routes/usersRoutes.js';
+import { requireAuth } from '../lib/auth.js';
 import eventsRoutes from '../routes/eventsRoutes.js';
 import newsRoutes from '../routes/govpostsRoutes.js';
 import reportsRoutes from '../routes/reportsRoutes.js';
@@ -14,6 +14,7 @@ import securityNewsRoutes from '../routes/securityNewsRoutes.js';
 import forumRoutes from '../routes/userpostsRoutes.js';
 import commentsRoutes from '../routes/commentsRoutes.js';
 import complaintsRoutes from '../routes/complaintsRoutes.js';
+import busesRoutes from '../routes/busesRoutes.js';
 import { ensureSchema } from '../lib/initSql.js';
 
 const app = express();
@@ -58,9 +59,6 @@ const authLimiter = rateLimit({
   keyGenerator: (req, _res) => `${req.ip}|${(req.body && req.body.email) || 'unknown'}`,
 });
 
-// Initialize SQL schema at startup (idempotent)
-ensureSchema().catch((e) => console.error('Schema init error', e));
-
 // Apply rate limiters to selected paths
 app.use('/api/users/login', authLimiter);
 app.use('/api/users', sensitiveLimiter);
@@ -77,11 +75,47 @@ app.use('/api/security-news', securityNewsRoutes);
 app.use('/api/forum', forumRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/api/complaints', complaintsRoutes);
+app.use('/api/buses', busesRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
-
-app.listen(5000, () => {
-  console.log('Backend running on http://localhost:5000');
+app.get('/api/auth/whoami', requireAuth, (req, res) => {
+  res.json({ user: req.user });
 });
 
-export default serverless(app);
+// Debug middleware - log unmatched routes (must be AFTER all other routes)
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    console.log(`Unmatched route: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ error: 'Route not found', path: req.originalUrl });
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+// Initialize SQL schema before starting server
+ensureSchema()
+  .then(() => {
+    const server = app.listen(5000, () => {
+      console.log('Backend running on http://localhost:5000');
+    });
+
+    // Prevent the server from closing unexpectedly
+    server.on('error', (err) => {
+      console.error('Server error:', err);
+    });
+  })
+  .catch((e) => {
+    console.error('Schema init error', e);
+    process.exit(1);
+  });
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+// For local testing, just export the app if needed
+export default app;

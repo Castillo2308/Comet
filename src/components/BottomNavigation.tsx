@@ -1,6 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Home, Megaphone, Plus, Info, MoreHorizontal, Calendar, Bell, Users, Bus, MapPin, ArrowLeft } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
+import { Home, Megaphone, Plus, Info, MoreHorizontal, Calendar, Users, Bus, MapPin, ArrowLeft } from 'lucide-react';
 import ReportModal from './ReportModal';
 import SideMenu from './SideMenu';
 import SettingsModal from './SettingsModal';
@@ -17,7 +16,6 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
   const [showInfoSubmenu, setShowInfoSubmenu] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const { user } = useAuth();
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Inicio' },
@@ -107,7 +105,7 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
     </nav>
   );
 
-  const renderSubmenuNavigation = (submenuItems: any[], title: string) => (
+  const renderSubmenuNavigation = (submenuItems: any[]) => (
     <nav className="flex items-center justify-between w-full max-w-lg mx-auto sm:max-w-3xl px-4">
       {/* Back button */}
       <button
@@ -166,11 +164,11 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
         <div className="pb-safe">
           {showAnnouncementsSubmenu ? (
             <div className="transform transition-all duration-500 animate-slideInRight">
-              {renderSubmenuNavigation(announcementsSubmenuItems, 'Anuncios')}
+              {renderSubmenuNavigation(announcementsSubmenuItems)}
             </div>
           ) : showInfoSubmenu ? (
             <div className="transform transition-all duration-500 animate-slideInRight">
-              {renderSubmenuNavigation(infoSubmenuItems, 'Información')}
+              {renderSubmenuNavigation(infoSubmenuItems)}
             </div>
           ) : (
             <div className="transform transition-all duration-500">

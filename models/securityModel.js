@@ -5,7 +5,7 @@ const OLD_HOTSPOTS_COLL = 'hotSpotsV2';
 
 export async function listHotspots() {
   const db = await getDb();
-  console.log('[securityModel.listHotspots] Using collection:', HOTSPOTS_COLL);
+  
   // One-time silent migration if old collection has docs and new one is empty
   try {
     const target = db.collection(HOTSPOTS_COLL);

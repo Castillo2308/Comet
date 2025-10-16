@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Navigation, Check } from 'lucide-react';
+import  HotspotsMap  from '../components/HotspotsMap';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 
@@ -21,7 +22,7 @@ interface User {
   cedula?: string;
   name: string;
   email: string;
-  role: 'user' | 'admin' | 'security' | 'news' | 'reports';
+  role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver';
   status: 'Activo' | 'Inactivo';
   joinDate: string;
   reportsCount: number;
@@ -189,6 +190,11 @@ export default function AdminDashboard() {
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [adminEditingUser, setAdminEditingUser] = useState<any>(null);
   const [adminForm, setAdminForm] = useState<{ cedula: string; name: string; lastname: string; email: string; password: string; role: User['role'] }>({ cedula: '', name: '', lastname: '', email: '', password: '', role: 'user' });
+  // Buses admin state
+  const [adminBuses, setAdminBuses] = useState<any[]>([]);
+  const [busesFilter, setBusesFilter] = useState<string>('Todos');
+  const [busesLoading, setBusesLoading] = useState(false);
+  const [busCenterId, setBusCenterId] = useState<string | null>(null);
 
   const adminNavItems = [
     { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
@@ -198,6 +204,7 @@ export default function AdminDashboard() {
     { id: 'dangerous', icon: AlertTriangle, label: 'Áreas Peligrosas' },
     { id: 'securityNews', icon: Shield, label: 'Noticias Seguridad' },
     { id: 'news', icon: Megaphone, label: 'Noticias' },
+    { id: 'buses', icon: Bus, label: 'Buses' },
   { id: 'users', icon: Users, label: 'Usuarios' },
     { id: 'community', icon: MessageSquare, label: 'Comunidad' },
     { id: 'events', icon: Calendar, label: 'Eventos' },
@@ -210,6 +217,7 @@ export default function AdminDashboard() {
     if (role === 'security') return ['dashboard','complaints','hotspots','dangerous','securityNews'].includes(item.id);
     if (role === 'news') return ['dashboard','news','events'].includes(item.id);
     if (role === 'reports') return ['dashboard','reports'].includes(item.id);
+    if (role === 'buses') return ['dashboard','buses'].includes(item.id);
     return false; // users shouldn't see AdminDashboard tabs
   });
 
@@ -682,6 +690,8 @@ export default function AdminDashboard() {
                 <option value="security">Seguridad</option>
                 <option value="news">Noticias</option>
                 <option value="reports">Reportes</option>
+                <option value="buses">Buses</option>
+                <option value="driver">Conductor</option>
               </select>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={()=>setAdminModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
@@ -1161,6 +1171,18 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Load buses when switching to Buses tab
+  useEffect(() => {
+    const shouldLoad = (activeTab === 'buses') && (role === 'admin' || role === 'buses');
+    if (!shouldLoad) return;
+    (async () => {
+      try {
+        const r = await api('/buses');
+        if (r.ok) setAdminBuses(await r.json());
+      } catch {}
+    })();
+  }, [activeTab, role]);
+
   const renderNews = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
@@ -1242,6 +1264,113 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
+
+  const renderBuses = () => {
+    const googleKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string;
+    const filtered = busesFilter==='Todos' ? adminBuses : adminBuses.filter((b:any) => (b.status||'')===busesFilter);
+    const points = filtered
+      .filter((b:any) => typeof b.lat === 'number' && typeof b.lng === 'number')
+      .map((b:any, i:number) => ({ id: b._id || i, title: b.busNumber ? `Bus ${b.busNumber}` : 'Bus', lat: b.lat, lng: b.lng }));
+    const selected = (() => {
+      const f = adminBuses.find((b:any) => (b._id || b.id) === busCenterId);
+      return f && typeof f.lat === 'number' && typeof f.lng === 'number' ? { lat: f.lat, lng: f.lng } : undefined;
+    })();
+    const refresh = async () => {
+      setBusesLoading(true);
+      try {
+        const r = await api('/buses');
+        const rows = r.ok ? await r.json() : [];
+        setAdminBuses(Array.isArray(rows) ? rows : []);
+      } finally {
+        setBusesLoading(false);
+      }
+    };
+    const approve = async (id: string) => {
+      if (!window.confirm('¿Aprobar esta solicitud? El usuario será promovido a conductor.')) return;
+      try {
+        const r = await api(`/buses/${id}/approve`, { method: 'POST' });
+        if (r.ok) {
+          refresh();
+        } else {
+          const error = await r.json().catch(() => ({ message: 'Error al aprobar' }));
+          alert(error.message || 'Error al aprobar la solicitud');
+        }
+      } catch (e) {
+        console.error('Error approving:', e);
+        alert('Error al aprobar la solicitud');
+      }
+    };
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Sistema de Buses</h2>
+              <p className="text-gray-600 text-sm">Monitoreo en vivo y aprobación de conductores</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select value={busesFilter} onChange={e=>setBusesFilter(e.target.value)} className="px-3 py-2 border rounded-lg text-sm">
+                <option>Todos</option>
+                <option value="pending">Pendiente</option>
+                <option value="approved">Aprobado</option>
+                <option value="rejected">Rechazado</option>
+              </select>
+              <button onClick={refresh} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" /> {busesLoading ? 'Actualizando…' : 'Actualizar'}
+              </button>
+            </div>
+          </div>
+          <div className="mt-2">
+            <HotspotsMap apiKey={googleKey} points={points} selected={selected} height={360} showAutocomplete={false} />
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-gray-900">Buses registrados</h3>
+            <span className="text-sm text-gray-600">{filtered.length} buses</span>
+          </div>
+          <div className="space-y-3">
+            {filtered.length === 0 && <div className="text-sm text-gray-600">No hay registros.</div>}
+            {filtered.map((b:any) => (
+              <div key={b._id || b.id} className="p-4 border rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg"><Bus className="h-5 w-5 text-blue-600"/></div>
+                  <div>
+                    <div className="font-semibold text-gray-900">{b.routeStart || 'Inicio'} → {b.routeEnd || 'Destino'}</div>
+                    <div className="text-xs text-gray-600">
+                      Bus {b.busNumber || 's/n'} • Placa {b.busId || 'N/D'} • 
+                      Estado: <span className={`ml-1 font-medium ${b.status === 'pending' ? 'text-yellow-600' : b.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
+                        {b.status === 'pending' ? '⏳ Pendiente' : b.status === 'approved' ? '✓ Aprobado' : '✗ Rechazado'}
+                      </span>
+                      {b.isActive && <span className="ml-1 text-green-600">• 🟢 En servicio</span>}
+                      • Tarifa ₡<input defaultValue={String(b.fee ?? '')} onBlur={async (e)=>{ const v=Number(e.currentTarget.value)||0; const u = await api(`/buses/${b._id || b.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fee: v })}); if (u.ok){ const nb = await u.json(); setAdminBuses(prev=>prev.map(x=>(x._id||x.id)===(b._id||b.id)? nb : x)); } }} className="w-20 border rounded px-1 py-0.5 text-xs" />
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">Conductor: {b.driverCedula || 'N/D'}</div>
+                    {b.driverLicense && <div className="text-xs text-gray-600">Licencia: {b.driverLicense}</div>}
+                    {(typeof b.lat === 'number' && typeof b.lng === 'number') && (
+                      <div className="text-[11px] text-gray-500">Última ubicación: {b.lat.toFixed(5)}, {b.lng.toFixed(5)} {b.lastLocationUpdate && `(${new Date(b.lastLocationUpdate).toLocaleTimeString('es-CR')})`}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {b.status === 'pending' && (
+                    <>
+                      <button onClick={() => approve(b._id || b.id)} className="px-3 py-2 rounded bg-green-600 text-white text-sm flex items-center gap-1"><Check className="h-4 w-4"/>Aprobar</button>
+                      <button onClick={async ()=>{ const r = await api(`/buses/${b._id || b.id}/reject`, { method: 'POST' }); if (r.ok) refresh(); }} className="px-3 py-2 rounded bg-yellow-600 text-white text-sm">Rechazar</button>
+                    </>
+                  )}
+                  {(typeof b.lat === 'number' && typeof b.lng === 'number') && (
+                    <button onClick={() => setBusCenterId(b._id || b.id)} className="px-3 py-2 rounded bg-blue-500 text-white text-sm flex items-center gap-1"><Navigation className="h-4 w-4"/>Ubicar</button>
+                  )}
+                  <button onClick={async ()=>{ if (!confirm('¿Eliminar este registro de bus?')) return; const r = await api(`/buses/${b._id || b.id}`, { method: 'DELETE' }); if (r.ok) setAdminBuses(prev=>prev.filter(x=>(x._id||x.id)!==(b._id||b.id))); }} className="px-3 py-2 rounded bg-red-600 text-white text-sm">Eliminar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderDangerous = () => (
     <div className="space-y-6">
@@ -1698,6 +1827,7 @@ export default function AdminDashboard() {
               {activeTab === 'dangerous' && 'Áreas Peligrosas'}
               {activeTab === 'securityNews' && 'Noticias de Seguridad'}
               {activeTab === 'news' && 'Gestión de Noticias'}
+              {activeTab === 'buses' && 'Sistema de Buses'}
               {activeTab === 'community' && 'Comunidad (Foro)'}
               {activeTab === 'events' && 'Gestión de Eventos'}
               {activeTab === 'settings' && 'Configuración del Sistema'}
@@ -1712,6 +1842,7 @@ export default function AdminDashboard() {
               {activeTab === 'securityNews' && 'Publica anuncios de seguridad'}
               {activeTab === 'community' && 'Modera publicaciones y comentarios del foro'}
               {activeTab === 'events' && 'Crea y administra eventos comunitarios'}
+              {activeTab === 'buses' && 'Monitorea buses, aprueba conductores y ubica unidades'}
               {activeTab === 'settings' && 'Configuración general del sistema'}
             </p>
           </div>
@@ -1728,6 +1859,7 @@ export default function AdminDashboard() {
             {activeTab === 'complaints' && (role==='admin' || role==='security') && renderComplaints()}
             {activeTab === 'hotspots' && (role==='admin' || role==='security') && renderHotspots()}
             {activeTab === 'events' && (role==='admin' || role==='news') && renderEvents()}
+            {activeTab === 'buses' && (role==='admin' || role==='buses') && renderBuses()}
             {activeTab === 'settings' && (
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
                 <div className="text-center">

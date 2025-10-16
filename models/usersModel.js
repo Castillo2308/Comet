@@ -20,7 +20,7 @@ export const getUserByEmail = async (email) => {
 
 export const getUserByCedula = async (cedula) => {
   const rows = await neonClient`
-    select name, lastname, cedula, email, role
+    select name, lastname, cedula, email, role, password
     from users where cedula = ${cedula}
   `;
   return rows?.[0] || null;
@@ -62,6 +62,16 @@ export const deleteUserCascade = async (cedula) => {
   await neonClient`delete from complaints where author = ${cedula}`;
   const rows = await neonClient`delete from users where cedula = ${cedula} returning cedula`;
   return rows?.length > 0;
+};
+
+export const updateUserRole = async (cedula, role) => {
+  const rows = await neonClient`
+    update users
+    set role = ${role}
+    where cedula = ${cedula}
+    returning name, lastname, cedula, email, role
+  `;
+  return rows?.[0] || null;
 };
 
 

@@ -17,8 +17,8 @@ function AppRoutes() {
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
 
-  // If user is staff (any non-user role), show admin interface
-  if (isAuthenticated && user && user.role !== 'user') {
+  // If user is staff (any non-user role except driver), show admin interface
+  if (isAuthenticated && user && user.role !== 'user' && user.role !== 'driver') {
     return (
       <Routes>
         <Route path="*" element={<AdminDashboard />} />
