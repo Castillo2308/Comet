@@ -7,7 +7,8 @@
     "dev": "concurrently \"vite\" \"nodemon api/index.js\"",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "get:drive-token": "node scripts/get-drive-refresh-token.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
@@ -18,10 +19,12 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "express-rate-limit": "^7.1.5",
+    "googleapis": "^163.0.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.344.0",
     "mongodb": "^6.20.0",
+    "multer": "^2.0.2",
     "pg": "^8.16.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

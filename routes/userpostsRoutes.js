@@ -13,5 +13,8 @@ router.get('/:id/comments', requireAuth, controller.listComments);
 router.post('/:id/comments', requireAuth, controller.addComment);
 router.post('/comments/:commentId/like', requireAuth, controller.likeComment);
 router.delete('/comments/:commentId', requireAuth, controller.removeComment);
+// Moderation endpoints
+router.post('/:id/approve', requireAuth, controller.approve);
+router.post('/:id/reject', requireAuth, controller.reject);
 
 export default router;

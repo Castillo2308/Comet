@@ -15,6 +15,7 @@ import forumRoutes from '../routes/userpostsRoutes.js';
 import commentsRoutes from '../routes/commentsRoutes.js';
 import complaintsRoutes from '../routes/complaintsRoutes.js';
 import busesRoutes from '../routes/busesRoutes.js';
+import uploadsRoutes from '../routes/uploadsRoutes.js';
 import { ensureSchema } from '../lib/initSql.js';
 
 const app = express();
@@ -24,7 +25,9 @@ app.use(express.json({ limit: '10mb' }));
 
 // Security headers
 app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP by default to avoid blocking dev; enable later with allowlist
+  contentSecurityPolicy: false, // Disabled to avoid blocking in dev; enable with allowlist if needed
+  crossOriginEmbedderPolicy: false, // Allow cross-origin resources to be loaded by the frontend
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Permit images/scripts from other origins (e.g., Google Drive)
 }));
 
 // CORS: allow configured origins; default to allow same-origin/non-browser
@@ -76,6 +79,7 @@ app.use('/api/forum', forumRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/api/complaints', complaintsRoutes);
 app.use('/api/buses', busesRoutes);
+app.use('/api/uploads', uploadsRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/auth/whoami', requireAuth, (req, res) => {
@@ -95,8 +99,9 @@ app.use((req, res) => {
 // Initialize SQL schema before starting server
 ensureSchema()
   .then(() => {
-    const server = app.listen(5000, () => {
-      console.log('Backend running on http://localhost:5000');
+    const PORT = Number(process.env.PORT || 5000);
+    const server = app.listen(PORT, () => {
+      console.log(`Backend running on http://localhost:${PORT}`);
     });
 
     // Prevent the server from closing unexpectedly

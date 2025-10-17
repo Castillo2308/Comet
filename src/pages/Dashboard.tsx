@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { MapPin, MoreHorizontal, Calendar, Users, Shield, AlertTriangle, Clock, TrendingUp, Activity, Bell, CheckCircle } from 'lucide-react';
+import { MapPin, MoreHorizontal, Calendar, Users, Shield, AlertTriangle, Clock, TrendingUp, Activity, Bell, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import UserProfileModal from '../components/UserProfileModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -65,13 +65,28 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
     .then(r => r.json())
       .then((rows: any[]) => {
         if (!Array.isArray(rows)) return;
+        const toEmbeddable = (url?: string) => {
+          if (!url) return undefined;
+          try {
+            const raw = String(url);
+            // Try extracting /d/<id> first
+            const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            let id = m?.[1];
+            if (!id) {
+           return `https://drive.google.com/thumbnail?id=${id}`;
+            }
+            if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+            return raw;
+          } catch { return url; }
+        };
         const mine = rows.filter(r => !user?.cedula || r.author === user?.cedula);
         const mapped = mine.map(r => ({
           id: r.id,
           title: r.title,
           description: r.description,
           location: r.location,
-          image: r.photo_link || 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+          photoLink: r.photo_link || undefined,
+          image: toEmbeddable(r.photo_link) || 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
           status: r.status === 'pending' ? 'Pendiente' : r.status,
           date: new Date(r.date).toLocaleString('es-ES'),
           priority: undefined
@@ -132,12 +147,26 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         const rr = await api('/reports');
         const rows: any[] = await rr.json();
         const mine = rows.filter(r => !user?.cedula || r.author === user?.cedula);
+        const toEmbeddable = (url?: string) => {
+          if (!url) return undefined;
+          try {
+            const raw = String(url);
+            const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            let id = m?.[1];
+            if (!id) {
+           return `https://drive.google.com/thumbnail?id=${id}`;
+            }
+            if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+            return raw;
+          } catch { return url; }
+        };
         setReports(mine.map(r => ({
           id: r.id,
           title: r.title,
           description: r.description,
           location: r.location,
-          image: r.photo_link || 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+          photoLink: r.photo_link || undefined,
+          image: toEmbeddable(r.photo_link) || 'https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
           status: r.status === 'pending' ? 'Pendiente' : r.status,
           date: new Date(r.date).toLocaleString('es-ES'),
           priority: undefined
@@ -232,11 +261,21 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                 >
                   <div className="flex items-start space-x-4">
                     <div className="relative">
-                      <img
-                        src={report.image}
-                        alt={report.title}
-                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0 transition-transform duration-300 hover:scale-110 shadow-md"
-                      />
+                      {report.photoLink ? (
+                        <a
+                          href={report.photoLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 shadow-md border"
+                          title="Abrir imagen en nueva pestaña"
+                        >
+                          <ImageIcon className="h-6 w-6" />
+                        </a>
+                      ) : (
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shadow-md border">
+                          <ImageIcon className="h-6 w-6" />
+                        </div>
+                      )}
                       <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-lg">
                         {index + 1}
                       </div>

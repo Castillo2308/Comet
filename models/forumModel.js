@@ -21,9 +21,9 @@ async function fetchNamesByCedula(cedulas) {
   }
 }
 
-export async function listPosts() {
+export async function listPosts(filter = {}) {
   const db = await getDb();
-  const docs = await db.collection('userPosts').find({}).sort({ date: -1 }).toArray();
+  const docs = await db.collection('userPosts').find(filter).sort({ date: -1 }).toArray();
   const cedulas = [...new Set(docs.map(d => d.author).filter(isCedula))];
   const nameMap = await fetchNamesByCedula(cedulas);
   return docs.map(d => ({
@@ -42,6 +42,7 @@ export async function createPost(post) {
     comments_count: 0,
     date: post.date ? new Date(post.date) : new Date(),
     author: post.author,
+    status: (post.status && ['pending','approved','rejected'].includes(String(post.status))) ? post.status : 'pending',
   };
   const { insertedId } = await db.collection('userPosts').insertOne(doc);
   let authorName;
@@ -85,6 +86,10 @@ export async function updatePost(id, updates) {
   const set = {};
   if (Object.prototype.hasOwnProperty.call(updates, 'content')) set.content = updates.content;
   if (Object.prototype.hasOwnProperty.call(updates, 'photo_link')) set.photo_link = updates.photo_link;
+  if (Object.prototype.hasOwnProperty.call(updates, 'status')) {
+    const allowed = ['pending','approved','rejected'];
+    if (allowed.includes(String(updates.status))) set.status = updates.status;
+  }
   const res = await db.collection('userPosts').findOneAndUpdate(
     { _id },
     { $set: set },

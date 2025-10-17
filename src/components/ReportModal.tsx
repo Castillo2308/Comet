@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Megaphone, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -31,13 +32,15 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
     e.preventDefault();
     let photo_link: string | null = null;
     if (formData.file) {
-      // Keep it simple: convert to base64 (small images recommended)
-      const file = formData.file;
-      photo_link = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
+      try {
+        const fd = new FormData();
+        fd.append('file', formData.file);
+        const up = await api('/uploads/photo?type=report', { method: 'POST', body: fd });
+        if (up.ok) {
+          const j = await up.json();
+          photo_link = j.url;
+        }
+      } catch {}
     }
 
     const payload = {
@@ -52,7 +55,7 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
     };
 
     try {
-      const res = await fetch('/api/reports', {
+      const res = await api('/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

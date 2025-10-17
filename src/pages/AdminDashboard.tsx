@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Navigation, Check } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, TrendingUp, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Navigation, Check, Image as ImageIcon } from 'lucide-react';
 import  HotspotsMap  from '../components/HotspotsMap';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -15,6 +15,7 @@ interface Report {
   user: string;
   priority: 'Alta' | 'Media' | 'Baja';
   image?: string;
+  photoLink?: string;
 }
 
 interface User {
@@ -186,6 +187,31 @@ export default function AdminDashboard() {
   const [communityForm, setCommunityForm] = useState<{ content: string; photo_link?: string } >({ content: '', photo_link: '' });
   const [communityComments, setCommunityComments] = useState<Record<string, any[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  // Reload community posts (admin)
+  const refreshCommunity = async () => {
+    setCommunityLoading(true);
+    try {
+      const r = await fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } });
+      const rows = r.ok ? await r.json() : [];
+      const toEmbeddable = (url?: string) => {
+        if (!url) return undefined;
+        try {
+          const raw = String(url);
+          const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          let id = m?.[1];
+          if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+          if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+          return raw;
+        } catch { return url; }
+      };
+      const posts = (Array.isArray(rows) ? rows : []).map((p:any) => ({ ...p, photo_link: toEmbeddable(p.photo_link) }));
+      setCommunityPosts(posts);
+    } catch {
+      setCommunityPosts([]);
+    } finally {
+      setCommunityLoading(false);
+    }
+  };
   // Administrators/Users management state
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [adminEditingUser, setAdminEditingUser] = useState<any>(null);
@@ -542,12 +568,20 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center space-x-3">
-                      {report.image && (
-                        <img
-                          src={report.image}
-                          alt={report.title}
-                          className="w-8 h-8 rounded-lg object-cover"
-                        />
+                      {report.photoLink ? (
+                        <a
+                          href={report.photoLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 border"
+                          title="Abrir imagen en nueva pestaña"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </a>
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 border">
+                          <ImageIcon className="h-4 w-4" />
+                        </div>
                       )}
                       <div>
                         <div className="text-xs font-medium text-gray-900">{report.title}</div>
@@ -965,8 +999,11 @@ export default function AdminDashboard() {
                   setCommunityPosts(prev => prev.map(p => (p._id === updated._id) ? updated : p));
                 }
               } else {
-                const payload = { content: communityForm.content, photo_link: communityForm.photo_link, date: new Date().toISOString(), author: user?.cedula || 'admin' } as any;
-                const res = await fetch('/api/forum', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                let photoUrl: string | undefined = communityForm.photo_link || undefined;
+                // If photo_link looks like a data URL, try uploading
+                if (photoUrl && photoUrl.startsWith('data:')) photoUrl = undefined;
+                const payload = { content: communityForm.content, photo_link: photoUrl, date: new Date().toISOString(), author: user?.cedula || 'admin' } as any;
+                const res = await api('/forum', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (res.ok) {
                   const created = await res.json();
                   setCommunityPosts(prev => [created, ...prev]);
@@ -996,12 +1033,23 @@ export default function AdminDashboard() {
                 <div className="pr-4">
                   <div className="text-sm text-gray-700 mb-1">{new Date(p.date).toLocaleString('es-ES')}</div>
                   <div className="font-semibold text-gray-900 mb-1">{p.authorName || (typeof p.author === 'string' && p.author.includes(' ') ? p.author : 'Usuario')}</div>
+                  {p.status && (
+                    <span className={`inline-block mb-2 px-2 py-0.5 rounded-full text-xs border ${p.status==='pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : p.status==='approved' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                      {p.status==='pending' ? 'Pendiente' : p.status==='approved' ? 'Aprobado' : 'Rechazado'}
+                    </span>
+                  )}
                   <div className="text-sm text-gray-800 whitespace-pre-wrap">{p.content}</div>
                   {p.photo_link && <img src={p.photo_link} alt="foto" className="mt-2 max-h-48 rounded-lg border" />}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 items-center">
+                  {p.status === 'pending' && (
+                    <>
+                      <button onClick={async()=>{ try { await api(`/forum/${p._id}/approve`, { method: 'POST' }); } finally { refreshCommunity(); } }} className="px-2 py-1 text-xs bg-green-600 text-white rounded">Aprobar</button>
+                      <button onClick={async()=>{ try { await api(`/forum/${p._id}/reject`, { method: 'POST' }); } finally { refreshCommunity(); } }} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">Rechazar</button>
+                    </>
+                  )}
                   <button onClick={() => { setEditingCommunityPost(p); setCommunityForm({ content: p.content || '', photo_link: p.photo_link || '' }); setCommunityModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
-                  <button onClick={async () => { const res = await api(`/forum/${p._id}`, { method: 'DELETE' }); if (res.ok) setCommunityPosts(prev => prev.filter(x => x._id !== p._id)); }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
+                  <button onClick={async () => { try { await api(`/forum/${p._id}`, { method: 'DELETE' }); } finally { refreshCommunity(); } }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
 
@@ -1100,7 +1148,18 @@ export default function AdminDashboard() {
           date: new Date(r.date).toLocaleDateString('es-ES'),
           user: r.author || 'Usuario',
           priority: 'Media',
-          image: r.photo_link || undefined,
+          photoLink: r.photo_link || undefined,
+          image: (() => {
+            const raw = r.photo_link as string | undefined;
+            if (!raw) return undefined;
+            try {
+              const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+              let id = m?.[1];
+              if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+              if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+            } catch {}
+            return raw;
+          })(),
         }));
         setReports(mapped);
       }).catch(()=>{ setReports([]); });
@@ -1155,7 +1214,18 @@ export default function AdminDashboard() {
   fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
         .then(r => r.ok ? r.json() : [])
         .then(async (rows:any[]) => {
-          const posts = Array.isArray(rows) ? rows : [];
+          const toEmbeddable = (url?: string) => {
+            if (!url) return undefined;
+            try {
+              const raw = String(url);
+              const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+              let id = m?.[1];
+              if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+              if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+              return raw;
+            } catch { return url; }
+          };
+          const posts = (Array.isArray(rows) ? rows : []).map(p => ({ ...p, photo_link: toEmbeddable(p.photo_link) }));
           setCommunityPosts(posts);
           const all: Record<string, any[]> = {};
           for (const p of posts) {

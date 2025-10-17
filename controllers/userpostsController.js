@@ -3,7 +3,14 @@ import { isPrivileged } from '../lib/auth.js';
 
 export default {
   async list(_req, res) {
-    try { res.json(await listPosts()); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to list posts' }); }
+    try {
+      const role = _req.user?.role;
+      // Regular users: only approved posts; admins/moderators: all
+      const filter = isPrivileged(role) ? {} : { $or: [ { status: 'approved' }, { status: { $exists: false } } ] };
+      const rows = await listPosts(filter);
+      // Normalize status for legacy docs
+      res.json(rows.map(r => ({ ...r, status: r.status || 'approved' })));
+    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to list posts' }); }
   },
   async create(req, res) {
     try {
@@ -34,6 +41,22 @@ export default {
       if (!updated) return res.status(404).json({ message: 'Post not found' });
       res.json(updated);
     } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to update post' }); }
+  },
+  async approve(req, res) {
+    try {
+      if (!isPrivileged(req.user?.role)) return res.status(403).json({ message: 'Prohibido' });
+      const updated = await updatePost(req.params.id, { status: 'approved' });
+      if (!updated) return res.status(404).json({ message: 'Post not found' });
+      res.json(updated);
+    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to approve post' }); }
+  },
+  async reject(req, res) {
+    try {
+      if (!isPrivileged(req.user?.role)) return res.status(403).json({ message: 'Prohibido' });
+      const updated = await updatePost(req.params.id, { status: 'rejected' });
+      if (!updated) return res.status(404).json({ message: 'Post not found' });
+      res.json(updated);
+    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to reject post' }); }
   },
   async listComments(req, res) {
     try { res.json(await listComments(req.params.id)); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to list comments' }); }

@@ -116,6 +116,17 @@ export default function Community() {
       .then(r => r.ok ? r.json() : [])
       .then((data) => {
         if (Array.isArray(data) && data.length) {
+                    const toEmbeddable = (url?: string) => {
+                      if (!url) return undefined;
+                      try {
+                        const raw = String(url);
+                        const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        let id = m?.[1];
+                        if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+                        if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+                        return raw;
+                      } catch { return url; }
+                    };
           const mapped: Post[] = data.map((p: any) => {
             const authorRaw = p.author; // could be cedula or display name (legacy)
             const display = p.authorName || (typeof authorRaw === 'string' && authorRaw.includes(' ') ? authorRaw : 'Usuario');
@@ -126,7 +137,7 @@ export default function Community() {
               avatar: display.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
               time: new Date(p.date).toLocaleString(),
               content: p.content,
-              image: p.photo_link || undefined,
+              image: toEmbeddable(p.photo_link) || undefined,
               likes: p.likes || 0,
               comments: p.comments_count || 0,
               isLiked: false,
@@ -250,18 +261,39 @@ export default function Community() {
     if (!newPost.trim()) return;
 
     try {
-      const res = await fetch('/api/forum', {
+      let photoUrl: string | undefined = undefined;
+      if (newPostImage) {
+        const fd = new FormData();
+        fd.append('file', newPostImage);
+        const up = await api(`/uploads/photo?type=post`, { method: 'POST', body: fd });
+        if (up.ok) {
+          const j = await up.json();
+          photoUrl = j.url;
+        }
+      }
+      const res = await api('/forum', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: newPost,
-          photo_link: newPostImagePreview || undefined,
+          photo_link: photoUrl || undefined,
           author: user?.cedula,
           date: new Date().toISOString()
         })
       });
       if (res.ok) {
         const saved = await res.json();
+        const toEmbeddable = (url?: string) => {
+          if (!url) return undefined;
+          try {
+            const raw = String(url);
+            const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            let id = m?.[1];
+            if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+            if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+            return raw;
+          } catch { return url; }
+        };
         const newPostObj: Post = {
           id: String(saved._id || saved.id || `tmp-${Date.now()}`),
           author: saved.authorName || `${user?.name} ${user?.lastname}`,
@@ -269,7 +301,7 @@ export default function Community() {
           avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
           time: new Date(saved.date || Date.now()).toLocaleString(),
           content: saved.content ?? newPost,
-          image: saved.photo_link || newPostImagePreview || undefined,
+          image: toEmbeddable(saved.photo_link || photoUrl) || undefined,
           likes: saved.likes ?? 0,
           comments: saved.comments_count ?? 0,
           isLiked: false
