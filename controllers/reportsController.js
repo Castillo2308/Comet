@@ -9,7 +9,8 @@ export default {
     try {
       const body = { ...req.body };
       if (!body.author && req.user?.cedula) body.author = req.user.cedula;
-      res.status(201).json(await createReport(body));
+      const created = await createReport(body);
+      res.status(201).json(created);
     } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to create report' }); }
   },
   async update(req, res) {

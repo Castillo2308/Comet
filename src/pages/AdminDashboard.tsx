@@ -585,10 +585,11 @@ export default function AdminDashboard() {
                         </div>
                       )}
                       <div>
-                        <div className="text-xs font-medium text-gray-900">{report.title}</div>
-                        <div className="text-xs text-gray-500 flex items-center">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {report.location}
+                        <div className="text-xs font-medium text-gray-900 flex items-center gap-2">
+                          <span>{report.title}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                          <span className="inline-flex items-center"><MapPin className="h-3 w-3 mr-1" />{report.location}</span>
                         </div>
                       </div>
                     </div>
@@ -603,6 +604,7 @@ export default function AdminDashboard() {
                       <span className="text-xs text-gray-900">{report.user}</span>
                     </div>
                   </td>
+                  
                   <td className="px-3 py-3">
                     <select
                       value={report.status}
@@ -1040,6 +1042,17 @@ export default function AdminDashboard() {
                       {p.status==='pending' ? 'Pendiente' : p.status==='approved' ? 'Aprobado' : 'Rechazado'}
                     </span>
                   )}
+                  <div className="flex flex-wrap items-center gap-1 mb-1">
+                    {p.ai_flagged && (
+                      <span title={p.ai_summary || 'Marcado por IA'} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-700 border border-red-200">IA: Riesgo</span>
+                    )}
+                    {p.ai_mismatch && (
+                      <span title="Texto e imagen no coinciden" className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-100 text-yellow-700 border border-yellow-200">IA: No coincide</span>
+                    )}
+                    {p.ai_summary && !p.ai_flagged && !p.ai_mismatch && (
+                      <span title={p.ai_summary} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">IA: Ok</span>
+                    )}
+                  </div>
                   <div className="text-sm text-gray-800 whitespace-pre-wrap">{p.content}</div>
                   {p.photo_link && (
                     /\/file\/d\//.test(p.photo_link) && /\/preview(\?|$)/.test(p.photo_link) ? (

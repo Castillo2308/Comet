@@ -11,8 +11,10 @@
     "get:drive-token": "node scripts/get-drive-refresh-token.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.1",
+    "@google-cloud/vision": "^5.3.4",
+    "@neondatabase/serverless": "^1.0.2",
     "@react-google-maps/api": "^2.19.2",
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",

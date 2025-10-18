@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Heart, MessageCircle, MoreHorizontal, Send, Clock, Camera, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
@@ -28,78 +28,14 @@ interface Comment {
   isLiked: boolean;
 }
 
-const mockPosts: Post[] = [
-  {
-    id: 'mock-1',
-    author: 'María González',
-    avatar: 'MG',
-    time: 'hace 2 horas',
-    content: '¡Excelente trabajo de la municipalidad limpiando el parque central! Se ve hermoso ahora. 🌳✨',
-    image: 'https://images.pexels.com/photos/1563356/pexels-photo-1563356.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&dpr=1',
-    likes: 24,
-    comments: 8,
-    isLiked: false
-  },
-  {
-    id: 'mock-2',
-    author: 'Carlos Rodríguez',
-    avatar: 'CR',
-    time: 'hace 4 horas',
-    content: 'Vecinos, ¿alguien sabe si van a arreglar el semáforo de la esquina? Lleva varios días intermitente.',
-    likes: 12,
-    comments: 15,
-    isLiked: true
-  },
-  {
-    id: 'mock-3',
-    author: 'Ana Jiménez',
-    avatar: 'AJ',
-    time: 'hace 6 horas',
-    content: 'Recordatorio: Mañana es la feria de emprendedores en el centro comunal. ¡Los esperamos! 🛍️',
-    likes: 31,
-    comments: 6,
-    isLiked: false
-  }
-];
-
-const mockComments: { [key: string]: Comment[] } = {
-  'mock-1': [
-    {
-      id: 'mock-c1',
-      author: 'Pedro Mora',
-      avatar: 'PM',
-      time: 'hace 1 hora',
-      content: '¡Totalmente de acuerdo! Se ve increíble.',
-      likes: 3,
-      isLiked: false
-    },
-    {
-      id: 'mock-c2',
-      author: 'Sofía Castro',
-      avatar: 'SC',
-      time: 'hace 30 min',
-      content: 'Gracias por compartir, no había visto el resultado final.',
-      likes: 1,
-      isLiked: true
-    }
-  ],
-  'mock-2': [
-    {
-      id: 'mock-c3',
-      author: 'Luis Vargas',
-      avatar: 'LV',
-      time: 'hace 3 horas',
-      content: 'Yo también lo he notado. Ya reporté a la municipalidad.',
-      likes: 5,
-      isLiked: false
-    }
-  ]
-};
+const mockComments: { [key: string]: Comment[] } = {};
 
 export default function Community() {
   const { user } = useAuth();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<{ [key: string]: Comment[] }>(mockComments);
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
   const [newComment, setNewComment] = useState<{ [key: string]: string }>({});
@@ -109,57 +45,86 @@ export default function Community() {
   const [showNewPost, setShowNewPost] = useState(false);
   const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
   const [stats, setStats] = useState<{ users: number; posts: number; comments: number }>({ users: 0, posts: 0, comments: 0 });
+  const [limit] = useState<number>(20);
+  const [offset, setOffset] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+
+  const toPreview = (url?: string) => {
+    if (!url) return undefined;
+    try {
+      const raw = String(url);
+      if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
+      const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      let id = m?.[1];
+      if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+      return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
+    } catch { return url; }
+  };
+
+  const mapPosts = (arr: any[]): Post[] => {
+    return (arr || []).map((p: any) => {
+      const authorRaw = p.author; // could be cedula or display name (legacy)
+      const display = p.authorName || (typeof authorRaw === 'string' && authorRaw.includes(' ') ? authorRaw : 'Usuario');
+      return ({
+        id: String(p._id || ''),
+        author: display,
+        ownerId: typeof authorRaw === 'string' && !authorRaw.includes(' ') ? authorRaw : undefined,
+        avatar: display.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
+        time: new Date(p.date).toLocaleString(),
+        content: p.content,
+        image: toPreview(p.photo_link) || undefined,
+        likes: p.likes || 0,
+        comments: p.comments_count || 0,
+        isLiked: false,
+      });
+    });
+  };
+
+  const loadPage = useCallback(async (nextOffset: number) => {
+    if (loadingMore || (!hasMore && nextOffset !== 0)) return;
+    setLoadingMore(true);
+    try {
+      const r = await fetch(`/api/forum?limit=${limit}&offset=${nextOffset}`, { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } });
+      const data = r.ok ? await r.json() : [];
+      const items = Array.isArray(data) ? data : (data?.items || []);
+      const page = Array.isArray(data) ? undefined : data?.page;
+      const mapped = mapPosts(items);
+      if (nextOffset === 0) setPosts(mapped);
+      else setPosts(prev => [...prev, ...mapped]);
+      setHasMore(page?.hasMore ?? (mapped.length === limit));
+      setOffset(nextOffset + (page?.limit ?? limit));
+      // stats: prefer total if provided
+      if (page?.total != null) {
+        setStats(prev => ({ ...prev, posts: Number(page.total) || 0 }));
+      } else if (nextOffset === 0) {
+        setStats(prev => ({ ...prev, posts: mapped.length }));
+      }
+    } catch {
+      // keep previous state
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, limit, loadingMore]);
 
   useEffect(() => {
-    // Load real posts from backend (Mongo)
-  fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then((data) => {
-        if (Array.isArray(data) && data.length) {
-                    const toPreview = (url?: string) => {
-                      if (!url) return undefined;
-                      try {
-                        const raw = String(url);
-                        if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
-                        const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                        let id = m?.[1];
-                        if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
-                        return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
-                      } catch { return url; }
-                    };
-          const mapped: Post[] = data.map((p: any) => {
-            const authorRaw = p.author; // could be cedula or display name (legacy)
-            const display = p.authorName || (typeof authorRaw === 'string' && authorRaw.includes(' ') ? authorRaw : 'Usuario');
-            return ({
-              id: String(p._id || ''),
-              author: display,
-              ownerId: typeof authorRaw === 'string' && !authorRaw.includes(' ') ? authorRaw : undefined,
-              avatar: display.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
-              time: new Date(p.date).toLocaleString(),
-              content: p.content,
-              image: toPreview(p.photo_link) || undefined,
-              likes: p.likes || 0,
-              comments: p.comments_count || 0,
-              isLiked: false,
-            });
-          });
-          setPosts(mapped);
-        }
-      })
-      .catch(()=>{});
-    // Load counts for stats (removed /api/users fetch since it requires admin privileges)
-    fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then((postsList) => {
-        const postsCount = Array.isArray(postsList) ? postsList.length : 0;
-        let commentsCount = 0;
-        if (Array.isArray(postsList)) {
-          commentsCount = postsList.reduce((acc: number, p: any) => acc + (p.comments_count || 0), 0);
-        }
-        setStats({ users: 0, posts: postsCount, comments: commentsCount });
-      })
-      .catch(()=>{});
+    loadPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const setSentinelRef = useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) observerRef.current.disconnect();
+    if (node && scrollRef.current) {
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0]?.isIntersecting) {
+          if (hasMore && !loadingMore) {
+            loadPage(offset);
+          }
+        }
+      }, { root: scrollRef.current, threshold: 0.1 });
+      observerRef.current.observe(node);
+    }
+  }, [hasMore, loadingMore, offset, loadPage]);
 
   const handleLikePost = async (postId: string) => {
     setPosts(posts.map(post => 
@@ -364,7 +329,7 @@ export default function Community() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto pb-20 sm:pb-24 md:pb-28 min-h-screen bg-gray-50">
+  <div ref={scrollRef} className="flex-1 overflow-y-auto pb-20 sm:pb-24 md:pb-28 min-h-screen bg-gray-50">
       <UserProfileModal 
         isOpen={showProfileModal} 
         onClose={() => setShowProfileModal(false)} 
@@ -649,6 +614,13 @@ export default function Community() {
               )}
             </div>
           ))}
+          {/* Sentinel ~10 from end to prefetch next page */}
+          {posts.length > 0 && (
+            <div ref={setSentinelRef} style={{ height: 1 }} />
+          )}
+          {loadingMore && (
+            <div className="text-center text-xs text-gray-500 py-2">Cargando más…</div>
+          )}
         </section>
 
         {/* Community Stats */}

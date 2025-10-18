@@ -21,9 +21,16 @@ async function fetchNamesByCedula(cedulas) {
   }
 }
 
-export async function listPosts(filter = {}) {
+export async function listPosts(filter = {}, opts = {}) {
   const db = await getDb();
-  const docs = await db.collection('userPosts').find(filter).sort({ date: -1 }).toArray();
+  const limit = Math.max(1, Math.min(100, Number(opts.limit) || 20));
+  const offset = Math.max(0, Number(opts.offset) || 0);
+  const cursor = db.collection('userPosts').find(filter).sort({ date: -1 }).skip(offset).limit(limit + 1);
+  const docs = await cursor.toArray();
+  const hasMore = docs.length > limit;
+  const slice = hasMore ? docs.slice(0, limit) : docs;
+  let total = undefined;
+  try { total = await db.collection('userPosts').countDocuments(filter); } catch {}
   const cedulas = [...new Set(docs.map(d => d.author).filter(isCedula))];
   const nameMap = await fetchNamesByCedula(cedulas);
   const toPreview = (url) => {
@@ -39,12 +46,16 @@ export async function listPosts(filter = {}) {
       return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
     } catch { return url; }
   };
-  return docs.map(d => ({
-    ...d,
-    photo_link: toPreview(d.photo_link),
-    _id: String(d._id),
-    authorName: nameMap[d.author] || (typeof d.author === 'string' && d.author.includes(' ') ? d.author : undefined),
-  }));
+  return {
+    items: slice.map(d => ({
+      ...d,
+      photo_link: toPreview(d.photo_link),
+      _id: String(d._id),
+      authorName: nameMap[d.author] || (typeof d.author === 'string' && d.author.includes(' ') ? d.author : undefined),
+    })),
+    hasMore,
+    total
+  };
 }
 
 export async function createPost(post) {
@@ -126,6 +137,15 @@ export async function updatePost(id, updates) {
     const allowed = ['pending','approved','rejected'];
     if (allowed.includes(String(updates.status))) set.status = updates.status;
   }
+  // AI fields (optional)
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_flagged')) set.ai_flagged = !!updates.ai_flagged;
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_summary')) set.ai_summary = updates.ai_summary;
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_scores')) set.ai_scores = updates.ai_scores;
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_labels')) set.ai_labels = updates.ai_labels;
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_safe')) set.ai_safe = updates.ai_safe;
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_mismatch')) set.ai_mismatch = !!updates.ai_mismatch;
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_text_toxic')) set.ai_text_toxic = !!updates.ai_text_toxic;
+  if (Object.prototype.hasOwnProperty.call(updates, 'ai_checked_at')) set.ai_checked_at = new Date(updates.ai_checked_at);
   const res = await db.collection('userPosts').findOneAndUpdate(
     { _id },
     { $set: set },

@@ -1,4 +1,5 @@
 import { listPosts, createPost, toggleLikePost, deletePost, listComments, addComment, likeComment, deleteComment, updatePost, getPostById, getCommentById } from '../models/forumModel.js';
+import { analyzeImageForModeration } from '../lib/vision.js';
 import { isPrivileged } from '../lib/auth.js';
 
 export default {
@@ -7,16 +8,47 @@ export default {
       const role = _req.user?.role;
       // Regular users: only approved posts; admins/moderators: all
       const filter = isPrivileged(role) ? {} : { $or: [ { status: 'approved' }, { status: { $exists: false } } ] };
-      const rows = await listPosts(filter);
+      const hasPaging = typeof _req.query.limit !== 'undefined' || typeof _req.query.offset !== 'undefined';
+      const limit = Math.max(1, Math.min(100, parseInt(_req.query.limit, 10) || 20));
+      const offset = Math.max(0, parseInt(_req.query.offset, 10) || 0);
+      const { items, hasMore, total } = await listPosts(filter, { limit, offset });
       // Normalize status for legacy docs
-      res.json(rows.map(r => ({ ...r, status: r.status || 'approved' })));
+      if (hasPaging) {
+        res.json({
+          items: items.map(r => ({ ...r, status: r.status || 'approved' })),
+          page: { limit, offset, hasMore, total }
+        });
+      } else {
+        res.json(items.map(r => ({ ...r, status: r.status || 'approved' })));
+      }
     } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to list posts' }); }
   },
   async create(req, res) {
     try {
       const body = { ...req.body };
       if (!body.author && req.user?.cedula) body.author = req.user.cedula;
-      res.status(201).json(await createPost(body));
+      // Force pending status until AI check
+      const created = await createPost({ ...body, status: 'pending' });
+      res.status(201).json(created);
+      // async AI audit
+      setImmediate(async () => {
+        try {
+          const ai = await analyzeImageForModeration({ photo_link: created.photo_link, text: created.content });
+          const patch = {
+            ai_flagged: ai.ai_flagged,
+            ai_summary: ai.ai_summary,
+            ai_scores: ai.ai_scores,
+            ai_labels: ai.ai_labels,
+            ai_safe: ai.ai_safe,
+            ai_mismatch: ai.ai_mismatch,
+            ai_text_toxic: ai.ai_text_toxic,
+            ai_checked_at: ai.checked_at,
+          };
+          if (ai.autoApprove) patch.status = 'approved';
+          else if (ai.ai_text_toxic) patch.status = 'rejected';
+          await updatePost(created._id || created.id, patch);
+        } catch (e) { /* no-op */ }
+      });
     } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to create post' }); }
   },
   async like(req, res) {
