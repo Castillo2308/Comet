@@ -23,7 +23,7 @@ interface User {
   cedula?: string;
   name: string;
   email: string;
-  role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver';
+  role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver' | 'community';
   status: 'Activo' | 'Inactivo';
   joinDate: string;
   reportsCount: number;
@@ -193,18 +193,18 @@ export default function AdminDashboard() {
     try {
       const r = await fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } });
       const rows = r.ok ? await r.json() : [];
-      const toEmbeddable = (url?: string) => {
+      const toPreview = (url?: string) => {
         if (!url) return undefined;
         try {
           const raw = String(url);
+          if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
           const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
           let id = m?.[1];
           if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
-          if (id) return `https://drive.google.com/thumbnail?id=${id}`;
-          return raw;
+          return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
         } catch { return url; }
       };
-      const posts = (Array.isArray(rows) ? rows : []).map((p:any) => ({ ...p, photo_link: toEmbeddable(p.photo_link) }));
+      const posts = (Array.isArray(rows) ? rows : []).map((p:any) => ({ ...p, photo_link: toPreview(p.photo_link) }));
       setCommunityPosts(posts);
     } catch {
       setCommunityPosts([]);
@@ -244,6 +244,7 @@ export default function AdminDashboard() {
     if (role === 'news') return ['dashboard','news','events'].includes(item.id);
     if (role === 'reports') return ['dashboard','reports'].includes(item.id);
     if (role === 'buses') return ['dashboard','buses'].includes(item.id);
+    if (role === 'community') return ['dashboard','community'].includes(item.id);
     return false; // users shouldn't see AdminDashboard tabs
   });
 
@@ -726,6 +727,7 @@ export default function AdminDashboard() {
                 <option value="reports">Reportes</option>
                 <option value="buses">Buses</option>
                 <option value="driver">Conductor</option>
+                <option value="community">Comunidad</option>
               </select>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={()=>setAdminModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
@@ -1039,7 +1041,22 @@ export default function AdminDashboard() {
                     </span>
                   )}
                   <div className="text-sm text-gray-800 whitespace-pre-wrap">{p.content}</div>
-                  {p.photo_link && <img src={p.photo_link} alt="foto" className="mt-2 max-h-48 rounded-lg border" />}
+                  {p.photo_link && (
+                    /\/file\/d\//.test(p.photo_link) && /\/preview(\?|$)/.test(p.photo_link) ? (
+                      <div className="mt-2">
+                        <iframe
+                          src={p.photo_link}
+                          className="w-full rounded-lg border"
+                          style={{ height: 200, border: 'none' }}
+                          allow="autoplay; encrypted-media"
+                          loading="lazy"
+                          title="Vista previa"
+                        />
+                      </div>
+                    ) : (
+                      <img src={p.photo_link} alt="foto" className="mt-2 max-h-48 rounded-lg border" />
+                    )
+                  )}
                 </div>
                 <div className="flex gap-1 items-center">
                   {p.status === 'pending' && (
@@ -1209,7 +1226,7 @@ export default function AdminDashboard() {
       .catch(()=>{});
 
     // Comunidad (admin only pre-load)
-    if ((user?.role || 'user') === 'admin') {
+    if ((user?.role || 'user') === 'admin' || (user?.role || 'user') === 'community') {
       setCommunityLoading(true);
   fetch('/api/forum', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
         .then(r => r.ok ? r.json() : [])
@@ -1221,7 +1238,7 @@ export default function AdminDashboard() {
               const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
               let id = m?.[1];
               if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
-              if (id) return `https://drive.google.com/thumbnail?id=${id}`;
+              if (id) return `https://drive.google.com/file/d/${id}/preview`;
               return raw;
             } catch { return url; }
           };
@@ -1919,7 +1936,7 @@ export default function AdminDashboard() {
             {activeTab === 'securityNews' && (role==='admin' || role==='security') && renderSecurityNews()}
             {activeTab === 'users' && role==='admin' && renderUsers()}
             {/* administrators tab merged into users */}
-            {activeTab === 'community' && role==='admin' && renderCommunity()}
+            {activeTab === 'community' && (role==='admin' || role==='community') && renderCommunity()}
             {activeTab === 'complaints' && (role==='admin' || role==='security') && renderComplaints()}
             {activeTab === 'hotspots' && (role==='admin' || role==='security') && renderHotspots()}
             {activeTab === 'events' && (role==='admin' || role==='news') && renderEvents()}

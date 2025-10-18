@@ -6,7 +6,7 @@ interface User {
   email: string;
   lastname: string;
   cedula: string;
-  role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver';
+  role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver' | 'community';
 }
 
 interface AuthContextType {

@@ -116,15 +116,15 @@ export default function Community() {
       .then(r => r.ok ? r.json() : [])
       .then((data) => {
         if (Array.isArray(data) && data.length) {
-                    const toEmbeddable = (url?: string) => {
+                    const toPreview = (url?: string) => {
                       if (!url) return undefined;
                       try {
                         const raw = String(url);
+                        if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
                         const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
                         let id = m?.[1];
                         if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
-                        if (id) return `https://drive.google.com/thumbnail?id=${id}`;
-                        return raw;
+                        return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
                       } catch { return url; }
                     };
           const mapped: Post[] = data.map((p: any) => {
@@ -137,7 +137,7 @@ export default function Community() {
               avatar: display.split(' ').map((s:string)=>s[0]).join('').slice(0,2) || 'U',
               time: new Date(p.date).toLocaleString(),
               content: p.content,
-              image: toEmbeddable(p.photo_link) || undefined,
+              image: toPreview(p.photo_link) || undefined,
               likes: p.likes || 0,
               comments: p.comments_count || 0,
               isLiked: false,
@@ -283,15 +283,15 @@ export default function Community() {
       });
       if (res.ok) {
         const saved = await res.json();
-        const toEmbeddable = (url?: string) => {
+        const toPreview = (url?: string) => {
           if (!url) return undefined;
           try {
             const raw = String(url);
+            if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
             const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
             let id = m?.[1];
             if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
-            if (id) return `https://drive.google.com/thumbnail?id=${id}`;
-            return raw;
+            return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
           } catch { return url; }
         };
         const newPostObj: Post = {
@@ -301,7 +301,7 @@ export default function Community() {
           avatar: `${user?.name?.charAt(0)}${user?.lastname?.charAt(0)}`,
           time: new Date(saved.date || Date.now()).toLocaleString(),
           content: saved.content ?? newPost,
-          image: toEmbeddable(saved.photo_link || photoUrl) || undefined,
+          image: toPreview(saved.photo_link || photoUrl) || undefined,
           likes: saved.likes ?? 0,
           comments: saved.comments_count ?? 0,
           isLiked: false
@@ -513,11 +513,24 @@ export default function Community() {
 
                 {/* Post Image */}
                 {post.image && (
-                  <img
-                    src={post.image}
-                    alt="Post content"
-                    className="w-full h-48 object-cover rounded-lg mb-3 transition-transform duration-300 hover:scale-105"
-                  />
+                  /\/file\/d\//.test(post.image) && /\/preview(\?|$)/.test(post.image) ? (
+                    <div className="w-full mb-3">
+                      <iframe
+                        src={post.image}
+                        className="w-full rounded-lg"
+                        style={{ height: 240, border: 'none' }}
+                        allow="autoplay; encrypted-media"
+                        loading="lazy"
+                        title="Vista previa"
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={post.image}
+                      alt="Post content"
+                      className="w-full h-48 object-cover rounded-lg mb-3 transition-transform duration-300 hover:scale-105"
+                    />
+                  )
                 )}
 
                 {/* Post Actions */}

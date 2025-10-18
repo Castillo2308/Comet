@@ -26,8 +26,22 @@ export async function listPosts(filter = {}) {
   const docs = await db.collection('userPosts').find(filter).sort({ date: -1 }).toArray();
   const cedulas = [...new Set(docs.map(d => d.author).filter(isCedula))];
   const nameMap = await fetchNamesByCedula(cedulas);
+  const toPreview = (url) => {
+    if (!url) return url;
+    try {
+      const raw = String(url);
+      // Already preview
+      if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
+      const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      let id = m?.[1];
+      if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {}
+      }
+      return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
+    } catch { return url; }
+  };
   return docs.map(d => ({
     ...d,
+    photo_link: toPreview(d.photo_link),
     _id: String(d._id),
     authorName: nameMap[d.author] || (typeof d.author === 'string' && d.author.includes(' ') ? d.author : undefined),
   }));
@@ -35,9 +49,20 @@ export async function listPosts(filter = {}) {
 
 export async function createPost(post) {
   const db = await getDb();
+  const toPreview = (url) => {
+    if (!url) return url;
+    try {
+      const raw = String(url);
+      if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
+      const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      let id = m?.[1];
+      if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+      return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
+    } catch { return url; }
+  };
   const doc = {
     content: post.content,
-    photo_link: post.photo_link || null,
+    photo_link: toPreview(post.photo_link) || null,
     likes: 0,
     comments_count: 0,
     date: post.date ? new Date(post.date) : new Date(),
@@ -84,8 +109,19 @@ export async function updatePost(id, updates) {
   const db = await getDb();
   const _id = new ObjectId(id);
   const set = {};
+  const toPreview = (url) => {
+    if (!url) return url;
+    try {
+      const raw = String(url);
+      if (/\/file\/d\//.test(raw) && /\/preview(\?|$)/.test(raw)) return raw;
+      const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      let id = m?.[1];
+      if (!id) { try { const u = new URL(raw); id = u.searchParams.get('id') || undefined; } catch {} }
+      return id ? `https://drive.google.com/file/d/${id}/preview` : raw;
+    } catch { return url; }
+  };
   if (Object.prototype.hasOwnProperty.call(updates, 'content')) set.content = updates.content;
-  if (Object.prototype.hasOwnProperty.call(updates, 'photo_link')) set.photo_link = updates.photo_link;
+  if (Object.prototype.hasOwnProperty.call(updates, 'photo_link')) set.photo_link = toPreview(updates.photo_link);
   if (Object.prototype.hasOwnProperty.call(updates, 'status')) {
     const allowed = ['pending','approved','rejected'];
     if (allowed.includes(String(updates.status))) set.status = updates.status;
