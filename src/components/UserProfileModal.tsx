@@ -79,9 +79,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
               <User className="h-10 w-10 text-blue-500" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900">{user?.name} {user?.lastname}</h3>
-            <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-              logout &gt;
-            </span>
+           
           </div>
 
           {/* Form */}
