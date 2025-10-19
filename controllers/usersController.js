@@ -111,8 +111,24 @@ const registerUser = async (req, res) => {
         const baseUrl = process.env.PUBLIC_BASE_URL || (req.headers.origin || `${req.protocol}://${req.get('host')}`);
   const verifyUrl = `${baseUrl}/verified?token=${encodeURIComponent(token)}`;
         const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
-        try { await insertVerifyToken({ token, email, expiresAt }); } catch (e) { console.log('[register] Token insert failed:', e); }
-        try { await sendVerificationEmail({ to: email, verifyUrl }); } catch (e) { console.log('[register] Email send failed:', e); }
+        try { 
+          await insertVerifyToken({ token, email, expiresAt }); 
+          console.log('[register] Token inserted for:', email);
+        } catch (e) { 
+          console.error('[register] Token insert failed:', e); 
+          return res.status(500).json({ message: 'Failed to create verification token.' });
+        }
+        
+        try { 
+          console.log('[register] Sending verification email to:', email);
+          await sendVerificationEmail({ to: email, verifyUrl }); 
+          console.log('[register] ✓ Verification email sent successfully to:', email);
+        } catch (e) { 
+          console.error('[register] ✗ Email send failed:', e.message || e);
+          // Token was created but email failed - still allow registration
+          // but log the error clearly
+          console.error('[register] WARNING: User registered but verification email failed to send');
+        }
       }
       console.log('[register] User registered successfully:', email);
       res.status(201).json({ message: 'User registered successfully!', verified });
@@ -254,8 +270,22 @@ export const resendVerification = async (req, res) => {
     const baseUrl = process.env.PUBLIC_BASE_URL || (req.headers.origin || `${req.protocol}://${req.get('host')}`);
   const verifyUrl = `${baseUrl}/verified?token=${encodeURIComponent(token)}`;
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
-    try { await insertVerifyToken({ token, email: normalized, expiresAt }); } catch {}
-    try { await sendVerificationEmail({ to: normalized, verifyUrl }); } catch {}
+    
+    try { 
+      await insertVerifyToken({ token, email: normalized, expiresAt }); 
+      console.log('[resend] Token inserted for:', normalized);
+    } catch (e) {
+      console.error('[resend] Token insert failed:', e);
+    }
+    
+    try { 
+      console.log('[resend] Sending verification email to:', normalized);
+      await sendVerificationEmail({ to: normalized, verifyUrl }); 
+      console.log('[resend] ✓ Verification email sent successfully');
+    } catch (e) {
+      console.error('[resend] ✗ Email send failed:', e.message || e);
+    }
+    
     return res.json({ ok: true });
   } catch (e) {
     console.error('resendVerification error', e);
