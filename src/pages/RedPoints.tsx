@@ -5,6 +5,9 @@ import { api } from '../lib/api';
 import HotspotsMap, { HotspotPoint } from '../components/HotspotsMap';
 import UserProfileModal from '../components/UserProfileModal';
 
+// Get Google Maps API key from environment, with fallback
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyDluFc7caulw2jHJKsPM_mGnLa8oLuFgio';
+
 interface RedPoint {
   id: number;
   location: string;
@@ -260,7 +263,7 @@ export default function RedPoints() {
                 <div className="space-y-2">
                   <label className="text-sm text-gray-700 font-medium">Selecciona la ubicación en el mapa</label>
                   <HotspotsMap
-                    apiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY as string}
+                    apiKey={GOOGLE_MAPS_KEY}
                     points={[]}
                     pickMode
                     selected={mapPick}
@@ -331,7 +334,7 @@ export default function RedPoints() {
           <div className="bg-white rounded-xl p-4 border border-blue-100">
             <h3 className="font-semibold text-gray-900 text-sm mb-2">Mapa de Zonas de Riesgo</h3>
             <HotspotsMap
-              apiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY as string}
+              apiKey={GOOGLE_MAPS_KEY}
               points={redPoints.map<HotspotPoint>(p => ({ id: p.id, title: p.location, lat: (p as any).lat, lng: (p as any).lng, riskLevel: p.riskLevel }))}
               onPlaceSelected={(place) => {
                 const lat = place.geometry?.location?.lat?.();
