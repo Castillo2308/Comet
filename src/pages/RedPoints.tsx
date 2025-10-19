@@ -69,6 +69,12 @@ export default function RedPoints() {
       address: newPointLatLng.address,
       placeId: newPointLatLng.placeId,
       plusCode: newPointPlusCode,
+    const point: RedPoint = {
+      id: Date.now(),
+      ...newPoint,
+      author: 'Usuario Anónimo',
+      date: 'ahora',
+      comments: []
     };
     try {
       const res = await api('/security/hotspots', {
@@ -181,6 +187,18 @@ export default function RedPoints() {
       })
       .catch(() => {});
   }, []);
+    const comment: Comment = {
+      id: Date.now(),
+      author: 'Usuario Anónimo',
+      content: commentText,
+      date: 'ahora'
+    };
+
+    setRedPoints(redPoints.map(point =>
+      point.id === pointId
+        ? { ...point, comments: [...point.comments, comment] }
+        : point
+    ));
 
   const canDeletePoint = (p: RedPoint) => !!user?.cedula && (p.author === user.cedula);
   const deletePoint = async (id: any) => {

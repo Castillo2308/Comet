@@ -33,6 +33,38 @@
   background-color: #374151 !important;
 }
 
+.dark .bg-gray-200 {
+  background-color: #4b5563 !important;
+}
+
+.dark .bg-gray-300 {
+  background-color: #6b7280 !important;
+}
+
+.dark .bg-gray-400 {
+  background-color: #9ca3af !important;
+}
+
+.dark .bg-gray-500 {
+  background-color: #6b7280 !important;
+}
+
+.dark .bg-gray-600 {
+  background-color: #4b5563 !important;
+}
+
+.dark .bg-gray-700 {
+  background-color: #374151 !important;
+}
+
+.dark .bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-900 {
+  background-color: #111827 !important;
+}
+
 .dark .text-gray-900 {
   color: #f9fafb !important;
 }
@@ -49,6 +81,26 @@
   color: #9ca3af !important;
 }
 
+.dark .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.dark .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-200 {
+  color: #e5e7eb !important;
+}
+
+.dark .text-gray-100 {
+  color: #f3f4f6 !important;
+}
+
 .dark .border-gray-100 {
   border-color: #4b5563 !important;
 }
@@ -57,6 +109,113 @@
   border-color: #6b7280 !important;
 }
 
+.dark .border-gray-300 {
+  border-color: #6b7280 !important;
+}
+
+.dark .border-gray-400 {
+  border-color: #9ca3af !important;
+}
+
+.dark .border-gray-500 {
+  border-color: #6b7280 !important;
+}
+
+.dark .border-gray-600 {
+  border-color: #4b5563 !important;
+}
+
+.dark .border-gray-700 {
+  border-color: #374151 !important;
+}
+
+/* Dark mode for form elements */
+.dark input, .dark textarea, .dark select {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f9fafb !important;
+}
+
+.dark input:focus, .dark textarea:focus, .dark select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Dark mode for buttons */
+.dark .hover\:bg-gray-50:hover {
+  background-color: #374151 !important;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #4b5563 !important;
+}
+
+/* Dark mode for cards and containers */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dark mode for specific components */
+.dark .bg-blue-50 {
+  background-color: #1e3a8a !important;
+}
+
+.dark .bg-green-50 {
+  background-color: #14532d !important;
+}
+
+.dark .bg-red-50 {
+  background-color: #7f1d1d !important;
+}
+
+.dark .bg-yellow-50 {
+  background-color: #78350f !important;
+}
+
+.dark .bg-orange-50 {
+  background-color: #7c2d12 !important;
+}
+
+.dark .bg-purple-50 {
+  background-color: #581c87 !important;
+}
+
+/* Dark mode for backdrop blur */
+.dark .bg-white\/95 {
+  background-color: rgba(55, 65, 81, 0.95) !important;
+}
+
+.dark .bg-opacity-20 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .bg-opacity-30 {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dark .bg-opacity-80 {
+  background-color: rgba(55, 65, 81, 0.8) !important;
+}
+
+.dark .bg-opacity-90 {
+  background-color: rgba(55, 65, 81, 0.9) !important;
+}
+
+.dark .bg-opacity-95 {
+  background-color: rgba(55, 65, 81, 0.95) !important;
+}
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

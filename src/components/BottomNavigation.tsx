@@ -106,6 +106,7 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
   );
 
   const renderSubmenuNavigation = (submenuItems: any[]) => (
+  const renderSubmenuNavigation = (submenuItems: any[], title: string) => (
     <nav className="flex items-center justify-between w-full max-w-lg mx-auto sm:max-w-3xl px-4">
       {/* Back button */}
       <button
@@ -169,6 +170,11 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
           ) : showInfoSubmenu ? (
             <div className="transform transition-all duration-500 animate-slideInRight">
               {renderSubmenuNavigation(infoSubmenuItems)}
+              {renderSubmenuNavigation(announcementsSubmenuItems, 'Anuncios')}
+            </div>
+          ) : showInfoSubmenu ? (
+            <div className="transform transition-all duration-500 animate-slideInRight">
+              {renderSubmenuNavigation(infoSubmenuItems, 'Información')}
             </div>
           ) : (
             <div className="transform transition-all duration-500">
