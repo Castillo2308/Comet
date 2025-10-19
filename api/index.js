@@ -65,15 +65,31 @@ for (const o of rawOrigins) {
 
 function isAllowedOrigin(origin) {
   if (!origin) return true; // non-browser or same-origin
-  if (rawOrigins.length === 0) return true; // permissive if not configured
+  
   let host = '';
   try { host = new URL(origin).hostname.toLowerCase(); }
   catch { host = parseHost(origin).toLowerCase(); }
   if (!host) return false;
+  
+  // If on Vercel, allow all Vercel subdomains by default
+  if (host.endsWith('.vercel.app')) {
+    console.log(`CORS allowed: ${origin}`);
+    return true;
+  }
+  
+  // If localhost, always allow (development)
+  if (host === 'localhost' || host.startsWith('127.')) {
+    return true;
+  }
+  
+  if (rawOrigins.length === 0) return true; // permissive if not configured
+  
   if (exactHosts.includes(host)) return true;
   for (const sfx of suffixHosts) {
     if (host === sfx || host.endsWith('.' + sfx)) return true;
   }
+  
+  console.warn(`CORS rejected: ${origin}`);
   return false;
 }
 
