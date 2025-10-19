@@ -65,15 +65,31 @@ for (const o of rawOrigins) {
 
 function isAllowedOrigin(origin) {
   if (!origin) return true; // non-browser or same-origin
-  if (rawOrigins.length === 0) return true; // permissive if not configured
+  
   let host = '';
   try { host = new URL(origin).hostname.toLowerCase(); }
   catch { host = parseHost(origin).toLowerCase(); }
   if (!host) return false;
+  
+  // If on Vercel, allow all Vercel subdomains by default
+  if (host.endsWith('.vercel.app')) {
+    console.log(`CORS allowed: ${origin}`);
+    return true;
+  }
+  
+  // If localhost, always allow (development)
+  if (host === 'localhost' || host.startsWith('127.')) {
+    return true;
+  }
+  
+  if (rawOrigins.length === 0) return true; // permissive if not configured
+  
   if (exactHosts.includes(host)) return true;
   for (const sfx of suffixHosts) {
     if (host === sfx || host.endsWith('.' + sfx)) return true;
   }
+  
+  console.warn(`CORS rejected: ${origin}`);
   return false;
 }
 
@@ -85,10 +101,30 @@ app.use(cors({
   credentials: true,
 }));
 
+// Explicit CORS headers for Vercel
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Allow all Vercel subdomains
+  if (origin && origin.includes('.vercel.app')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  } else if (origin === 'http://localhost:3000' || origin === 'http://localhost:5173') {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  }
+  
+  next();
+});
+
 // Handle preflight without defining a route pattern (prevents path-to-regexp issues)
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
-    // CORS middleware above already set the headers
+    // CORS headers already set above
     return res.sendStatus(204);
   }
   next();
