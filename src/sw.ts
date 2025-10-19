@@ -14,6 +14,8 @@ swSelf.skipWaiting();
 
 let pingTimer: number | undefined;
 let pingIntervalMs = 20_000;
+let newsTimer: number | undefined;
+let newsIntervalMs = 60_000; // default 1 minute
 
 // Simple IndexedDB helpers for SW-side persistence
 function idbOpen(dbName: string, storeName: string): Promise<IDBDatabase> {
@@ -51,6 +53,105 @@ async function idbGet<T = any>(dbName: string, storeName: string, key: IDBValidK
 async function getClient(): Promise<WindowClient | Client | null> {
   const all = await swSelf.clients.matchAll({ type: 'window', includeUncontrolled: true });
   return all.length ? all[0] : null;
+}
+
+async function checkNews() {
+  try {
+    // get token from IDB
+    const token = await idbGet<string>('comet-driver', 'kv', 'authToken');
+    if (!token) return;
+    const res = await fetch('/api/news', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return;
+    if (!rows.length) return;
+
+    // Compute max id and max time across all rows
+    const maxId = rows.reduce((m: number, n: any) => {
+      const v = Number(n?.id) || 0; return v > m ? v : m;
+    }, 0);
+    const maxTime = rows.reduce((m: number, n: any) => {
+      let t = 0; try { t = new Date(n?.date).getTime(); } catch { t = 0; }
+      return Number.isFinite(t) && t > m ? t : m;
+    }, 0);
+
+    const lastSeenTime = (await idbGet<number>('comet-driver', 'kv', 'lastNewsTime')) || 0;
+    const lastSeenId = (await idbGet<number>('comet-driver', 'kv', 'lastNewsId')) || 0;
+
+    const hasNewByTime = Number.isFinite(maxTime) && maxTime > lastSeenTime;
+    const hasNewById = Number.isFinite(maxId) && maxId > lastSeenId;
+
+    if (hasNewByTime || hasNewById) {
+      // Pick a representative new item: prefer newest by date beyond last seen; otherwise newest by id beyond last seen
+      let latest: any = rows.find((n: any) => {
+        try { return new Date(n.date).getTime() > lastSeenTime; } catch { return false; }
+      });
+      if (!latest && hasNewById) {
+        latest = rows.find((n: any) => (Number(n?.id) || 0) > lastSeenId) || rows[0];
+      }
+      const rawTitle = (latest?.title || 'Nueva noticia').toString();
+      const rawDesc = (latest?.description || '').toString();
+      const words = rawDesc.trim().split(/\s+/).filter(Boolean);
+      const truncated = words.slice(0, 40);
+      const preview = truncated.join(' ') + (words.length > 40 ? '' : '');
+      const thisId = Number(latest?.id) || maxId || 0;
+      await swSelf.registration.showNotification(rawTitle, {
+        body: preview || 'Revisa las últimas noticias municipales.',
+        tag: thisId ? `news-${thisId}` : 'news-update'
+      });
+      await idbSet('comet-driver', 'kv', 'lastNewsTime', maxTime || Date.now());
+      if (thisId) await idbSet('comet-driver', 'kv', 'lastNewsId', Math.max(thisId, maxId));
+    }
+  } catch (e) {
+    // swallow errors
+  }
+
+  // Also check Security News
+  try {
+    const token = await idbGet<string>('comet-driver', 'kv', 'authToken');
+    if (!token) return;
+    const res = await fetch('/api/security-news', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) return;
+
+    const maxId = rows.reduce((m: number, n: any) => {
+      const v = Number(n?.id) || 0; return v > m ? v : m;
+    }, 0);
+    const maxTime = rows.reduce((m: number, n: any) => {
+      let t = 0; try { t = new Date(n?.date).getTime(); } catch { t = 0; }
+      return Number.isFinite(t) && t > m ? t : m;
+    }, 0);
+
+    const lastSeenTime = (await idbGet<number>('comet-driver', 'kv', 'lastSecurityNewsTime')) || 0;
+    const lastSeenId = (await idbGet<number>('comet-driver', 'kv', 'lastSecurityNewsId')) || 0;
+
+    const hasNewByTime = Number.isFinite(maxTime) && maxTime > lastSeenTime;
+    const hasNewById = Number.isFinite(maxId) && maxId > lastSeenId;
+
+    if (hasNewByTime || hasNewById) {
+      let latest: any = rows.find((n: any) => {
+        try { return new Date(n.date).getTime() > lastSeenTime; } catch { return false; }
+      });
+      if (!latest && hasNewById) {
+        latest = rows.find((n: any) => (Number(n?.id) || 0) > lastSeenId) || rows[0];
+      }
+      const rawTitle = (latest?.title || 'Nueva noticia de seguridad').toString();
+      const rawDesc = (latest?.description || '').toString();
+      const words = rawDesc.trim().split(/\s+/).filter(Boolean);
+      const truncated = words.slice(0, 40);
+      const preview = truncated.join(' ') + (words.length > 40 ? '' : '');
+      const thisId = Number(latest?.id) || maxId || 0;
+      await swSelf.registration.showNotification(rawTitle, {
+        body: preview || 'Revisa las últimas noticias de seguridad.',
+        tag: thisId ? `security-news-${thisId}` : 'security-news-update'
+      });
+      await idbSet('comet-driver', 'kv', 'lastSecurityNewsTime', maxTime || Date.now());
+      if (thisId) await idbSet('comet-driver', 'kv', 'lastSecurityNewsId', Math.max(thisId, maxId));
+    }
+  } catch (e) {
+    // swallow errors
+  }
 }
 
 async function sendPing() {
@@ -105,6 +206,18 @@ function stopPings() {
   pingTimer = undefined;
 }
 
+function startNewsChecks() {
+  if (newsTimer) clearInterval(newsTimer);
+  newsTimer = setInterval(checkNews, newsIntervalMs) as unknown as number;
+  // prime once
+  checkNews();
+}
+
+function stopNewsChecks() {
+  if (newsTimer) clearInterval(newsTimer);
+  newsTimer = undefined;
+}
+
 swSelf.addEventListener('message', (event: ExtendableMessageEvent) => {
   const data = (event as any).data;
   if (!data) return;
@@ -116,6 +229,16 @@ swSelf.addEventListener('message', (event: ExtendableMessageEvent) => {
   } else if (data.type === 'UPDATE_LAST_LOCATION') {
     const loc = data.payload;
     event.waitUntil(idbSet('comet-driver', 'kv', 'lastLocation', loc).catch(()=>{}));
+  } else if (data.type === 'UPDATE_AUTH_TOKEN') {
+    const token = data.token;
+    event.waitUntil(idbSet('comet-driver', 'kv', 'authToken', token).catch(()=>{}));
+  } else if (data.type === 'START_NEWS_CHECK') {
+    newsIntervalMs = typeof data.interval === 'number' ? data.interval : 60_000;
+    startNewsChecks();
+  } else if (data.type === 'STOP_NEWS_CHECK') {
+    stopNewsChecks();
+  } else if (data.type === 'TRIGGER_NEWS_CHECK') {
+    event.waitUntil(checkNews());
   }
 });
 
@@ -129,6 +252,9 @@ swSelf.addEventListener('sync', (event: any) => {
   if (event?.tag && event.tag.startsWith('bus-ping')) {
     event.waitUntil(sendPing());
   }
+  if (event?.tag && event.tag.startsWith('news-check')) {
+    event.waitUntil(checkNews());
+  }
 });
 
 // Periodic Background Sync (Chrome/Android installed PWA)
@@ -139,4 +265,21 @@ swSelf.addEventListener('periodicsync', (event: any) => {
   if (event?.tag === 'bus-ping') {
     event.waitUntil(sendPing());
   }
+  if (event?.tag === 'news-check') {
+    event.waitUntil(checkNews());
+  }
+});
+
+swSelf.addEventListener('notificationclick', (event: any) => {
+  event.notification?.close?.();
+  event.waitUntil((async () => {
+    try {
+      const client = await getClient();
+      if (client && 'focus' in client) {
+        return (client as WindowClient).focus();
+      }
+      // fallback: open dashboard
+      return swSelf.clients.openWindow?.('/dashboard');
+    } catch {}
+  })());
 });

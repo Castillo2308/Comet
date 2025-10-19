@@ -71,3 +71,75 @@ export function setupLocationResponder(getLocation: () => { lat: number; lng: nu
   // Expose a global hook to push updates when app state changes
   (window as any).__pushSWLocationUpdate = pushLoc;
 }
+
+// Request notification permission if needed
+async function ensureNotificationPermission() {
+  try {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    const p = await Notification.requestPermission();
+    return p === 'granted';
+  } catch { return false; }
+}
+
+// Start periodic news checks in SW and send the auth token to SW for authenticated fetches
+export async function startServiceWorkerNewsChecks(token?: string, intervalMs = 60_000) {
+  const granted = await ensureNotificationPermission();
+  if (!granted) {
+    // still proceed; SW showNotification will be no-op without permission
+  }
+  const reg = await navigator.serviceWorker.ready.catch(() => undefined);
+  const sw = reg?.active;
+  if (sw) {
+    if (token) sw.postMessage({ type: 'UPDATE_AUTH_TOKEN', token });
+    sw.postMessage({ type: 'START_NEWS_CHECK', interval: intervalMs });
+    // Try background sync variants to increase reliability
+    try {
+      // One-off sync
+      // @ts-ignore
+      if ('sync' in reg) await reg.sync.register('news-check-oneshot');
+    } catch {}
+    try {
+      // Periodic background sync
+      // @ts-ignore
+      const ps = await (reg as any).periodicSync?.getTags?.();
+      // @ts-ignore
+      if ((reg as any).periodicSync && (!ps || !ps.includes('news-check'))) {
+        // @ts-ignore
+        await (reg as any).periodicSync.register('news-check', { minInterval: intervalMs });
+      }
+    } catch {}
+  }
+
+  // As a foreground fallback, trigger checks from the page too (throttled by intervalMs)
+  try {
+    let lastTrigger = 0;
+    const tick = () => {
+      const now = Date.now();
+      if (now - lastTrigger >= intervalMs) {
+        lastTrigger = now;
+        navigator.serviceWorker.ready.then(r => r.active?.postMessage({ type: 'TRIGGER_NEWS_CHECK' })).catch(()=>{});
+      }
+    };
+    // fire once and then on visibility change + interval
+    tick();
+    const iv = window.setInterval(tick, Math.max(30_000, Math.floor(intervalMs / 2)));
+    const onVis = () => { if (document.visibilityState === 'visible') tick(); };
+    document.addEventListener('visibilitychange', onVis);
+    // store cleanup on window for simplicity
+    (window as any).__newsCheckCleanup = () => {
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  } catch {}
+}
+
+export async function stopServiceWorkerNewsChecks() {
+  const reg = await navigator.serviceWorker.ready.catch(() => undefined);
+  const sw = reg?.active;
+  if (sw) {
+    sw.postMessage({ type: 'STOP_NEWS_CHECK' });
+  }
+  try { (window as any).__newsCheckCleanup?.(); } catch {}
+}

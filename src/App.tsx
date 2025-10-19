@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SignIn from './pages/SignIn';
@@ -12,10 +12,23 @@ import Community from './pages/Community';
 import Events from './pages/Events';
 import RedPoints from './pages/RedPoints';
 import Layout from './components/Layout';
+import { startServiceWorkerNewsChecks, stopServiceWorkerNewsChecks } from './lib/swClient';
 
 function AppRoutes() {
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
+
+  // Start SW-based news checks for all authenticated users (including admin)
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const token = localStorage.getItem('authToken') || undefined;
+      if (isAuthenticated && user) {
+        startServiceWorkerNewsChecks(token, 60_000).catch(() => {});
+      } else {
+        stopServiceWorkerNewsChecks().catch(() => {});
+      }
+    }
+  }, [isAuthenticated, user?.role]);
 
   // If user is staff (any non-user role except driver), show admin interface
   if (isAuthenticated && user && user.role !== 'user' && user.role !== 'driver') {
