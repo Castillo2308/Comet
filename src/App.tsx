@@ -55,10 +55,6 @@ function AppRoutes() {
         return <Events />;
       case 'redpoints':
         return <RedPoints />;
-      case 'info':
-        return <Dashboard />; // Placeholder for now
-      case 'menu':
-        return <Dashboard />; // Placeholder for now
       default:
         return <Dashboard />;
     }
