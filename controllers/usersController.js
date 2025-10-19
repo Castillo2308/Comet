@@ -57,12 +57,30 @@ const registerUser = async (req, res) => {
   // Extract all five fields from the request body.
   const { name, lastname, cedula, email, password, role } = req.body;
 
+  // Log for debugging
+  console.log('[register] Request received:', { 
+    hasName: !!name, 
+    hasLastname: !!lastname, 
+    hasCedula: !!cedula, 
+    hasEmail: !!email, 
+    hasPassword: !!password,
+    bodyKeys: Object.keys(req.body || {})
+  });
+
   // Basic validation.
   if (!name || !lastname || !cedula || !email || !password) {
-    return res.status(400).json({ message: 'All fields are required.' });
+    const missing = [];
+    if (!name) missing.push('name');
+    if (!lastname) missing.push('lastname');
+    if (!cedula) missing.push('cedula');
+    if (!email) missing.push('email');
+    if (!password) missing.push('password');
+    console.log('[register] Missing fields:', missing);
+    return res.status(400).json({ message: 'All fields are required.', missing });
   }
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRe.test(String(email))) {
+    console.log('[register] Invalid email:', email);
     return res.status(400).json({ message: 'Email inválido.' });
   }
 
@@ -70,6 +88,7 @@ const registerUser = async (req, res) => {
     // Validate password strength
     const check = validatePassword(password, { name, lastname, email, cedula });
     if (!check.ok) {
+      console.log('[register] Password validation failed:', check.violations);
       return res.status(400).json({ message: 'La contraseña no cumple los requisitos.', violations: check.violations });
     }
     // Hash the password before saving
@@ -92,15 +111,17 @@ const registerUser = async (req, res) => {
         const baseUrl = process.env.PUBLIC_BASE_URL || (req.headers.origin || `${req.protocol}://${req.get('host')}`);
   const verifyUrl = `${baseUrl}/verified?token=${encodeURIComponent(token)}`;
         const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
-        try { await insertVerifyToken({ token, email, expiresAt }); } catch {}
-        try { await sendVerificationEmail({ to: email, verifyUrl }); } catch {}
+        try { await insertVerifyToken({ token, email, expiresAt }); } catch (e) { console.log('[register] Token insert failed:', e); }
+        try { await sendVerificationEmail({ to: email, verifyUrl }); } catch (e) { console.log('[register] Email send failed:', e); }
       }
+      console.log('[register] User registered successfully:', email);
       res.status(201).json({ message: 'User registered successfully!', verified });
     } else {
+      console.log('[register] User creation failed');
       res.status(500).json({ message: 'Failed to register user.' });
     }
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('[register] Unexpected error:', error);
     res.status(500).json({ message: 'Failed to register user.' });
   }
 };
