@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "start": "node api/index.js",
     "get:drive-token": "node scripts/get-drive-refresh-token.js"
   },
   "dependencies": {

@@ -30,17 +30,60 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }, // Permit images/scripts from other origins (e.g., Google Drive)
 }));
 
-// CORS: allow configured origins; default to allow same-origin/non-browser
-const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
+// CORS: allow configured origins (supports exact hosts and wildcard subdomains like *.vercel.app)
+// Example CORS_ORIGINS: "https://your-app.vercel.app, https://*.vercel.app, http://localhost:5173"
+const rawOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+function parseHost(v) {
+  try { return new URL(v).hostname; } catch { return v.replace(/^https?:\/\//, ''); }
+}
+
+const exactHosts = [];
+const suffixHosts = [];
+for (const o of rawOrigins) {
+  const v = o.toLowerCase();
+  if (v.startsWith('*.') || v.startsWith('.')) {
+    const suffix = v.replace(/^[*.]+/, '');
+    if (suffix) suffixHosts.push(suffix);
+  } else {
+    const host = parseHost(v);
+    if (host) exactHosts.push(host);
+  }
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // non-browser or same-origin
+  if (rawOrigins.length === 0) return true; // permissive if not configured
+  let host = '';
+  try { host = new URL(origin).hostname.toLowerCase(); }
+  catch { host = parseHost(origin).toLowerCase(); }
+  if (!host) return false;
+  if (exactHosts.includes(host)) return true;
+  for (const sfx of suffixHosts) {
+    if (host === sfx || host.endsWith('.' + sfx)) return true;
+  }
+  return false;
+}
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.length === 0) return callback(null, true);
-    const allowed = allowedOrigins.includes(origin);
+    const allowed = isAllowedOrigin(origin || '');
     callback(allowed ? null : new Error('Not allowed by CORS'));
   },
   credentials: true,
 }));
+
+// Handle preflight without defining a route pattern (prevents path-to-regexp issues)
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    // CORS middleware above already set the headers
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 // Basic rate limiting
 const sensitiveLimiter = rateLimit({
