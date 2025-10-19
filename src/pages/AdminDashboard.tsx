@@ -1163,8 +1163,15 @@ export default function AdminDashboard() {
 
   // Initial data loads from backend
   useEffect(() => {
+    const token = localStorage.getItem('authToken') || '';
+    
     // Users
-  fetch('/api/users', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
+    fetch('/api/users', { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    })
       .then(r => r.ok ? r.json() : [])
       .then((rows) => {
         if (Array.isArray(rows) && rows.length) {
@@ -1185,7 +1192,12 @@ export default function AdminDashboard() {
       }).catch(()=>{});
 
     // Events
-  fetch('/api/events', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
+    fetch('/api/events', { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    })
       .then(r => r.ok ? r.json() : [])
       .then((rows) => {
         if (Array.isArray(rows) && rows.length) {
@@ -1239,14 +1251,24 @@ export default function AdminDashboard() {
       .catch(()=>{});
 
     // Complaints
-  fetch('/api/complaints', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
+    fetch('/api/complaints', { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    })
       .then(r => r.ok ? r.json() : [])
       .then((rows:any[]) => {
         if (Array.isArray(rows)) setComplaints(rows);
       }).catch(()=>{});
 
     // Hotspots + load comments per hotspot for admin view
-  fetch('/api/security/hotspots', { headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } })
+    fetch('/api/security/hotspots', { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    })
       .then(r => r.ok ? r.json() : [])
       .then(async (rows:any[]) => {
         if (Array.isArray(rows)) {
