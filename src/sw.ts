@@ -7,16 +7,10 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 
 import { clientsClaim } from 'workbox-core';
-import { precacheAndRoute } from 'workbox-precaching';
 const swSelf = self as unknown as ServiceWorkerGlobalScope;
 
 clientsClaim();
 swSelf.skipWaiting();
-
-// Enable Workbox precache injection when building with injectManifest.
-// The plugin replaces __WB_MANIFEST with the generated asset list at build time.
-// @ts-ignore - injected by workbox at build
-precacheAndRoute(self.__WB_MANIFEST || []);
 
 let pingTimer: number | undefined;
 let pingIntervalMs = 20_000;
