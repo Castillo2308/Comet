@@ -148,23 +148,42 @@ app.use((req, res) => {
   }
 });
 
-// Initialize SQL schema before starting server
-ensureSchema()
-  .then(() => {
-    const PORT = Number(process.env.PORT || 5000);
-    const server = app.listen(PORT, () => {
-      console.log(`Backend running on http://localhost:${PORT}`);
-    });
+// Initialize SQL schema only once at startup
+let schemaInitialized = false;
+let schemaInitPromise = null;
 
-    // Prevent the server from closing unexpectedly
-    server.on('error', (err) => {
-      console.error('Server error:', err);
+async function initSchemaOnce() {
+  if (schemaInitialized) return;
+  if (!schemaInitPromise) {
+    schemaInitPromise = ensureSchema().then(() => {
+      schemaInitialized = true;
     });
-  })
-  .catch((e) => {
-    console.error('Schema init error', e);
-    process.exit(1);
+  }
+  return schemaInitPromise;
+}
+
+// Add middleware to initialize schema once on first request
+app.use(async (req, res, next) => {
+  try {
+    await initSchemaOnce();
+    next();
+  } catch (err) {
+    console.error('Schema init error:', err);
+    res.status(500).json({ error: 'Database initialization failed' });
+  }
+});
+
+// Local development: Start server if not on Vercel/serverless
+if (process.env.VERCEL !== '1' && !process.env.LAMBDA_TASK_ROOT) {
+  const PORT = Number(process.env.PORT || 5000);
+  const server = app.listen(PORT, () => {
+    console.log(`Backend running on http://localhost:${PORT}`);
   });
+
+  server.on('error', (err) => {
+    console.error('Server error:', err);
+  });
+}
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -174,5 +193,5 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
 
-// For local testing, just export the app if needed
+// Export app for both local server and Vercel serverless
 export default app;
