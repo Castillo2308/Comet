@@ -15,12 +15,13 @@ export default function Register() {
   const [pwTouched, setPwTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [dupError, setDupError] = useState('');
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const validatePassword = (password: string) => {
     const v: string[] = [];
-    const minLen = 12;
+    const minLen = 8;
     if (password.length < minLen) v.push(`Al menos ${minLen} caracteres.`);
     if (password.length > 128) v.push('No más de 128 caracteres.');
     if (!/[a-z]/.test(password)) v.push('Incluye una letra minúscula.');
@@ -51,6 +52,7 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setDupError('');
 
     try {
       const success = await signUp(
@@ -66,7 +68,10 @@ export default function Register() {
         setError('Error al crear la cuenta');
       }
     } catch (err) {
-      setError('Error al registrarse');
+      const msg = (err as Error)?.message || '';
+      if (msg.includes('cédula') || msg.toLowerCase().includes('cedula')) setDupError('Esta cédula ya está registrada.');
+      else if (msg.toLowerCase().includes('email')) setDupError('Este email ya está registrado.');
+      else setError('Error al registrarse');
     } finally {
       setLoading(false);
     }
@@ -90,6 +95,11 @@ export default function Register() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm animate-shake">
               {error}
+            </div>
+          )}
+          {dupError && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl text-sm">
+              {dupError}
             </div>
           )}
 
@@ -167,9 +177,9 @@ export default function Register() {
               />
               {(pwTouched || formData.password) && (
                 <div className="mt-2 text-xs">
-                  <div className={`h-1 rounded ${pwViolations.length === 0 && formData.password.length >= 12 ? 'bg-green-500' : pwViolations.length <= 2 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
+                  <div className={`h-1 rounded ${pwViolations.length === 0 && formData.password.length >= 8 ? 'bg-green-500' : pwViolations.length <= 2 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
                   <ul className="mt-2 space-y-1 text-gray-600">
-                    {['Al menos 12 caracteres.','Incluye una letra minúscula.','Incluye una letra mayúscula.','Incluye un número.','Incluye un carácter especial.','No debe tener espacios.'].map(req => (
+                    {['Al menos 8 caracteres.','Incluye una letra minúscula.','Incluye una letra mayúscula.','Incluye un número.','Incluye un carácter especial.','No debe tener espacios.'].map(req => (
                       <li key={req} className={`flex items-center gap-2 ${pwViolations.includes(req) ? 'text-gray-500' : 'text-green-600'}`}>
                         <span className={`inline-block w-2 h-2 rounded-full ${pwViolations.includes(req) ? 'bg-gray-300' : 'bg-green-500'}`}></span>
                         {req}

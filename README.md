@@ -111,6 +111,10 @@ GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_OAUTH_CLIENT_SECRET=your-secret
 GOOGLE_OAUTH_REFRESH_TOKEN=your-token
+GOOGLE_IMPERSONATE_EMAIL=workspace-user@your-domain.com   # Optional: Workspace domain-wide delegation for Gmail sending
+GMAIL_SENDER_EMAIL=youremail@gmail.com                     # Sender address when using Gmail API
+MAIL_FROM_NAME=COMET                                       # Friendly display name
+MAIL_REPLY_TO=support@your-domain.com                      # Optional reply-to
 
 # Google Drive (for file uploads)
 DRIVE_REPORTS_FOLDER_ID=folder-id-for-reports
@@ -160,6 +164,25 @@ npm run lint
 ```bash
 npm run get:drive-token
 ```
+
+### Get Gmail Token (to send emails via Gmail API)
+```bash
+npm run get:gmail-token
+```
+Then add the printed values to your `.env`:
+```
+GOOGLE_OAUTH_CLIENT_ID=...
+GOOGLE_OAUTH_CLIENT_SECRET=...
+GOOGLE_OAUTH_REFRESH_TOKEN=...
+GMAIL_SENDER_EMAIL=youremail@gmail.com
+MAIL_FROM_NAME=COMET
+```
+The app will try sending emails in this order:
+- Gmail via Google Workspace service account (domain-wide delegation) if `GOOGLE_CLIENT_EMAIL`/`GOOGLE_PRIVATE_KEY` and `GOOGLE_IMPERSONATE_EMAIL` are set
+- Gmail via OAuth2 refresh token (`GOOGLE_OAUTH_*` + `GMAIL_SENDER_EMAIL`)
+- Resend (`RESEND_API_KEY` + `MAIL_FROM`)
+- Custom webhook (`MAIL_WEBHOOK_URL`)
+If none are configured, it logs the verification link to the console for manual testing.
 
 ## 📜 Available Scripts
 

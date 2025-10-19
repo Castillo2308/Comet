@@ -255,24 +255,25 @@ export default function Security() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="bg-white px-3 sm:px-4 py-3 sm:py-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
+      {/* Header - standardized container with local police logo (white background) */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-4 py-5 shadow">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Police Logo beside title */}
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-lg flex items-center justify-center p-2 border-2 border-blue-100">
-              <img src="/police-logo.svg" alt="Police Logo" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-lg flex items-center justify-center p-2">
+              <img src="/police-logo.svg" alt="Logo Policía" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-lg sm:text-xl font-bold text-blue-600">Seguridad</h1>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Seguridad</h1>
+              <p className="text-blue-100 text-sm">Mantente al tanto sobre la seguridad del cantón</p>
+            </div>
           </div>
           <button
             onClick={() => setShowProfileModal(true)}
-            className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
+            className="bg-white text-blue-700 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm shadow-md hover:bg-blue-50 transition-all duration-200"
           >
             {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
           </button>
         </div>
-        <p className="text-gray-600 text-xs sm:text-sm">Aquí puedes mantenerte al tanto sobre la seguridad del cantón.</p>
       </div>
 
       <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">

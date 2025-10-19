@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,8 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [canInstall, setCanInstall] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
@@ -22,12 +24,40 @@ export default function SignIn() {
       if (success) {
         navigate('/');
       } else {
+        const pending = localStorage.getItem('pendingVerifyEmail');
+        if (pending) {
+          navigate('/verify-required');
+          return;
+        }
         setError('Credenciales inválidas');
       }
     } catch (err) {
       setError('Error al iniciar sesión');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Custom PWA install banner
+  useEffect(() => {
+    const onBIP = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', onBIP);
+    return () => window.removeEventListener('beforeinstallprompt', onBIP);
+  }, []);
+
+  const triggerInstall = async () => {
+    const prompt = deferredPrompt;
+    if (!prompt) return;
+    setCanInstall(false);
+    prompt.prompt();
+    try {
+      await prompt.userChoice;
+    } finally {
+      setDeferredPrompt(null);
     }
   };
 
@@ -113,6 +143,17 @@ export default function SignIn() {
             </Link>
           </div>
         </form>
+
+        {canInstall && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm">
+            <div className="font-semibold text-blue-800 mb-1">Instala COMET</div>
+            <div className="text-blue-700 mb-3">Instálala como app para acceder más rápido y usarla sin conexión.</div>
+            <div className="flex gap-2 justify-center">
+              <button onClick={triggerInstall} className="px-4 py-2 rounded-lg bg-blue-600 text-white">Instalar</button>
+              <button onClick={() => setCanInstall(false)} className="px-4 py-2 rounded-lg border">Ahora no</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

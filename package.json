@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node api/index.js",
-    "get:drive-token": "node scripts/get-drive-refresh-token.js"
+    "get:drive-token": "node scripts/get-drive-refresh-token.js",
+    "get:gmail-token": "node scripts/get-gmail-refresh-token.js",
+    "test:gmail-send": "node scripts/test-gmail-send.js"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.4",

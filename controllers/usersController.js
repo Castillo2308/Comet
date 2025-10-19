@@ -1,13 +1,15 @@
-import { createUser, getUserByEmail, updateUser, deleteUser, getUserByCedula, listUsers, deleteUserCascade } from '../models/usersModel.js';
+import { createUser, getUserByEmail, updateUser, deleteUser, getUserByCedula, listUsers, deleteUserCascade, insertVerifyToken, consumeVerifyToken, setUserVerifiedByEmail } from '../models/usersModel.js';
 import bcrypt from 'bcryptjs';    // Same as const bcrypt = require('bcryptjs');
 import { signAccessToken } from '../lib/auth.js';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '../lib/email.js';
 
 const allowedRoles = ['user','admin','security','news','reports','buses','driver','community'];
 
 function validatePassword(password, context = {}) {
   const violations = [];
   if (typeof password !== 'string') return { ok: false, violations: ['La contraseña es inválida.'] };
-  const minLen = 12;
+  const minLen = 8;
   const maxLen = 128;
   if (password.length < minLen) violations.push(`Al menos ${minLen} caracteres.`);
   if (password.length > maxLen) violations.push(`No más de ${maxLen} caracteres.`);
@@ -76,9 +78,24 @@ const registerUser = async (req, res) => {
 
     // Call the model to create a new user with the hashed password
   const safeRole = allowedRoles.includes(role) ? role : 'user';
-  const { success, user } = await createUser({ name, lastname, cedula, email, password: hashedPassword, role: safeRole });
+  const isAdmin = safeRole !== 'user';
+  const verified = isAdmin ? true : false;
+  const { success, duplicate } = await createUser({ name, lastname, cedula, email, password: hashedPassword, role: safeRole, verified });
+    if (duplicate) {
+      const msg = duplicate === 'cedula' ? 'Esta cédula ya está registrada.' : 'Este email ya está registrado.';
+      return res.status(409).json({ message: msg, duplicate });
+    }
     if (success) {
-      res.status(201).json({ message: 'User registered successfully!' });
+      if (!isAdmin) {
+        // Generate verification token and send email
+        const token = crypto.randomBytes(24).toString('hex');
+        const baseUrl = process.env.PUBLIC_BASE_URL || (req.headers.origin || `${req.protocol}://${req.get('host')}`);
+  const verifyUrl = `${baseUrl}/verified?token=${encodeURIComponent(token)}`;
+        const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
+        try { await insertVerifyToken({ token, email, expiresAt }); } catch {}
+        try { await sendVerificationEmail({ to: email, verifyUrl }); } catch {}
+      }
+      res.status(201).json({ message: 'User registered successfully!', verified });
     } else {
       res.status(500).json({ message: 'Failed to register user.' });
     }
@@ -112,6 +129,11 @@ const loginUser = async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    // If not verified, return a flag so frontend can block until verification
+    if (!user.verified) {
+      return res.status(200).json({ message: 'Cuenta no verificada', user: { ...user, password: undefined }, requiresVerification: true });
     }
 
     // If login is successful, issue JWT and return user data (excluding password)
@@ -153,6 +175,7 @@ const updateUserInfo = async (req, res) => {
 const deleteUserAccount = async (req, res) => {
   const { cedula } = req.params;
   try {
+    if (String(cedula) === '000000000') return res.status(403).json({ message: 'No se puede eliminar el administrador global.' });
     const exists = await getUserByCedula(cedula);
     if (!exists) return res.status(404).json({ message: 'User not found' });
   const ok = await deleteUserCascade(cedula);
@@ -167,5 +190,55 @@ const deleteUserAccount = async (req, res) => {
 export default { registerUser, loginUser, updateUserInfo, deleteUserAccount };    // Same as module.exports = { registerUser };
 export const listAllUsers = async (_req, res) => {
   try { res.json(await listUsers()); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to list users' }); }
+};
+
+export const verifyAccount = async (req, res) => {
+  const token = String(req.query.token || '');
+  if (!token) return res.status(400).json({ message: 'Token requerido' });
+  try {
+    const email = await consumeVerifyToken(token);
+    if (!email) return res.status(400).json({ message: 'Token inválido o expirado' });
+    await setUserVerifiedByEmail(email);
+    return res.json({ message: 'Cuenta verificada' });
+  } catch (e) {
+    console.error('verifyAccount error', e);
+    res.status(500).json({ message: 'Error verificando cuenta' });
+  }
+};
+
+export const me = async (req, res) => {
+  // Optionally allow frontend to poll verification status
+  try {
+    const u = await getUserByCedula(req.user?.cedula);
+    if (!u) return res.status(404).json({ message: 'Not found' });
+    const { password: _, ...safe } = u;
+    res.json(safe);
+  } catch {
+    res.status(500).json({ message: 'Failed' });
+  }
+};
+
+export const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    const normalized = String(email || '').trim().toLowerCase();
+    if (!normalized) return res.status(400).json({ message: 'Email requerido' });
+
+    const user = await getUserByEmail(normalized);
+    // Do not reveal if user exists or not; always return 200
+    if (!user) return res.json({ ok: true });
+    if (user.verified) return res.json({ ok: true });
+
+    const token = crypto.randomBytes(24).toString('hex');
+    const baseUrl = process.env.PUBLIC_BASE_URL || (req.headers.origin || `${req.protocol}://${req.get('host')}`);
+  const verifyUrl = `${baseUrl}/verified?token=${encodeURIComponent(token)}`;
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
+    try { await insertVerifyToken({ token, email: normalized, expiresAt }); } catch {}
+    try { await sendVerificationEmail({ to: normalized, verifyUrl }); } catch {}
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('resendVerification error', e);
+    return res.json({ ok: true });
+  }
 };
 
