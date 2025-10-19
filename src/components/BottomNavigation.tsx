@@ -169,11 +169,6 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
           ) : showInfoSubmenu ? (
             <div className="transform transition-all duration-500 animate-slideInRight">
               {renderSubmenuNavigation(infoSubmenuItems)}
-              {renderSubmenuNavigation(announcementsSubmenuItems, 'Anuncios')}
-            </div>
-          ) : showInfoSubmenu ? (
-            <div className="transform transition-all duration-500 animate-slideInRight">
-              {renderSubmenuNavigation(infoSubmenuItems, 'Información')}
             </div>
           ) : (
             <div className="transform transition-all duration-500">
