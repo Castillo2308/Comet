@@ -335,33 +335,23 @@ export default function AdminDashboard() {
 
   const handleDeleteEvent = (eventId: number) => {
     setEvents(events.filter(event => event.id !== eventId));
-  api(`/events/${eventId}`, { method: 'DELETE' }).catch(()=>{});
-    { id: 'users', icon: Users, label: 'Usuarios' },
-    { id: 'events', icon: Calendar, label: 'Eventos' },
-    { id: 'announcements', icon: Bell, label: 'Anuncios' }
-  ];
-
-  // CRUD Operations
-  const handleUpdateReportStatus = (reportId: number, newStatus: Report['status']) => {
-    setReports(reports.map(report =>
-      report.id === reportId ? { ...report, status: newStatus } : report
-    ));
+    api(`/events/${eventId}`, { method: 'DELETE' }).catch(()=>{});
   };
 
-  const handleDeleteReport = (reportId: number) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este reporte?')) {
-      setReports(reports.filter(report => report.id !== reportId));
-    }
+  const handleEditEvent = (event: Event) => {
+    setEditingItem({ ...event, type: 'event' });
+  };
+
+  const handleDeleteAnnouncement = (announcementId: number) => {
+    setAnnouncements(announcements.filter(announcement => announcement.id !== announcementId));
+  };
+
+  const handleEditAnnouncement = (announcement: Announcement) => {
+    setEditingItem({ ...announcement, type: 'announcement' });
   };
 
   const handleEditReport = (report: Report) => {
     setEditingItem({ ...report, type: 'report' });
-  };
-
-  const handleDeleteUser = (userId: number) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
-      setUsers(users.filter(user => user.id !== userId));
-    }
   };
 
   const handleEditUser = (user: User) => {
@@ -376,24 +366,13 @@ export default function AdminDashboard() {
     ));
   };
 
-  const handleDeleteEvent = (eventId: number) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este evento?')) {
-      setEvents(events.filter(event => event.id !== eventId));
-    }
+  const handleSaveEdit = () => {
+    if (!editingItem) return;
+    setEditingItem(null);
   };
 
-  const handleEditEvent = (event: Event) => {
-    setEditingItem({ ...event, type: 'event' });
-  };
-
-  const handleDeleteAnnouncement = (announcementId: number) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este anuncio?')) {
-      setAnnouncements(announcements.filter(announcement => announcement.id !== announcementId));
-    }
-  };
-
-  const handleEditAnnouncement = (announcement: Announcement) => {
-    setEditingItem({ ...announcement, type: 'announcement' });
+  const handleCreateNew = () => {
+    setShowCreateModal(false);
   };
 
   const handleBulkAction = (action: string) => {
@@ -411,73 +390,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveEdit = () => {
-    if (!editingItem) return;
+  const tabs = [
+    { id: 'users', icon: Users, label: 'Usuarios' },
+    { id: 'events', icon: Calendar, label: 'Eventos' },
+    { id: 'announcements', icon: Bell, label: 'Anuncios' }
+  ];
 
-    if (editingItem.type === 'report') {
-      setReports(reports.map(report =>
-        report.id === editingItem.id ? { ...editingItem } : report
-      ));
-    } else if (editingItem.type === 'user') {
-      setUsers(users.map(user =>
-        user.id === editingItem.id ? { ...editingItem } : user
-      ));
-    } else if (editingItem.type === 'event') {
-      setEvents(events.map(event =>
-        event.id === editingItem.id ? { ...editingItem } : event
-      ));
-    } else if (editingItem.type === 'announcement') {
-      setAnnouncements(announcements.map(announcement =>
-        announcement.id === editingItem.id ? { ...editingItem } : announcement
-      ));
-    }
-    setEditingItem(null);
-  };
-
-  const handleCreateNew = () => {
-    const newItem = {
-      id: Date.now(),
-      title: 'Nuevo elemento',
-      description: 'Descripción del nuevo elemento',
-      date: new Date().toISOString().split('T')[0],
-      status: 'Activo'
-    };
-
-    if (createType === 'user') {
-      const newUser: User = {
-        ...newItem,
-        name: 'Nuevo Usuario',
-        email: 'nuevo@email.com',
-        role: 'user',
-        status: 'Activo',
-        joinDate: newItem.date,
-        reportsCount: 0,
-        lastActivity: 'nunca'
-      };
-      setUsers([newUser, ...users]);
-    } else if (createType === 'event') {
-      const newEvent: Event = {
-        ...newItem,
-        time: '10:00 AM',
-        location: 'Por definir',
-        attendees: 0,
-        maxAttendees: 100,
-        status: 'Programado',
-        category: 'General',
-        price: 'Gratis',
-        organizer: 'Municipalidad'
-      };
-      setEvents([newEvent, ...events]);
-    } else if (createType === 'announcement') {
-      const newAnnouncement: Announcement = {
-        ...newItem,
-        type: 'Servicios',
-        priority: 'medium'
-      };
-      setAnnouncements([newAnnouncement, ...announcements]);
-    }
-    setShowCreateModal(false);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1050,11 +968,6 @@ export default function AdminDashboard() {
                         </div>
                       )}
                       <div>
-                        <div className="text-xs font-medium text-gray-900 flex items-center gap-2">
-                          <span>{report.title}</span>
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-2">
-                          <span className="inline-flex items-center"><MapPin className="h-3 w-3 mr-1" />{report.location}</span>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">{report.title}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                           <MapPin className="h-3 w-3 mr-1" />
@@ -1092,6 +1005,7 @@ export default function AdminDashboard() {
                       <Clock className="h-3 w-3 mr-1 text-gray-400" />
                       {report.date}
                     </div>
+                  </td>
                   <td className="px-3 py-3 hidden md:table-cell">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(report.priority)}`}>
                       {report.priority}
@@ -1100,9 +1014,6 @@ export default function AdminDashboard() {
                   <td className="px-3 py-3">
                     <div className="flex space-x-1">
                       <button 
-                        onClick={() => setEditingItem(report)}
-                        className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
-                        title="Editar"
                         onClick={() => handleEditReport(report)}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200 p-1 hover:bg-blue-50 dark:hover:bg-blue-900 rounded"
                         title="Editar reporte"
@@ -1141,18 +1052,6 @@ export default function AdminDashboard() {
           >
             <Plus className="h-4 w-4" />
             <span>Nuevo Usuario</span>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Gestión de Usuarios</h2>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">Administra usuarios registrados</p>
-          </div>
-          <button 
-            onClick={() => {
-              setCreateType('user');
-              setShowCreateModal(true);
-            }}
-            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
-            title="Crear usuario"
-          >
-            <UserPlus className="h-4 w-4" />
           </button>
         </div>
 
@@ -1239,39 +1138,11 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Cédula</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">Email</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rol</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((u) => (
-                <tr key={u.cedula || u.id}>
-                  <td className="px-3 py-3 text-xs text-gray-900">{u.cedula || u.id}</td>
-                  <td className="px-3 py-3 text-xs text-gray-900">{u.name}</td>
-                  <td className="px-3 py-3 text-xs text-gray-900 hidden sm:table-cell">{u.email}</td>
-                  <td className="px-3 py-3 text-xs text-gray-900">
-                    <span className="px-3 py-1 rounded-full text-xs font-medium border bg-gray-50">{u.role}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          const [firstName, ...rest] = (u.name || '').split(' ');
-                          setAdminEditingUser(u);
-                          setAdminForm({ cedula: String(u.cedula || ''), name: firstName || '', lastname: rest.join(' '), email: u.email, password: '', role: u.role });
-                          setAdminModalOpen(true);
-                        }}
-                        className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
-                        title="Editar"
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Usuario</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase hidden sm:table-cell">Email</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Estado</th>
@@ -1324,9 +1195,6 @@ export default function AdminDashboard() {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(u.cedula || String(u.id))}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
-                        title="Eliminar"
                         onClick={() => handleDeleteUser(user.id)}
                         className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors duration-200 p-1 hover:bg-red-50 dark:hover:bg-red-900 rounded"
                         title="Eliminar usuario"
@@ -1472,8 +1340,6 @@ export default function AdminDashboard() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event, index) => (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredEvents.map((event, index) => (
           <div 
             key={event.id}
@@ -1486,22 +1352,6 @@ export default function AdminDashboard() {
               </span>
               <div className="flex space-x-1">
                 <button 
-                  onClick={() => { 
-                    setEditingItem(event); 
-                    setEventForm({
-                      title: event.title,
-                      description: event.description,
-                      date: new Date(event.date).toISOString().slice(0,10),
-                      time: '',
-                      location: event.location,
-                      category: event.category,
-                      host: 'Municipalidad',
-                      price: '',
-                      attendants: event.attendees,
-                    });
-                    setShowCreateModal(true); 
-                  }}
-                  className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
                   onClick={() => handleEditEvent(event)}
                   className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-200 p-1 hover:bg-green-50 dark:hover:bg-green-900 rounded"
                   title="Editar evento"
@@ -2478,6 +2328,13 @@ export default function AdminDashboard() {
               >
                 Salir
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderAnnouncements = () => (
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-100 dark:border-gray-700">
@@ -2587,37 +2444,6 @@ export default function AdminDashboard() {
     </div>
   );
 
-
-      {/* Main Content */}
-      <div className="w-full px-4 py-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {activeTab === 'dashboard' && 'Dashboard Principal'}
-              {activeTab === 'reports' && 'Gestión de Reportes'}
-              {activeTab === 'users' && 'Gestión de Usuarios'}
-              {activeTab === 'complaints' && 'Gestión de Quejas'}
-              {activeTab === 'hotspots' && 'Gestión de Hotspots'}
-              {activeTab === 'dangerous' && 'Áreas Peligrosas'}
-              {activeTab === 'securityNews' && 'Noticias de Seguridad'}
-              {activeTab === 'news' && 'Gestión de Noticias'}
-              {activeTab === 'buses' && 'Sistema de Buses'}
-              {activeTab === 'community' && 'Comunidad (Foro)'}
-              {activeTab === 'events' && 'Gestión de Eventos'}
-              {activeTab === 'settings' && 'Configuración del Sistema'}
-            </h2>
-            <p className="text-gray-600">
-              {activeTab === 'dashboard' && 'Vista general del sistema y estadísticas'}
-              {activeTab === 'reports' && 'Administra todos los reportes ciudadanos'}
-              {activeTab === 'users' && 'Gestiona usuarios registrados'}
-              {activeTab === 'complaints' && 'Administra y da seguimiento a quejas de seguridad'}
-              {activeTab === 'hotspots' && 'Crea y administra zonas peligrosas'}
-              {activeTab === 'dangerous' && 'Gestiona zonas peligrosas (fuente municipal)'}
-              {activeTab === 'securityNews' && 'Publica anuncios de seguridad'}
-              {activeTab === 'community' && 'Modera publicaciones y comentarios del foro'}
-              {activeTab === 'events' && 'Crea y administra eventos comunitarios'}
-              {activeTab === 'buses' && 'Monitorea buses, aprueba conductores y ubica unidades'}
-              {activeTab === 'settings' && 'Configuración general del sistema'}
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Enhanced Header - Mobile Optimized */}
@@ -2698,9 +2524,6 @@ export default function AdminDashboard() {
 
       {/* Bottom Navigation */}
       {renderUsersModal()}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-30 shadow-lg">
-        <nav className="flex items-center justify-center gap-6 max-w-3xl mx-auto">
-          {visibleTabs.map((item) => {
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-30 shadow-2xl">
         <nav className="flex items-center justify-around max-w-md mx-auto">
           {adminNavItems.map((item) => {
@@ -2711,10 +2534,6 @@ export default function AdminDashboard() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform ${
-                  isActive
-                    ? 'text-blue-500 scale-110'
-                    : 'text-gray-400 hover:text-gray-600 hover:scale-105'
                 className={`flex flex-col items-center justify-center p-2 transition-all duration-300 transform ${
                   isActive
                     ? 'text-blue-500 dark:text-blue-400 scale-110 bg-blue-50 dark:bg-blue-900 rounded-xl px-3 py-2'
@@ -2724,7 +2543,6 @@ export default function AdminDashboard() {
                 <IconComponent className="h-5 w-5 mb-1 transition-transform duration-200" />
                 <span className="text-xs font-medium transition-all duration-200">{item.label}</span>
                 {isActive && (
-                  <div className="absolute -bottom-1 w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
                   <div className="absolute -bottom-1 w-1 h-1 bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse"></div>
                 )}
               </button>

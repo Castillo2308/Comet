@@ -64,11 +64,12 @@ export default function RedPoints() {
       dangerlevel: dangerMap[newPoint.riskLevel] || 'medium',
       date: new Date().toISOString(),
       author: user?.cedula || `${user?.name} ${user?.lastname}`,
-  lat: typeof newPointLatLng.lat === 'string' ? Number(newPointLatLng.lat) : newPointLatLng.lat,
-  lng: typeof newPointLatLng.lng === 'string' ? Number(newPointLatLng.lng) : newPointLatLng.lng,
+      lat: typeof newPointLatLng.lat === 'string' ? Number(newPointLatLng.lat) : newPointLatLng.lat,
+      lng: typeof newPointLatLng.lng === 'string' ? Number(newPointLatLng.lng) : newPointLatLng.lng,
       address: newPointLatLng.address,
       placeId: newPointLatLng.placeId,
       plusCode: newPointPlusCode,
+    };
     const point: RedPoint = {
       id: Date.now(),
       ...newPoint,

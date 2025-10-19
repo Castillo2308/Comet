@@ -105,8 +105,7 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
     </nav>
   );
 
-  const renderSubmenuNavigation = (submenuItems: any[]) => (
-  const renderSubmenuNavigation = (submenuItems: any[], title: string) => (
+  const renderSubmenuNavigation = (submenuItems: any[], title?: string) => (
     <nav className="flex items-center justify-between w-full max-w-lg mx-auto sm:max-w-3xl px-4">
       {/* Back button */}
       <button
