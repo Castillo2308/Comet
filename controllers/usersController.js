@@ -9,7 +9,7 @@ const allowedRoles = ['user','admin','security','news','reports','buses','driver
 function validatePassword(password, context = {}) {
   const violations = [];
   if (typeof password !== 'string') return { ok: false, violations: ['La contraseña es inválida.'] };
-  const minLen = 8;
+  const minLen = 12;
   const maxLen = 128;
   if (password.length < minLen) violations.push(`Al menos ${minLen} caracteres.`);
   if (password.length > maxLen) violations.push(`No más de ${maxLen} caracteres.`);
