@@ -101,10 +101,30 @@ app.use(cors({
   credentials: true,
 }));
 
+// Explicit CORS headers for Vercel
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Allow all Vercel subdomains
+  if (origin && origin.includes('.vercel.app')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  } else if (origin === 'http://localhost:3000' || origin === 'http://localhost:5173') {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  }
+  
+  next();
+});
+
 // Handle preflight without defining a route pattern (prevents path-to-regexp issues)
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
-    // CORS middleware above already set the headers
+    // CORS headers already set above
     return res.sendStatus(204);
   }
   next();
