@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { MapPin, MoreHorizontal, Calendar, Users, Shield, AlertTriangle, Clock, TrendingUp, Activity, Bell, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { MapPin, MoreHorizontal, Calendar, Users, Shield, AlertTriangle, Clock, Activity, Bell, Image as ImageIcon } from 'lucide-react';
 import UserProfileModal from '../components/UserProfileModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,48 +8,7 @@ const mockReports: any[] = [];
 
 const importantNews: any[] = [];
 
-const quickStats = [
-  {
-    id: 1,
-    title: 'Ciudadanos Activos',
-    value: '1,247',
-    change: '+12%',
-    trend: 'up',
-    icon: Users,
-    color: 'blue',
-    description: 'Usuarios registrados este mes'
-  },
-  {
-    id: 2,
-    title: 'Reportes Resueltos',
-    value: '89',
-    change: '+8%',
-    trend: 'up',
-    icon: CheckCircle,
-    color: 'green',
-    description: 'Problemas solucionados'
-  },
-  {
-    id: 3,
-    title: 'Eventos Programados',
-    value: '12',
-    change: '+3',
-    trend: 'up',
-    icon: Calendar,
-    color: 'orange',
-    description: 'Actividades este mes'
-  },
-  {
-    id: 4,
-    title: 'Satisfacción',
-    value: '95%',
-    change: '+2%',
-    trend: 'up',
-    icon: TrendingUp,
-    color: 'purple',
-    description: 'Calificación ciudadana'
-  }
-];
+// quickStats removed per new dashboard design
 
 export default function Dashboard({ userReports = [] }: { userReports?: any[] }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -178,15 +137,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
     }
   };
 
-  const getStatColor = (color: string) => {
-    switch (color) {
-      case 'blue': return 'from-blue-500 to-blue-600';
-      case 'green': return 'from-green-500 to-green-600';
-      case 'orange': return 'from-orange-500 to-orange-600';
-      case 'purple': return 'from-purple-500 to-purple-600';
-      default: return 'from-blue-500 to-blue-600';
-    }
-  };
+  // removed getStatColor; not used in new layout
 
   return (
     <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -195,47 +146,30 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         onClose={() => setShowProfileModal(false)} 
       />
 
-      {/* Enhanced Header with Gradient */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-3 sm:px-4 py-4 sm:py-5 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            {/* Municipality Logo beside title */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-lg flex items-center justify-center p-2">
-              <img src="/municipality-logo.svg" alt="Municipalidad Logo" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-white mb-1">¡Bienvenido, {user?.name}!</h1>
-              <p className="text-blue-100 text-xs sm:text-sm">Aquí puedes conocer más de tu cantón y mantenerte informado.</p>
-            </div>
+      {/* Banner de paisaje del cantón */}
+      <div className="relative shadow-xl">
+        <img
+          src="/landscape.png"
+          alt="Paisaje del cantón"
+          className="w-full h-40 sm:h-56 object-cover filter brightness-[.55]"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=1200'; }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent"></div>
+        <div className="absolute top-2 left-3 flex items-center gap-3">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-lg flex items-center justify-center p-2">
+            <img src="/municipality-logo.svg" alt="Municipalidad Logo" className="w-full h-full object-contain" />
           </div>
-          <button
-            onClick={() => setShowProfileModal(true)}
-            className="bg-white bg-opacity-20 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm backdrop-blur-sm hover:bg-opacity-30 transition-all duration-200 transform hover:scale-110 active:scale-95 shadow-lg"
-          >
-            {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
-          </button>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow">¡Bienvenido, {user?.name}!</h1>
+            <p className="text-white/90 text-xs sm:text-sm drop-shadow">Conoce tu cantón y mantente informado.</p>
+          </div>
         </div>
-        
-        {/* Quick Stats in Header */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          {quickStats.map((stat, index) => {
-            const IconComponent = stat.icon;
-            return (
-              <div 
-                key={stat.id}
-                className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-2 sm:p-3 hover:bg-opacity-20 transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                  <span className="text-xs text-green-300 font-medium">{stat.change}</span>
-                </div>
-                <div className="text-lg sm:text-xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-xs text-blue-100">{stat.title}</div>
-              </div>
-            );
-          })}
-        </div>
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="absolute top-2 right-3 bg-white/80 text-gray-900 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm backdrop-blur-sm hover:bg-white transition-all duration-200 shadow-lg"
+        >
+          {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
+        </button>
       </div>
 
       <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-4">
@@ -336,7 +270,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
           )}
         </section>
 
-        {/* Enhanced Important News Section */}
+        {/* Noticias Importantes (mostrar todas) */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
@@ -344,12 +278,12 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               Noticias Importantes
             </h2>
             <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
-              {importantNews.filter(n => n.priority === 'high').length} urgentes
+              {(news || []).filter(n => n.priority === 'high').length} urgentes
             </span>
           </div>
           
           <div className="space-y-4">
-            {news.map((news, index) => {
+            {(news || []).map((news, index) => {
               const type = (news.type || '').toLowerCase();
               const IconComponent = type.includes('seguridad') ? Shield : type.includes('transporte') ? Users : type.includes('event') ? Calendar : AlertTriangle;
               return (
@@ -393,39 +327,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
           </div>
         </section>
 
-        {/* Enhanced Quick Stats */}
-        <section className="animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-            Resumen del Cantón
-          </h2>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {quickStats.map((stat, index) => {
-              const IconComponent = stat.icon;
-              return (
-                <div 
-                  key={stat.id}
-                  className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-105 animate-fadeInUp hover-lift"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`bg-gradient-to-r ${getStatColor(stat.color)} p-3 rounded-xl shadow-lg`}>
-                      <IconComponent className="h-6 w-6 text-white" />
-                    </div>
-                    <span className="text-green-500 text-sm font-bold bg-green-50 px-2 py-1 rounded-full">
-                      {stat.change}
-                    </span>
-                  </div>
-                  
-                  <div className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
-                  <div className="text-sm font-medium text-gray-700 mb-1">{stat.title}</div>
-                  <div className="text-xs text-gray-500">{stat.description}</div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        {/* Removed Noticias de Seguridad section per request */}
       </div>
     </div>
   );

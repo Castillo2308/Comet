@@ -21,7 +21,7 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
       icon: MessageSquare,
       label: 'WhatsApp',
       description: 'Contacta por WhatsApp',
-      action: () => window.open('https://wa.me/50612345678', '_blank')
+      action: () => window.open('https://wa.me/+50687398074', '_blank')
     },
     {
       id: 'settings',

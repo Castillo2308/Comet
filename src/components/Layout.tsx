@@ -25,7 +25,7 @@ export default function Layout({ children, activeTab, onTabChange }: LayoutProps
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col relative overflow-hidden">
       <main className="flex-1 overflow-hidden">
-        {React.cloneElement(children as React.ReactElement, { userReports: reports })}
+        {React.cloneElement(children as React.ReactElement, { userReports: reports, onTabChange })}
       </main>
       <BottomNavigation 
         activeTab={activeTab} 
