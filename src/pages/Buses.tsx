@@ -6,6 +6,9 @@ import { useAuth } from '../context/AuthContext';
 
 type ActiveBus = { _id: string; driverId: string; busNumber?: string; busId?: string; routeStart?: string; routeEnd?: string; fee?: number; status: string; lat?: number; lng?: number };
 
+// Get Google Maps API key from environment, with fallback
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyDluFc7caulw2jHJKsPM_mGnLa8oLuFgio';
+
 export default function Buses() {
   const { user } = useAuth();
   const [active, setActive] = useState<ActiveBus[]>([]);
@@ -20,8 +23,6 @@ export default function Buses() {
   const lastSentRef = useRef<number>(0);
   const cedulaRef = useRef<string | null>(null);
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
-
-  const googleKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string;
 
   const fetchActive = useCallback(async () => {
     try {
@@ -284,7 +285,7 @@ export default function Buses() {
             <div className="flex items-center gap-2 text-sm text-green-700"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/> En vivo</div>
           </div>
           <HotspotsMap
-            apiKey={googleKey}
+            apiKey={GOOGLE_MAPS_KEY}
             points={points}
             selected={selected}
             selectedId={selectedId}

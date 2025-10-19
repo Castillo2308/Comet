@@ -1366,7 +1366,7 @@ export default function AdminDashboard() {
   );
 
   const renderBuses = () => {
-    const googleKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string;
+    const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyDluFc7caulw2jHJKsPM_mGnLa8oLuFgio';
     const filtered = busesFilter==='Todos' ? adminBuses : adminBuses.filter((b:any) => (b.status||'')===busesFilter);
     const points = filtered
       .filter((b:any) => typeof b.lat === 'number' && typeof b.lng === 'number')
@@ -1416,7 +1416,7 @@ export default function AdminDashboard() {
           </div>
           <div className="mt-2">
             <HotspotsMap
-              apiKey={googleKey}
+              apiKey={GOOGLE_MAPS_KEY}
               points={points}
               selected={selected}
               height={360}
