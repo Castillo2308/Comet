@@ -1,10 +1,21 @@
 import { neonClient } from '../lib/neonClient.js';
 
 export const createUser = async ({ name, lastname, cedula, email, password, role = 'user', verified = false }) => {
+  // Pre-check duplicates for clear error messages
+  const emailTrim = String(email || '').trim().toLowerCase();
+  const existingByCedula = await neonClient`
+    select cedula from users where cedula = ${cedula}
+  `;
+  if (existingByCedula?.length) return { success: false, duplicate: 'cedula' };
+  const existingByEmail = await neonClient`
+    select email from users where email = ${emailTrim}
+  `;
+  if (existingByEmail?.length) return { success: false, duplicate: 'email' };
+
+  // Insert user
   await neonClient`
     insert into users (name, lastname, cedula, email, password, role, verified)
-    values (${name}, ${lastname}, ${cedula}, ${email}, ${password}, ${role}, ${verified})
-    on conflict (cedula) do nothing
+    values (${name}, ${lastname}, ${cedula}, ${emailTrim}, ${password}, ${role}, ${verified})
   `;
   return { success: true };
 };
@@ -58,6 +69,8 @@ export const deleteUser = async (cedula) => {
 };
 
 export const deleteUserCascade = async (cedula) => {
+  // Protect global admin account from deletion
+  if (String(cedula) === '000000000') return false;
   // Delete dependent rows first to avoid FK violations
   await neonClient`delete from reports where author = ${cedula}`;
   await neonClient`delete from complaints where author = ${cedula}`;

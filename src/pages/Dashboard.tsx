@@ -146,8 +146,8 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         onClose={() => setShowProfileModal(false)} 
       />
 
-      {/* Banner de paisaje del cantón */}
-      <div className="relative shadow-xl">
+      {/* Banner de paisaje del cantón (bubble style) */}
+      <div className="relative shadow-xl rounded-2xl overflow-hidden mx-3 sm:mx-4 mt-3 sm:mt-4">
         <img
           src="/landscape.png"
           alt="Paisaje del cantón"
@@ -155,7 +155,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=1200'; }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent"></div>
-        <div className="absolute top-2 left-3 flex items-center gap-3">
+  <div className="absolute top-4 sm:top-5 left-3 flex items-center gap-3">
           <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-lg flex items-center justify-center p-2">
             <img src="/municipality-logo.svg" alt="Municipalidad Logo" className="w-full h-full object-contain" />
           </div>

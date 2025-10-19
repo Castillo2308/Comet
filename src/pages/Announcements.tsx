@@ -25,29 +25,24 @@ export default function Announcements() {
         onClose={() => setShowProfileModal(false)} 
       />
 
-      {/* Header with background image */}
-      <div 
-        className="relative h-32 sm:h-40 bg-cover bg-center"
-        style={{
-          backgroundImage: 'url(https://images.pexels.com/photos/1563356/pexels-photo-1563356.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&dpr=1)'
-        }}
-      >
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-        <div className="relative z-10 p-3 sm:p-4 h-full flex flex-col justify-center">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-white mb-1">¡Descubre!</h1>
-              <p className="text-white text-xs sm:text-sm opacity-90">
-                Aquí puedes conocer más de tu cantón.
-              </p>
+      {/* Header - standardized to Buses style */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 px-4 py-5 shadow">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-3 rounded-full">
+              <Megaphone className="h-6 w-6 text-white" />
             </div>
-            <button
-              onClick={() => setShowProfileModal(true)}
-              className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
-            >
-              {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
-            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Anuncios</h1>
+              <p className="text-blue-100 text-sm">Novedades y avisos del cantón</p>
+            </div>
           </div>
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="bg-white text-blue-700 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm shadow-md hover:bg-blue-50 transition-all duration-200"
+          >
+            {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
+          </button>
         </div>
       </div>
 

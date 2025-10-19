@@ -84,6 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Bubble up server-side validation errors
       try {
         const data = await response.json();
+        if (response.status === 409 && data?.duplicate) {
+          if (data.duplicate === 'cedula') throw new Error('Esta cédula ya está registrada.');
+          if (data.duplicate === 'email') throw new Error('Este email ya está registrado.');
+        }
         if (data?.violations) {
           throw new Error(Array.isArray(data.violations) ? data.violations.join('\n') : data.message || 'Error de validación');
         }

@@ -9,7 +9,7 @@ const allowedRoles = ['user','admin','security','news','reports','buses','driver
 function validatePassword(password, context = {}) {
   const violations = [];
   if (typeof password !== 'string') return { ok: false, violations: ['La contraseña es inválida.'] };
-  const minLen = 12;
+  const minLen = 8;
   const maxLen = 128;
   if (password.length < minLen) violations.push(`Al menos ${minLen} caracteres.`);
   if (password.length > maxLen) violations.push(`No más de ${maxLen} caracteres.`);
@@ -80,7 +80,11 @@ const registerUser = async (req, res) => {
   const safeRole = allowedRoles.includes(role) ? role : 'user';
   const isAdmin = safeRole !== 'user';
   const verified = isAdmin ? true : false;
-  const { success } = await createUser({ name, lastname, cedula, email, password: hashedPassword, role: safeRole, verified });
+  const { success, duplicate } = await createUser({ name, lastname, cedula, email, password: hashedPassword, role: safeRole, verified });
+    if (duplicate) {
+      const msg = duplicate === 'cedula' ? 'Esta cédula ya está registrada.' : 'Este email ya está registrado.';
+      return res.status(409).json({ message: msg, duplicate });
+    }
     if (success) {
       if (!isAdmin) {
         // Generate verification token and send email
@@ -171,6 +175,7 @@ const updateUserInfo = async (req, res) => {
 const deleteUserAccount = async (req, res) => {
   const { cedula } = req.params;
   try {
+    if (String(cedula) === '000000000') return res.status(403).json({ message: 'No se puede eliminar el administrador global.' });
     const exists = await getUserByCedula(cedula);
     if (!exists) return res.status(404).json({ message: 'User not found' });
   const ok = await deleteUserCascade(cedula);
