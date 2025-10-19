@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  lastName: string;
+  lastname: string;
   cedula: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver' | 'community';
 }
 
 interface AuthContextType {
@@ -14,59 +14,114 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<boolean>;
-  signUp: (name: string, lastName: string, cedula: string, email: string, password: string) => Promise<boolean>;
+  signUp: (name: string, lastname: string, cedula: string, email: string, password: string) => Promise<boolean>;
   signOut: () => void;
+  updateProfile: (updates: Partial<Pick<User, 'name' | 'lastname' | 'email'>> & { password?: string }) => Promise<boolean>;
+  deleteAccount: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('authUser');
+    return saved ? JSON.parse(saved) : null;
+  });
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setUser(null);
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('authToken');
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized as any);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized as any);
+  }, []);
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
-    // Mock authentication - replace with real API call
-    if (email === 'admin@1' && password === 'admin') {
-      setUser({
-        id: 'admin',
-        name: 'Administrador',
-        email: 'admin@comet.com',
-        lastName: 'Sistema',
-        cedula: '000000000',
-        role: 'admin'
+    try {
+      const response = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
-      return true;
-    } else if (email && password) {
-      setUser({
-        id: '1',
-        name: 'Usuario',
-        email: email,
-        lastName: 'Demo',
-        cedula: '123456789',
-        role: 'user'
-      });
-      return true;
+      if (response.ok) {
+        // Get user data from backend response
+        const data = await response.json();
+        setUser(data.user as User);
+        localStorage.setItem('authUser', JSON.stringify(data.user));
+        localStorage.setItem('cedula', data.user.cedula);
+        if (data.token) localStorage.setItem('authToken', data.token);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
 
-  const signUp = async (name: string, lastName: string, cedula: string, email: string, password: string): Promise<boolean> => {
-    // Mock registration - replace with real API call
-    if (name && lastName && cedula && email && password) {
-      setUser({
-        id: '1',
-        name,
-        email,
-        lastName,
-        cedula,
-        role: 'user'
+  const signUp = async (name: string, lastname: string, cedula: string, email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, lastname, cedula, email, password, role: 'user' })
       });
-      return true;
+      if (response.ok) {
+        return true;
+      }
+      // Bubble up server-side validation errors
+      try {
+        const data = await response.json();
+        if (data?.violations) {
+          throw new Error(Array.isArray(data.violations) ? data.violations.join('\n') : data.message || 'Error de validación');
+        }
+      } catch {}
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const signOut = () => {
     setUser(null);
+    localStorage.removeItem('authUser');
+    localStorage.removeItem('authToken');
+  };
+
+  const updateProfile: AuthContextType['updateProfile'] = async (updates) => {
+    if (!user) return false;
+    try {
+      const res = await fetch(`/api/users/${user.cedula}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setUser(prev => {
+        const merged = { ...(prev as User), ...data.user };
+        localStorage.setItem('authUser', JSON.stringify(merged));
+       
+        return merged;
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const deleteAccount: AuthContextType['deleteAccount'] = async () => {
+    if (!user) return false;
+    try {
+      // Important: send DELETE with current JWT; signOut only after success
+      const res = await fetch(`/api/users/${user.cedula}`, { method: 'DELETE' });
+      if (!res.ok) return false;
+      // Now, after server confirms deletion, clear local session
+      signOut();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return (
@@ -76,7 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: user?.role === 'admin',
       signIn,
       signUp,
-      signOut
+      signOut,
+      updateProfile,
+      deleteAccount
     }}>
       {children}
     </AuthContext.Provider>

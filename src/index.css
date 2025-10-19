@@ -12,6 +12,15 @@
   color: #f9fafb;
 }
 
+/* Ensure dark background paints the entire viewport, not just body */
+.dark html {
+  background-color: #1f2937;
+}
+
+.dark #root {
+  background-color: #1f2937;
+}
+
 .dark .bg-white {
   background-color: #374151 !important;
 }
@@ -224,6 +233,13 @@ html, body, #root {
   overflow-x: hidden;
 }
 
+/* Use dynamic viewport height when available to avoid small gaps at top/bottom */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
 /* Safe area for mobile devices - iPhone compatibility */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
@@ -244,6 +260,7 @@ html, body, #root {
 /* Line clamp utility */
 .line-clamp-2 {
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -252,6 +269,7 @@ html, body, #root {
 /* PWA install prompt styles */
 @media (display-mode: standalone) {
   body {
+    user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;

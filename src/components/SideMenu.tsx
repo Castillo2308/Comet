@@ -1,5 +1,4 @@
-import React from 'react';
-import { X, HelpCircle, MessageSquare, Bot, Settings, Info, Phone, Mail } from 'lucide-react';
+import { X, HelpCircle, MessageSquare, Settings, Info, Phone } from 'lucide-react';
 
 interface SideMenuProps {
   isOpen: boolean;
@@ -22,15 +21,7 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
       icon: MessageSquare,
       label: 'WhatsApp',
       description: 'Contacta por WhatsApp',
-      action: () => window.open('https://wa.me/50612345678', '_blank')
-    },
-    {
-      id: 'chatbot',
-      icon: Bot,
-      label: 'Asistente Virtual',
-      description: 'Próximamente disponible',
-      action: () => console.log('Chatbot clicked'),
-      isComingSoon: true
+      action: () => window.open('https://wa.me/+50687398074', '_blank')
     },
     {
       id: 'settings',
@@ -95,44 +86,18 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
                     key={item.id}
                     onClick={() => {
                       item.action();
-                      if (!item.isComingSoon) {
-                        onClose();
-                      }
+                      onClose();
                     }}
-                    disabled={item.isComingSoon}
-                    className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 text-left ${
-                      item.isComingSoon
-                        ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
-                        : 'hover:bg-gray-50 hover:shadow-sm active:scale-98'
-                    }`}
+                    className="w-full flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 text-left hover:bg-gray-50 hover:shadow-sm active:scale-98"
                   >
-                    <div className={`p-2 rounded-lg ${
-                      item.isComingSoon 
-                        ? 'bg-gray-200' 
-                        : 'bg-gradient-to-br from-blue-100 to-purple-100'
-                    }`}>
-                      <IconComponent className={`h-5 w-5 ${
-                        item.isComingSoon 
-                          ? 'text-gray-400' 
-                          : 'text-blue-600'
-                      }`} />
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100">
+                      <IconComponent className="h-5 w-5 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className={`font-semibold text-sm ${
-                          item.isComingSoon ? 'text-gray-400' : 'text-gray-900'
-                        }`}>
-                          {item.label}
-                        </h3>
-                        {item.isComingSoon && (
-                          <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-xs font-medium">
-                            Próximamente
-                          </span>
-                        )}
-                      </div>
-                      <p className={`text-xs ${
-                        item.isComingSoon ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
+                      <h3 className="font-semibold text-sm text-gray-900">
+                        {item.label}
+                      </h3>
+                      <p className="text-xs text-gray-600">
                         {item.description}
                       </p>
                     </div>
@@ -145,7 +110,7 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
           {/* Footer */}
           <div className="p-4 border-t border-gray-100 bg-gray-50">
             <div className="text-center">
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">Comet App</h3>
+              <h3 className="font-semibold text-gray-900 text-sm mb-1">COMET</h3>
               <p className="text-gray-600 text-xs mb-2">Versión 1.0.0</p>
               <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
                 <button className="hover:text-blue-500 transition-colors duration-200">

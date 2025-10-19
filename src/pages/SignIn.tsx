@@ -20,7 +20,7 @@ export default function SignIn() {
     try {
       const success = await signIn(email, password);
       if (success) {
-        navigate('/dashboard');
+        navigate('/');
       } else {
         setError('Credenciales inválidas');
       }
@@ -35,8 +35,14 @@ export default function SignIn() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50">
       <div className="max-w-md w-full space-y-8 animate-fadeInUp">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h2>
-          <p className="text-gray-600">Welcome, sign in to continue to your account</p>
+          {/* COMET Logo */}
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 rounded-full bg-white shadow-lg flex items-center justify-center p-4">
+              <img src="/COMET-isotipo.png" alt="COMET Logo" className="w-full h-full object-contain" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Iniciar sesión</h2>
+          <p className="text-gray-600">Bienvenido, ingresa para continuar a tu cuenta</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -57,7 +63,7 @@ export default function SignIn() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none relative block w-full pl-10 pr-3 py-4 border border-gray-200 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
-                placeholder="Email"
+                placeholder="Correo electrónico"
               />
             </div>
 
@@ -71,7 +77,7 @@ export default function SignIn() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none relative block w-full pl-10 pr-10 py-4 border border-gray-200 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
-                placeholder="Password"
+                placeholder="Contraseña"
               />
               <button
                 type="button"
@@ -93,17 +99,17 @@ export default function SignIn() {
               disabled={loading}
               className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Iniciando…' : 'Iniciar sesión'}
             </button>
           </div>
 
           <div className="text-center">
-            <span className="text-gray-600">Don't have an account? </span>
+            <span className="text-gray-600">¿No tienes cuenta? </span>
             <Link
               to="/register"
               className="font-medium text-blue-500 hover:text-blue-600 transition-colors duration-200"
             >
-              Create one
+              Crea una
             </Link>
           </div>
         </form>

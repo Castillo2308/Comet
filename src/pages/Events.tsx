@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, Users, Star, Filter, Search, Heart, Share2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, Clock, MapPin, Users, Filter, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
@@ -13,12 +13,9 @@ interface Event {
   category: string;
   attendees: number;
   maxAttendees?: number;
-  image: string;
   organizer: string;
   price: string;
   rating: number;
-  isAttending: boolean;
-  isFavorite: boolean;
 }
 
 const mockEvents: Event[] = [
@@ -32,12 +29,9 @@ const mockEvents: Event[] = [
     category: 'Comercio',
     attendees: 45,
     maxAttendees: 100,
-    image: 'https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Municipalidad de Alajuelita',
     price: 'Gratis',
-    rating: 4.8,
-    isAttending: false,
-    isFavorite: false
+    rating: 4.8
   },
   {
     id: 2,
@@ -49,12 +43,9 @@ const mockEvents: Event[] = [
     category: 'Cultural',
     attendees: 120,
     maxAttendees: 200,
-    image: 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Casa de la Cultura',
     price: 'Gratis',
-    rating: 4.9,
-    isAttending: true,
-    isFavorite: true
+    rating: 4.9
   },
   {
     id: 3,
@@ -66,12 +57,9 @@ const mockEvents: Event[] = [
     category: 'Deportes',
     attendees: 80,
     maxAttendees: 150,
-    image: 'https://images.pexels.com/photos/274506/pexels-photo-274506.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Liga Deportiva Local',
     price: '₡1,000',
-    rating: 4.6,
-    isAttending: false,
-    isFavorite: false
+    rating: 4.6
   },
   {
     id: 4,
@@ -83,12 +71,9 @@ const mockEvents: Event[] = [
     category: 'Educativo',
     attendees: 25,
     maxAttendees: 40,
-    image: 'https://images.pexels.com/photos/3735218/pexels-photo-3735218.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&dpr=1',
     organizer: 'Grupo Ecológico',
     price: 'Gratis',
-    rating: 4.7,
-    isAttending: false,
-    isFavorite: true
+    rating: 4.7
   }
 ];
 
@@ -98,6 +83,29 @@ export default function Events() {
   const { user } = useAuth();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [events, setEvents] = useState<Event[]>(mockEvents);
+  useEffect(() => {
+    fetch('/api/events')
+      .then(r => r.ok ? r.json() : [])
+      .then((rows) => {
+        if (Array.isArray(rows) && rows.length) {
+          const mapped: Event[] = rows.map((e:any) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description,
+            date: new Date(e.date).toISOString().slice(0,10),
+            time: new Date(e.date).toLocaleTimeString(),
+            location: e.location,
+            category: e.type || 'Social',
+            attendees: Number(e.attendants) || 0,
+            organizer: e.host || 'Municipalidad',
+            price: e.price ? `₡${e.price}` : 'Gratis',
+            rating: 4.5
+          }));
+          setEvents(mapped);
+        }
+      })
+      .catch(()=>{});
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -109,25 +117,7 @@ export default function Events() {
     return matchesCategory && matchesSearch;
   });
 
-  const handleAttendEvent = (eventId: number) => {
-    setEvents(events.map(event =>
-      event.id === eventId
-        ? {
-            ...event,
-            isAttending: !event.isAttending,
-            attendees: event.isAttending ? event.attendees - 1 : event.attendees + 1
-          }
-        : event
-    ));
-  };
-
-  const handleFavoriteEvent = (eventId: number) => {
-    setEvents(events.map(event =>
-      event.id === eventId
-        ? { ...event, isFavorite: !event.isFavorite }
-        : event
-    ));
-  };
+  // Interactions disabled by design (no asistir/favoritos/compartir)
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -155,7 +145,7 @@ export default function Events() {
             onClick={() => setShowProfileModal(true)}
             className="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm hover:bg-blue-600 transition-all duration-200 transform hover:scale-110 active:scale-95"
           >
-            {user?.name?.charAt(0)}{user?.lastName?.charAt(0)}
+            {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
           </button>
         </div>
         <p className="text-gray-600 text-xs sm:text-sm">Descubre eventos en tu comunidad</p>
@@ -215,32 +205,13 @@ export default function Events() {
               className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              {/* Event Image */}
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                />
-                <div className="absolute top-3 left-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
+              {/* Event Header with Category Badge */}
+              <div className="relative bg-gradient-to-r from-blue-50 to-blue-100 p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
                     {event.category}
                   </span>
-                </div>
-                <div className="absolute top-3 right-3 flex space-x-2">
-                  <button
-                    onClick={() => handleFavoriteEvent(event.id)}
-                    className={`p-2 rounded-full backdrop-blur-sm transition-all duration-200 transform hover:scale-110 ${
-                      event.isFavorite 
-                        ? 'bg-red-500 text-white' 
-                        : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100'
-                    }`}
-                  >
-                    <Heart className={`h-4 w-4 ${event.isFavorite ? 'fill-current' : ''}`} />
-                  </button>
-                  <button className="p-2 rounded-full bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100 backdrop-blur-sm transition-all duration-200 transform hover:scale-110">
-                    <Share2 className="h-4 w-4" />
-                  </button>
+                
                 </div>
               </div>
 
@@ -248,10 +219,6 @@ export default function Events() {
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-bold text-gray-900 text-sm sm:text-base">{event.title}</h3>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                    <span className="text-xs text-gray-600">{event.rating}</span>
-                  </div>
                 </div>
 
                 <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">{event.description}</p>
@@ -287,16 +254,7 @@ export default function Events() {
                     <span className="text-xs text-gray-500">Por {event.organizer}</span>
                     <span className="text-xs font-medium text-green-600">{event.price}</span>
                   </div>
-                  <button
-                    onClick={() => handleAttendEvent(event.id)}
-                    className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                      event.isAttending
-                        ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}
-                  >
-                    {event.isAttending ? 'Asistiré' : 'Asistir'}
-                  </button>
+                  {/* Asistir button removed */}
                 </div>
               </div>
             </div>
@@ -312,22 +270,12 @@ export default function Events() {
           </div>
         )}
 
-        {/* Quick Stats */}
+        {/* Quick Stats simplified: only total events */}
         <section className="animate-fadeInUp bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <h3 className="font-semibold text-gray-900 mb-3 text-sm">Estadísticas de Eventos</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-blue-600">{events.length}</div>
-              <div className="text-xs text-gray-600">Eventos</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-green-600">{events.filter(e => e.isAttending).length}</div>
-              <div className="text-xs text-gray-600">Asistiré</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-red-600">{events.filter(e => e.isFavorite).length}</div>
-              <div className="text-xs text-gray-600">Favoritos</div>
-            </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-blue-600">{events.length}</div>
+            <div className="text-xs text-gray-600">Eventos</div>
           </div>
         </section>
       </div>
