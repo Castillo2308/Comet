@@ -5,7 +5,12 @@ export async function api(path: string, options: RequestInit = {}, throwOnError 
   if (!isFormData) baseHeaders['Content-Type'] = 'application/json';
   if (token) baseHeaders['Authorization'] = `Bearer ${token}`;
   const mergedHeaders: HeadersInit = { ...baseHeaders, ...(options.headers as any || {}) };
-  const res = await fetch(`/api${path}`, { headers: mergedHeaders, ...options });
+  
+  // Use relative /api for same-origin, or full URL if API_URL is set
+  const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+  const fullUrl = apiBaseUrl ? `${apiBaseUrl}/api${path}` : `/api${path}`;
+  
+  const res = await fetch(fullUrl, { headers: mergedHeaders, ...options });
   if (throwOnError && !res.ok) throw new Error(await res.text());
   return res;
 }
