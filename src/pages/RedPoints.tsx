@@ -70,13 +70,6 @@ export default function RedPoints() {
       placeId: newPointLatLng.placeId,
       plusCode: newPointPlusCode,
     };
-    const point: RedPoint = {
-      id: Date.now(),
-      ...newPoint,
-      author: 'Usuario Anónimo',
-      date: 'ahora',
-      comments: []
-    };
     try {
       const res = await api('/security/hotspots', {
         method: 'POST',
@@ -86,7 +79,7 @@ export default function RedPoints() {
       if (res.ok) {
         const created = await res.json();
         const riskBack: Record<string, RedPoint['riskLevel']> = { high: 'Alto', medium: 'Medio', low: 'Bajo' };
-        const point: RedPoint = {
+        const newCreatedPoint: RedPoint = {
           id: (created._id?.toString?.() ?? created._id ?? Date.now()).toString() as any,
           location: created.title,
           description: created.description,
@@ -97,9 +90,9 @@ export default function RedPoints() {
           comments: []
         };
         // Attach lat/lng so the marker shows without reloading
-        (point as any).lat = typeof created.lat === 'number' ? created.lat : newPointLatLng.lat;
-        (point as any).lng = typeof created.lng === 'number' ? created.lng : newPointLatLng.lng;
-        setRedPoints(prev => [point, ...prev]);
+        (newCreatedPoint as any).lat = typeof created.lat === 'number' ? created.lat : newPointLatLng.lat;
+        (newCreatedPoint as any).lng = typeof created.lng === 'number' ? created.lng : newPointLatLng.lng;
+        setRedPoints(prev => [newCreatedPoint, ...prev]);
         setNewPoint({ location: '', description: '', timeRange: '', riskLevel: 'Medio' });
         setNewPointLatLng({});
         setShowAddModal(false);
@@ -188,18 +181,6 @@ export default function RedPoints() {
       })
       .catch(() => {});
   }, []);
-    const comment: Comment = {
-      id: Date.now(),
-      author: 'Usuario Anónimo',
-      content: commentText,
-      date: 'ahora'
-    };
-
-    setRedPoints(redPoints.map(point =>
-      point.id === pointId
-        ? { ...point, comments: [...point.comments, comment] }
-        : point
-    ));
 
   const canDeletePoint = (p: RedPoint) => !!user?.cedula && (p.author === user.cedula);
   const deletePoint = async (id: any) => {
