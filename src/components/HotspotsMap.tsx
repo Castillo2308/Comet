@@ -23,13 +23,15 @@ interface Props {
   onSelect?: (coords: { lat: number; lng: number }) => void;
   height?: number; // default 300
   showAutocomplete?: boolean; // default true
+  // Optional custom marker icon for all points (string URL or full Icon)
+  markerIcon?: string | google.maps.Icon;
 }
 
 const baseContainerStyle: React.CSSProperties = { width: '100%', height: 300, borderRadius: 12 };
 
 // You can color markers by risk if desired
 
-export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLocation, pickMode = false, selected, selectedId, onSelect, height, showAutocomplete = true }: Props) {
+export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLocation, pickMode = false, selected, selectedId, onSelect, height, showAutocomplete = true, markerIcon }: Props) {
   const { isLoaded } = useLoadScript({ googleMapsApiKey: apiKey, libraries: ['places'] as any });
   const [center, setCenter] = useState<{lat: number; lng: number}>({ lat: 9.9118, lng: -84.1012 }); // Default: Alajuelita approx.
   const [zoom, setZoom] = useState(13);
@@ -77,6 +79,23 @@ export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLoc
     onSelect?.({ lat, lng });
   }, [pickMode, onSelect]);
 
+  // Build a google.maps.Icon from a URL when provided, once the API is loaded
+  const computedIcon = useMemo(() => {
+    if (!markerIcon || !isLoaded) return undefined;
+    if (typeof markerIcon === 'string') {
+      try {
+        return {
+          url: markerIcon,
+          scaledSize: new google.maps.Size(32, 32),
+          anchor: new google.maps.Point(16, 16),
+        } as google.maps.Icon;
+      } catch {
+        return undefined;
+      }
+    }
+    return markerIcon;
+  }, [markerIcon, isLoaded]);
+
   // Recenter map when a new external selected location is provided
   useEffect(() => {
     const hasLat = typeof selected?.lat === 'number';
@@ -115,6 +134,7 @@ export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLoc
               key={`m-${p.id}`}
               position={{ lat: p.lat!, lng: p.lng! }}
               title={p.title}
+              icon={computedIcon}
               animation={selectedId !== undefined && p.id === selectedId ? google.maps.Animation.DROP : undefined}
               zIndex={p.id === selectedId ? 999 : undefined}
             />

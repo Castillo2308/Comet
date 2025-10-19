@@ -103,19 +103,19 @@ export default function Buses() {
 
   const resolveCedula = useCallback(() => {
     if (cedulaRef.current) {
-      console.log('[Buses] Using cached cedula:', cedulaRef.current);
+      
       return cedulaRef.current;
     }
 
     const stored = localStorage.getItem('cedula');
-    console.log('[Buses] cedula in localStorage:', stored);
+    
     if (stored) {
       cedulaRef.current = stored;
       return stored;
     }
 
     if (user?.cedula) {
-      console.log('[Buses] cedula from context user:', user.cedula);
+      
       cedulaRef.current = user.cedula;
       localStorage.setItem('cedula', user.cedula);
       return user.cedula;
@@ -123,7 +123,7 @@ export default function Buses() {
 
     try {
       const authUser = localStorage.getItem('authUser');
-      console.log('[Buses] authUser blob:', authUser);
+      
       if (authUser) {
         const parsed = JSON.parse(authUser);
         if (parsed?.cedula) {
@@ -133,18 +133,18 @@ export default function Buses() {
         }
       }
     } catch (e) {
-      console.error('[Buses] Error parsing authUser:', e);
+      
     }
 
-    console.warn('[Buses] Cedula could not be resolved');
+    
     return null;
   }, [user?.cedula]);
 
   const sendLocation = useCallback(async (lat: number, lng: number) => {
     const cedula = resolveCedula();
-    console.log('[Buses] sendLocation invoked', { cedula, lat, lng });
+    
     if (!cedula) {
-      console.error('[Buses] sendLocation aborted: missing cedula');
+      
       return false;
     }
 
@@ -155,22 +155,20 @@ export default function Buses() {
     });
 
     if (!r.ok) {
-      const txt = await r.text().catch(() => '');
-      console.error('[Buses] sendLocation failed:', txt);
       return false;
     }
 
-    console.log('[Buses] sendLocation succeeded');
+    
     return true;
   }, [resolveCedula]);
 
   const startDriverService = useCallback(async () => {
     try {
-      console.log('[Buses] startDriverService invoked');
+      
       const cedula = resolveCedula();
       if (!cedula) throw new Error('No se pudo identificar al conductor');
       const pos = await getPositionOnce();
-      console.log('[Buses] startDriverService position:', pos.coords.latitude, pos.coords.longitude);
+      
       // Call the new start service endpoint with initial location
       const r = await api('/buses/driver/start', {
         method: 'POST',
@@ -193,17 +191,17 @@ export default function Buses() {
       }, () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'No se pudo iniciar el servicio';
-      console.error('Start error:', msg);
+      
       alert(msg);
     }
   }, [sendLocation]);
 
   const stopDriverService = useCallback(async () => {
     try {
-      console.log('[Buses] stopDriverService invoked');
+      
       const cedula = resolveCedula();
       if (!cedula) {
-        console.error('[Buses] stopDriverService aborted: missing cedula');
+        
         throw new Error('No se pudo identificar al conductor');
       }
       // Call the stop service endpoint
@@ -213,11 +211,10 @@ export default function Buses() {
         body: JSON.stringify({ cedula })
       });
       if (!r.ok) {
-        const txt = await r.text().catch(() => '');
-        console.error('[Buses] stopDriverService failed:', txt);
+        // No alert; silently ignore stop error to avoid noisy UX
       }
     } catch (e) {
-      console.error('Error stopping service:', e);
+      
     } finally {
       runningRef.current = false;
       setRunning(false);
@@ -286,7 +283,15 @@ export default function Buses() {
             <h2 className="text-lg font-semibold text-gray-800 flex items-center"><MapPin className="h-5 w-5 mr-2 text-blue-600"/>Mapa</h2>
             <div className="flex items-center gap-2 text-sm text-green-700"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/> En vivo</div>
           </div>
-          <HotspotsMap apiKey={googleKey} points={points} selected={selected} selectedId={selectedId} height={360} showAutocomplete={false} />
+          <HotspotsMap
+            apiKey={googleKey}
+            points={points}
+            selected={selected}
+            selectedId={selectedId}
+            height={360}
+            showAutocomplete={false}
+            markerIcon={"/bus-marker.svg"}
+          />
         </section>
 
         <section>

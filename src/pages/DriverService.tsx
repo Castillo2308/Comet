@@ -18,19 +18,19 @@ export default function DriverService() {
   // Helper function to resolve and memoize the driver's cedula just like startService expects.
   const getCedula = useCallback(() => {
     if (cedulaRef.current) {
-      console.log('[DriverService] Using cached cedula:', cedulaRef.current);
+      
       return cedulaRef.current;
     }
 
     const storedCedula = localStorage.getItem('cedula');
-    console.log('[DriverService] cedula in localStorage:', storedCedula);
+    
     if (storedCedula) {
       cedulaRef.current = storedCedula;
       return storedCedula;
     }
 
     if (user?.cedula) {
-      console.log('[DriverService] cedula from context user:', user.cedula);
+      
       cedulaRef.current = user.cedula;
       localStorage.setItem('cedula', user.cedula);
       return user.cedula;
@@ -38,10 +38,10 @@ export default function DriverService() {
 
     try {
       const authUser = localStorage.getItem('authUser');
-      console.log('[DriverService] authUser blob in storage:', authUser);
+      
       if (authUser) {
         const parsed = JSON.parse(authUser);
-        console.log('[DriverService] parsed authUser object:', parsed);
+        
         if (parsed?.cedula) {
           cedulaRef.current = parsed.cedula;
           localStorage.setItem('cedula', parsed.cedula);
@@ -49,10 +49,10 @@ export default function DriverService() {
         }
       }
     } catch (e) {
-      console.error('[DriverService] Error parsing authUser:', e);
+      
     }
 
-    console.warn('[DriverService] Cedula could not be resolved');
+    
     return null;
   }, [user?.cedula]);
 
@@ -62,9 +62,6 @@ export default function DriverService() {
   });
 
   const sendPing = useCallback(async (lat: number, lng: number) => {
-    const timestamp = new Date().toISOString();
-    console.log(`🚌 [PING ATTEMPT] ${timestamp} | Lat: ${lat.toFixed(6)} | Lng: ${lng.toFixed(6)}`);
-    
     try {
       const cedula = getCedula();
       if (!cedula) throw new Error('No se pudo identificar al conductor');
@@ -75,11 +72,9 @@ export default function DriverService() {
         body: JSON.stringify({ cedula, lat, lng })
       });
 
-      console.log(`✅ [PING SUCCESS] ${timestamp} | Status: ${r.status}`);
       if (!r.ok) {
         const txt = await r.text().catch(() => '');
         setError(txt || 'Fallo al enviar ubicación');
-        console.error(`❌ [PING FAILED] ${timestamp} | ${txt}`);
         return false;
       }
 
@@ -87,7 +82,6 @@ export default function DriverService() {
       lastSentRef.current = Date.now();
       return true;
     } catch (e: any) {
-      console.error(`❌ [PING ERROR] ${timestamp} | ${e?.message || e}`);
       setError(e?.message || 'Fallo al enviar ubicación');
       return false;
     }
@@ -97,11 +91,12 @@ export default function DriverService() {
     if (!navigator.geolocation) { setError('Geolocalización no disponible'); return; }
     if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
     watchIdRef.current = navigator.geolocation.watchPosition((p) => {
-      console.log('[DriverService] watchPosition lat/lng:', p.coords.latitude, p.coords.longitude);
+      
       // Just update the position reference - the interval loop will handle sending pings
       lastPositionRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
+      try { (window as any).__pushSWLocationUpdate?.(); } catch {}
     }, (err) => {
-      console.warn('[DriverService] watchPosition error:', err?.message);
+      
       setError(err?.message || 'No se pudo obtener ubicación');
     }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
   }, []);
@@ -129,17 +124,17 @@ export default function DriverService() {
       window.clearInterval(pingIntervalRef.current);
       pingIntervalRef.current = null;
     }
-    console.log('🛑 [PING LOOP] Stopped');
+    
   }, []);
 
   const startService = useCallback(async () => {
     try {
-      console.log('[DriverService] startService invoked');
+      
       const cedula = getCedula();
       if (!cedula) throw new Error('No se pudo identificar al conductor');
 
       const pos = await getPositionOnce();
-      console.log('[DriverService] startService initial position:', pos.coords.latitude, pos.coords.longitude);
+      
       lastPositionRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 
       const r = await api('/buses/driver/start', {
@@ -148,11 +143,11 @@ export default function DriverService() {
         body: JSON.stringify({ cedula, lat: pos.coords.latitude, lng: pos.coords.longitude })
       });
 
-      console.log('[DriverService] startService response status:', r.status);
+      
       if (!r.ok) {
         const txt = await r.text().catch(()=> '');
         setError(txt || 'No se pudo iniciar el servicio');
-        console.error('[DriverService] startService failed:', txt);
+        
         return;
       }
 
@@ -161,15 +156,32 @@ export default function DriverService() {
       lastSentRef.current = Date.now();
       startWatch(); // Start watching position (only updates lastPositionRef)
       startPingLoop(); // Delegate to SW pings
+
+      // Try to keep CPU/GPS alive with Wake Lock where supported
+      try {
+        // @ts-ignore
+        if ('wakeLock' in navigator) {
+          // @ts-ignore
+          const lock = await (navigator as any).wakeLock.request('screen');
+          (window as any).__driverWakeLock = lock;
+          document.addEventListener('visibilitychange', async () => {
+            // Re-acquire wake lock when tab becomes visible again
+            // @ts-ignore
+            if (document.visibilityState === 'visible' && 'wakeLock' in navigator && running) {
+              try { (window as any).__driverWakeLock = await (navigator as any).wakeLock.request('screen'); } catch {}
+            }
+          });
+        }
+      } catch {}
     } catch (e: any) {
-      console.error('[DriverService] startService exception:', e);
+      
       setError(e?.message || 'Se requiere tu ubicación para iniciar');
     }
   }, [getCedula, startPingLoop, startWatch]);
 
   const stopService = useCallback(async () => {
     try {
-      console.log('[DriverService] stopService invoked');
+      
       const cedula = getCedula();
       if (!cedula) throw new Error('No se pudo identificar al conductor');
 
@@ -179,7 +191,7 @@ export default function DriverService() {
         body: JSON.stringify({ cedula })
       });
 
-      console.log('[DriverService] stopService response status:', r.status);
+      
       if (!r.ok) {
         const txt = await r.text().catch(()=> '');
         setError(txt || 'No se pudo detener el servicio');
@@ -190,6 +202,8 @@ export default function DriverService() {
       setRunning(false);
       stopPingLoop();
       stopWatch();
+      try { (window as any).__driverWakeLock?.release?.(); } catch {}
+      (window as any).__driverWakeLock = undefined;
       console.log('[DriverService] stopService succeeded');
       setError(null);
     } catch (e: any) {

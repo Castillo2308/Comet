@@ -1415,7 +1415,14 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="mt-2">
-            <HotspotsMap apiKey={googleKey} points={points} selected={selected} height={360} showAutocomplete={false} />
+            <HotspotsMap
+              apiKey={googleKey}
+              points={points}
+              selected={selected}
+              height={360}
+              showAutocomplete={false}
+              markerIcon={"/bus-marker.svg"}
+            />
           </div>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">

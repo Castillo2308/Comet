@@ -1,7 +1,7 @@
 {
-  "name": "Comet",
-  "short_name": "Comet",
-  "description": "App para seguridad y comunicacion en Alajuelita",
+  "name": "COMET",
+  "short_name": "COMET",
+  "description": "App para reportar problemas cívicos y recibir noticias locales",
   "theme_color": "#1e40af",
   "background_color": "#ffffff",
   "display": "standalone",

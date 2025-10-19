@@ -15,6 +15,39 @@ swSelf.skipWaiting();
 let pingTimer: number | undefined;
 let pingIntervalMs = 20_000;
 
+// Simple IndexedDB helpers for SW-side persistence
+function idbOpen(dbName: string, storeName: string): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(dbName, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(dbName: string, storeName: string, key: IDBValidKey, value: any) {
+  const db = await idbOpen(dbName, storeName);
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).put(value, key);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function idbGet<T = any>(dbName: string, storeName: string, key: IDBValidKey): Promise<T | undefined> {
+  const db = await idbOpen(dbName, storeName);
+  return new Promise<T | undefined>((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).get(key);
+    req.onsuccess = () => { db.close(); resolve(req.result as T | undefined); };
+    req.onerror = () => { db.close(); reject(req.error); };
+  });
+}
+
 async function getClient(): Promise<WindowClient | Client | null> {
   const all = await swSelf.clients.matchAll({ type: 'window', includeUncontrolled: true });
   return all.length ? all[0] : null;
@@ -23,18 +56,26 @@ async function getClient(): Promise<WindowClient | Client | null> {
 async function sendPing() {
   try {
     const client = await getClient();
-    if (!client) return;
+    let loc: { lat: number; lng: number; cedula?: string; token?: string } | null = null;
+    if (client) {
+      // Ask page for latest location
+      try {
+        const mc = new MessageChannel();
+        loc = await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error('location timeout')), 3000);
+          mc.port1.onmessage = (event) => {
+            clearTimeout(timer);
+            resolve(event.data);
+          };
+          client.postMessage({ type: 'REQUEST_LOCATION' }, [mc.port2]);
+        });
+      } catch {}
+    }
 
-    // Ask page for latest location
-    const mc = new MessageChannel();
-    const loc: { lat: number; lng: number; cedula?: string; token?: string } = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('location timeout')), 4000);
-      mc.port1.onmessage = (event) => {
-        clearTimeout(timer);
-        resolve(event.data);
-      };
-      client.postMessage({ type: 'REQUEST_LOCATION' }, [mc.port2]);
-    });
+    if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') {
+      // Fallback to last known location from IndexedDB
+      loc = await idbGet('comet-driver', 'kv', 'lastLocation') as any;
+    }
 
     if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return;
 
@@ -72,10 +113,30 @@ swSelf.addEventListener('message', (event: ExtendableMessageEvent) => {
     startPings();
   } else if (data.type === 'STOP_PINGS') {
     stopPings();
+  } else if (data.type === 'UPDATE_LAST_LOCATION') {
+    const loc = data.payload;
+    event.waitUntil(idbSet('comet-driver', 'kv', 'lastLocation', loc).catch(()=>{}));
   }
 });
 
 // Fallback: ensure pings stop when SW is terminated naturally
 swSelf.addEventListener('activate', () => {
   // no-op beyond clientsClaim/skipWaiting
+});
+
+// One-off Background Sync
+swSelf.addEventListener('sync', (event: any) => {
+  if (event?.tag && event.tag.startsWith('bus-ping')) {
+    event.waitUntil(sendPing());
+  }
+});
+
+// Periodic Background Sync (Chrome/Android installed PWA)
+// Note: Requires user permission and browser support; min intervals are browser-defined.
+// This will send the last known location if the page can't respond.
+// @ts-ignore - periodicsync is not in all TS lib dom definitions
+swSelf.addEventListener('periodicsync', (event: any) => {
+  if (event?.tag === 'bus-ping') {
+    event.waitUntil(sendPing());
+  }
 });

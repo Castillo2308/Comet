@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+
   plugins: [
     react(),
     VitePWA({
@@ -16,8 +17,8 @@ export default defineConfig({
         type: 'module'
       },
       manifest: {
-        name: 'Comet - Civic Engagement',
-        short_name: 'Comet',
+        name: 'COMET',
+        short_name: 'COMET',
         description: 'App para reportar problemas cívicos y recibir noticias locales',
         theme_color: '#1e40af',
         background_color: '#ffffff',
