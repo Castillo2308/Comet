@@ -1980,7 +1980,7 @@ export default function AdminDashboard() {
       {/* Bottom Navigation */}
       {renderUsersModal()}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-30 shadow-lg">
-        <nav className="flex items-center justify-center gap-6 max-w-3xl mx-auto">
+  <nav className="flex items-center gap-6 w-full sm:max-w-3xl mx-auto justify-start sm:justify-center overflow-x-auto sm:overflow-visible no-scrollbar snap-x snap-mandatory sm:snap-none">
           {visibleTabs.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -1989,7 +1989,7 @@ export default function AdminDashboard() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform ${
+                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform snap-center ${
                   isActive
                     ? 'text-blue-500 scale-110'
                     : 'text-gray-400 hover:text-gray-600 hover:scale-105'

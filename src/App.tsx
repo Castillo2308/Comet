@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import SignIn from './pages/SignIn';
+import VerifyRequired from './pages/VerifyRequired';
+import Verified from './pages/Verified';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -70,6 +72,8 @@ function AppRoutes() {
         path="/signin" 
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignIn />} 
       />
+      <Route path="/verify-required" element={<VerifyRequired />} />
+  <Route path="/verified" element={<Verified />} />
       <Route 
         path="/register" 
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} 

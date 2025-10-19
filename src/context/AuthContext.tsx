@@ -7,6 +7,7 @@ interface User {
   lastname: string;
   cedula: string;
   role: 'user' | 'admin' | 'security' | 'news' | 'reports' | 'buses' | 'driver' | 'community';
+  verified?: boolean;
 }
 
 interface AuthContextType {
@@ -47,6 +48,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         // Get user data from backend response
         const data = await response.json();
+        if (data.requiresVerification) {
+          // Store minimal user info to show a verify-needed screen; do not set auth token
+          localStorage.setItem('pendingVerifyEmail', email);
+          setUser(null);
+          return false;
+        }
+        if (data.user && data.user.verified === false) {
+          localStorage.setItem('pendingVerifyEmail', email);
+          setUser(null);
+          return false;
+        }
         setUser(data.user as User);
         localStorage.setItem('authUser', JSON.stringify(data.user));
         localStorage.setItem('cedula', data.user.cedula);
