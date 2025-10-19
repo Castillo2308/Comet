@@ -114,6 +114,37 @@ const authLimiter = rateLimit({
   keyGenerator: (req, _res) => `${req.ip}|${(req.body && req.body.email) || 'unknown'}`,
 });
 
+// Initialize SQL schema only once at startup
+let schemaInitialized = false;
+let schemaInitPromise = null;
+
+async function initSchemaOnce() {
+  if (schemaInitialized) return;
+  if (!schemaInitPromise) {
+    schemaInitPromise = ensureSchema().then(() => {
+      schemaInitialized = true;
+      console.log('Database schema initialized successfully');
+    }).catch((err) => {
+      console.error('Failed to initialize schema:', err);
+      throw err;
+    });
+  }
+  return schemaInitPromise;
+}
+
+// Add middleware to initialize schema once on first API request
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    try {
+      await initSchemaOnce();
+    } catch (err) {
+      console.error('Schema init error on request:', err.message);
+      return res.status(500).json({ error: 'Database connection failed', details: err.message });
+    }
+  }
+  next();
+});
+
 // Apply rate limiters to selected paths
 app.use('/api/users/login', authLimiter);
 app.use('/api/users', sensitiveLimiter);
@@ -145,31 +176,6 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Route not found', path: req.originalUrl });
   } else {
     res.status(404).json({ error: 'Not found' });
-  }
-});
-
-// Initialize SQL schema only once at startup
-let schemaInitialized = false;
-let schemaInitPromise = null;
-
-async function initSchemaOnce() {
-  if (schemaInitialized) return;
-  if (!schemaInitPromise) {
-    schemaInitPromise = ensureSchema().then(() => {
-      schemaInitialized = true;
-    });
-  }
-  return schemaInitPromise;
-}
-
-// Add middleware to initialize schema once on first request
-app.use(async (req, res, next) => {
-  try {
-    await initSchemaOnce();
-    next();
-  } catch (err) {
-    console.error('Schema init error:', err);
-    res.status(500).json({ error: 'Database initialization failed' });
   }
 });
 
