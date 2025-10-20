@@ -9,7 +9,7 @@ const allowedRoles = ['user','admin','security','news','reports','buses','driver
 function validatePassword(password, context = {}) {
   const violations = [];
   if (typeof password !== 'string') return { ok: false, violations: ['La contraseña es inválida.'] };
-  const minLen = 8;
+  const minLen = 12;
   const maxLen = 128;
   if (password.length < minLen) violations.push(`Al menos ${minLen} caracteres.`);
   if (password.length > maxLen) violations.push(`No más de ${maxLen} caracteres.`);
@@ -57,12 +57,30 @@ const registerUser = async (req, res) => {
   // Extract all five fields from the request body.
   const { name, lastname, cedula, email, password, role } = req.body;
 
+  // Log for debugging
+  console.log('[register] Request received:', { 
+    hasName: !!name, 
+    hasLastname: !!lastname, 
+    hasCedula: !!cedula, 
+    hasEmail: !!email, 
+    hasPassword: !!password,
+    bodyKeys: Object.keys(req.body || {})
+  });
+
   // Basic validation.
   if (!name || !lastname || !cedula || !email || !password) {
-    return res.status(400).json({ message: 'All fields are required.' });
+    const missing = [];
+    if (!name) missing.push('name');
+    if (!lastname) missing.push('lastname');
+    if (!cedula) missing.push('cedula');
+    if (!email) missing.push('email');
+    if (!password) missing.push('password');
+    console.log('[register] Missing fields:', missing);
+    return res.status(400).json({ message: 'All fields are required.', missing });
   }
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRe.test(String(email))) {
+    console.log('[register] Invalid email:', email);
     return res.status(400).json({ message: 'Email inválido.' });
   }
 
@@ -70,6 +88,7 @@ const registerUser = async (req, res) => {
     // Validate password strength
     const check = validatePassword(password, { name, lastname, email, cedula });
     if (!check.ok) {
+      console.log('[register] Password validation failed:', check.violations);
       return res.status(400).json({ message: 'La contraseña no cumple los requisitos.', violations: check.violations });
     }
     // Hash the password before saving
@@ -92,15 +111,33 @@ const registerUser = async (req, res) => {
         const baseUrl = process.env.PUBLIC_BASE_URL || (req.headers.origin || `${req.protocol}://${req.get('host')}`);
   const verifyUrl = `${baseUrl}/verified?token=${encodeURIComponent(token)}`;
         const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
-        try { await insertVerifyToken({ token, email, expiresAt }); } catch {}
-        try { await sendVerificationEmail({ to: email, verifyUrl }); } catch {}
+        try { 
+          await insertVerifyToken({ token, email, expiresAt }); 
+          console.log('[register] Token inserted for:', email);
+        } catch (e) { 
+          console.error('[register] Token insert failed:', e); 
+          return res.status(500).json({ message: 'Failed to create verification token.' });
+        }
+        
+        try { 
+          console.log('[register] Sending verification email to:', email);
+          await sendVerificationEmail({ to: email, verifyUrl }); 
+          console.log('[register] ✓ Verification email sent successfully to:', email);
+        } catch (e) { 
+          console.error('[register] ✗ Email send failed:', e.message || e);
+          // Token was created but email failed - still allow registration
+          // but log the error clearly
+          console.error('[register] WARNING: User registered but verification email failed to send');
+        }
       }
+      console.log('[register] User registered successfully:', email);
       res.status(201).json({ message: 'User registered successfully!', verified });
     } else {
+      console.log('[register] User creation failed');
       res.status(500).json({ message: 'Failed to register user.' });
     }
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('[register] Unexpected error:', error);
     res.status(500).json({ message: 'Failed to register user.' });
   }
 };
@@ -233,8 +270,22 @@ export const resendVerification = async (req, res) => {
     const baseUrl = process.env.PUBLIC_BASE_URL || (req.headers.origin || `${req.protocol}://${req.get('host')}`);
   const verifyUrl = `${baseUrl}/verified?token=${encodeURIComponent(token)}`;
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(); // 48h
-    try { await insertVerifyToken({ token, email: normalized, expiresAt }); } catch {}
-    try { await sendVerificationEmail({ to: normalized, verifyUrl }); } catch {}
+    
+    try { 
+      await insertVerifyToken({ token, email: normalized, expiresAt }); 
+      console.log('[resend] Token inserted for:', normalized);
+    } catch (e) {
+      console.error('[resend] Token insert failed:', e);
+    }
+    
+    try { 
+      console.log('[resend] Sending verification email to:', normalized);
+      await sendVerificationEmail({ to: normalized, verifyUrl }); 
+      console.log('[resend] ✓ Verification email sent successfully');
+    } catch (e) {
+      console.error('[resend] ✗ Email send failed:', e.message || e);
+    }
+    
     return res.json({ ok: true });
   } catch (e) {
     console.error('resendVerification error', e);

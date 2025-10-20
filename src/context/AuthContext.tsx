@@ -73,28 +73,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (name: string, lastname: string, cedula: string, email: string, password: string): Promise<boolean> => {
     try {
+      const payload = { name, lastname, cedula, email, password, role: 'user' };
+      console.log('[signUp] Enviando:', payload);
+      
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, lastname, cedula, email, password, role: 'user' })
+        body: JSON.stringify(payload)
       });
+      
+      console.log('[signUp] Status:', response.status);
+      const data = await response.json();
+      console.log('[signUp] Response:', data);
+      
       if (response.ok) {
         return true;
       }
+      
       // Bubble up server-side validation errors
-      try {
-        const data = await response.json();
-        if (response.status === 409 && data?.duplicate) {
-          if (data.duplicate === 'cedula') throw new Error('Esta cédula ya está registrada.');
-          if (data.duplicate === 'email') throw new Error('Este email ya está registrado.');
-        }
-        if (data?.violations) {
-          throw new Error(Array.isArray(data.violations) ? data.violations.join('\n') : data.message || 'Error de validación');
-        }
-      } catch {}
-      return false;
-    } catch {
-      return false;
+      if (response.status === 409 && data?.duplicate) {
+        if (data.duplicate === 'cedula') throw new Error('Esta cédula ya está registrada.');
+        if (data.duplicate === 'email') throw new Error('Este email ya está registrado.');
+      }
+      if (data?.violations) {
+        throw new Error(Array.isArray(data.violations) ? data.violations.join('\n') : data.message || 'Error de validación');
+      }
+      if (data?.missing) {
+        throw new Error(`Campos faltantes: ${data.missing.join(', ')}`);
+      }
+      throw new Error(data?.message || 'Error al registrarse');
+    } catch (err) {
+      console.error('[signUp] Error:', err);
+      throw err;
     }
   };
 

@@ -21,7 +21,7 @@ export default function Register() {
 
   const validatePassword = (password: string) => {
     const v: string[] = [];
-    const minLen = 8;
+    const minLen = 12;
     if (password.length < minLen) v.push(`Al menos ${minLen} caracteres.`);
     if (password.length > 128) v.push('No más de 128 caracteres.');
     if (!/[a-z]/.test(password)) v.push('Incluye una letra minúscula.');
@@ -177,9 +177,18 @@ export default function Register() {
               />
               {(pwTouched || formData.password) && (
                 <div className="mt-2 text-xs">
-                  <div className={`h-1 rounded ${pwViolations.length === 0 && formData.password.length >= 8 ? 'bg-green-500' : pwViolations.length <= 2 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
+                  <div className={`h-1 rounded ${pwViolations.length === 0 && formData.password.length >= 12 ? 'bg-green-500' : pwViolations.length <= 2 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
                   <ul className="mt-2 space-y-1 text-gray-600">
-                    {['Al menos 8 caracteres.','Incluye una letra minúscula.','Incluye una letra mayúscula.','Incluye un número.','Incluye un carácter especial.','No debe tener espacios.'].map(req => (
+                    {[
+                      'Al menos 12 caracteres.',
+                      'Incluye una letra minúscula.',
+                      'Incluye una letra mayúscula.',
+                      'Incluye un número.',
+                      'Incluye un carácter especial.',
+                      'No debe tener espacios.',
+                      'Evita 3+ caracteres repetidos.',
+                      'Evita secuencias como 1234 o 4321.'
+                    ].map(req => (
                       <li key={req} className={`flex items-center gap-2 ${pwViolations.includes(req) ? 'text-gray-500' : 'text-green-600'}`}>
                         <span className={`inline-block w-2 h-2 rounded-full ${pwViolations.includes(req) ? 'bg-gray-300' : 'bg-green-500'}`}></span>
                         {req}
