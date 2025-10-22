@@ -759,7 +759,6 @@ export default function AdminDashboard() {
                 <option value="news">Noticias</option>
                 <option value="reports">Reportes</option>
                 <option value="buses">Buses</option>
-                <option value="driver">Conductor</option>
                 <option value="community">Comunidad</option>
               </select>
               <div className="flex justify-end gap-2 pt-2">

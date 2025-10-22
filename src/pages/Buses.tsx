@@ -244,7 +244,7 @@ export default function Buses() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={fetchActive} className="px-3 py-2 rounded bg-white/20 text-white text-sm">Actualizar</button>
+            
             {!myApp && (
               <button onClick={() => setApplyOpen(true)} className="px-3 py-2 rounded bg-white text-blue-700 text-sm font-medium flex items-center gap-1">
                 <Send className="h-4 w-4" /> Unirse como conductor
