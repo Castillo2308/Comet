@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../lib/api';
+import { useAuth } from './AuthContext';
 
 interface DriverServiceState {
   isRunning: boolean;
@@ -20,6 +21,7 @@ const DriverServiceContext = createContext<DriverServiceContextType | undefined>
 const STORAGE_KEY = 'driverServiceState';
 
 export function DriverServiceProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
   const locationWatchRef = useRef<number | null>(null);
   const lastSentRef = useRef<number>(0);
@@ -57,41 +59,33 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Load state from localStorage and check database on mount
+  // Load state from localStorage and check database on mount or when user changes
   useEffect(() => {
     const initializeServiceState = async () => {
-      // First try to get cedula from various sources
-      const cedula = resolveCedula();
-      if (cedula) {
-        // Always check database status for authenticated users
-        await checkServiceStatus(cedula);
-      }
+      if (!user?.cedula) return; // Wait for user to be available
+
+      // Always check database status for authenticated users
+      await checkServiceStatus(user.cedula);
     };
 
     initializeServiceState();
-  }, []);
+  }, [user?.cedula]); // Depend on user.cedula to re-run when user is available
 
   const resolveCedula = () => {
     if (cedulaRef.current) return cedulaRef.current;
 
+    // Use user from context if available
+    if (user?.cedula) {
+      cedulaRef.current = user.cedula;
+      localStorage.setItem('cedula', user.cedula);
+      return user.cedula;
+    }
+
+    // Fallback to localStorage
     const stored = localStorage.getItem('cedula');
     if (stored) {
       cedulaRef.current = stored;
       return stored;
-    }
-
-    try {
-      const authUser = localStorage.getItem('authUser');
-      if (authUser) {
-        const parsed = JSON.parse(authUser);
-        if (parsed?.cedula) {
-          cedulaRef.current = parsed.cedula;
-          localStorage.setItem('cedula', parsed.cedula);
-          return parsed.cedula;
-        }
-      }
-    } catch (e) {
-      console.error('Error resolving cedula:', e);
     }
 
     return null;
