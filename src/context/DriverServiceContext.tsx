@@ -102,7 +102,33 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
 
   const getPositionOnce = () => new Promise<GeolocationPosition>((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('Geolocalización no disponible'));
-    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
+
+    // Request permission explicitly
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'denied') {
+          reject(new Error('Permiso de geolocalización denegado. Por favor, habilita la geolocalización en tu navegador.'));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000
+        });
+      }).catch(() => {
+        // Fallback if permissions API is not available
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000
+        });
+      });
+    } else {
+      // Fallback for browsers without permissions API
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000
+      });
+    }
   });
 
   const sendLocation = async (lat: number, lng: number): Promise<boolean> => {

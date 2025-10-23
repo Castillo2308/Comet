@@ -31,10 +31,20 @@ export default function Buses() {
       if (res.ok) {
         const rows = await res.json();
         console.log('[fetchActive] Buses received:', rows.map((b: any) => ({ busId: b.busId, routeColor: b.routeColor, stage: b.stage })));
-        setActive(rows || []);
+
+        // Filter buses: show all active buses, but driver's bus only when service is running
+        let filteredBuses = rows || [];
+
+        if (!isRunning && myApp) {
+          // When driver doesn't have service running, hide their own bus from the map
+          const cedula = localStorage.getItem('cedula');
+          filteredBuses = (rows || []).filter((bus: any) => bus.driverId !== cedula);
+        }
+
+        setActive(filteredBuses);
       }
     } catch {}
-  }, []);
+  }, [isRunning, myApp]);
 
   const fetchMyApp = useCallback(async () => {
     try {
@@ -102,6 +112,8 @@ export default function Buses() {
   const handleStartService = async () => {
     try {
       await startService();
+      // Refresh the active buses list immediately after starting service
+      setTimeout(() => fetchActive(), 1000);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'No se pudo iniciar el servicio');
     }
@@ -110,6 +122,8 @@ export default function Buses() {
   const handleStopService = async () => {
     try {
       await stopService();
+      // Refresh the active buses list immediately after stopping service
+      setTimeout(() => fetchActive(), 1000);
     } catch (error) {
       console.error('Error stopping service:', error);
     }
@@ -199,7 +213,9 @@ export default function Buses() {
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Buses en servicio</h2>
           <div className="space-y-3">
             {active.length === 0 && (
-              <div className="p-4 bg-white rounded-xl border text-gray-600">No hay buses en servicio en este momento.</div>
+              <div className="p-4 bg-white rounded-xl border text-gray-600">
+                {isRunning ? 'Cargando buses...' : 'No hay buses en servicio en este momento.'}
+              </div>
             )}
             {active.map((b) => (
               <div key={b._id} className="bg-white rounded-xl border p-4 flex items-center justify-between">
