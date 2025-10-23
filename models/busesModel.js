@@ -90,9 +90,11 @@ export async function startServiceByDriver(driverCedula, lat, lng) {
     },
     { returnDocument: 'after' }
   );
-  console.log('[busesModel.startServiceByDriver] raw response:', res);
+  console.log('[busesModel.startServiceByDriver] raw response - isActive:', res?.isActive, '_id:', res?._id);
   // Handle both possible return formats: direct document or { value: document }
-  return res?._id ? res : (res?.value || null);
+  const result = res?._id ? res : (res?.value || null);
+  console.log('[busesModel.startServiceByDriver] final result - isActive:', result?.isActive, 'driverCedula:', result?.driverCedula);
+  return result;
 }
 
 export async function stopServiceByDriver(driverCedula) {
@@ -109,9 +111,11 @@ export async function stopServiceByDriver(driverCedula) {
     },
     { returnDocument: 'after' }
   );
-  console.log('[busesModel.stopServiceByDriver] raw response:', res);
+  console.log('[busesModel.stopServiceByDriver] raw response - isActive:', res?.isActive, '_id:', res?._id);
   // Handle both possible return formats: direct document or { value: document }
-  return res?._id ? res : (res?.value || null);
+  const result = res?._id ? res : (res?.value || null);
+  console.log('[busesModel.stopServiceByDriver] final result - isActive:', result?.isActive, 'driverCedula:', result?.driverCedula);
+  return result;
 }
 
 export async function updateLocationByDriver(driverCedula, lat, lng) {

@@ -36,6 +36,7 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
 
   const checkServiceStatus = async (cedula: string) => {
     try {
+      console.log('[DriverServiceContext] Checking service status for cedula:', cedula);
       const r = await api('/buses/driver/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,19 +44,24 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
       });
       if (r.ok) {
         const data = await r.json();
+        console.log('[DriverServiceContext] Service status response:', data);
         if (data.isRunning) {
+          console.log('[DriverServiceContext] Service is running, setting isRunning=true');
           setIsRunning(true);
           cedulaRef.current = cedula;
           saveState({ isRunning: true, cedula });
           // Restart location tracking if needed
           startLocationTracking();
         } else {
+          console.log('[DriverServiceContext] Service is not running, cleaning up');
           // Service was stopped on backend, clean up
           cleanup();
         }
+      } else {
+        console.log('[DriverServiceContext] Error response:', r.status);
       }
     } catch (error) {
-      console.error('Error checking service status:', error);
+      console.error('[DriverServiceContext] Error checking service status:', error);
     }
   };
 
@@ -171,6 +177,7 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
       const cedula = resolveCedula();
       if (!cedula) throw new Error('No se pudo identificar al conductor');
 
+      console.log('[DriverServiceContext.startService] Starting service for cedula:', cedula);
       const pos = await getPositionOnce();
 
       // Call the start service endpoint
@@ -185,22 +192,28 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
         throw new Error(error.message || 'No se pudo iniciar el servicio');
       }
 
+      const response = await r.json();
+      console.log('[DriverServiceContext.startService] Backend response:', response);
+
       setIsRunning(true);
       cedulaRef.current = cedula;
       lastSentRef.current = Date.now();
 
-      saveState({
+      const stateData = {
         isRunning: true,
         cedula,
         startTime: Date.now(),
         lastLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude }
-      });
+      };
+      console.log('[DriverServiceContext.startService] Saving state:', stateData);
+      saveState(stateData);
 
       // Start location tracking
       startLocationTracking();
 
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'No se pudo iniciar el servicio';
+      console.error('[DriverServiceContext.startService] Error:', msg);
       throw new Error(msg);
     }
   };
@@ -208,16 +221,18 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
   const stopService = async (): Promise<void> => {
     try {
       const cedula = resolveCedula();
+      console.log('[DriverServiceContext.stopService] Stopping service for cedula:', cedula);
       if (cedula) {
         // Call the stop service endpoint
-        await api('/buses/driver/stop', {
+        const r = await api('/buses/driver/stop', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cedula })
         });
+        console.log('[DriverServiceContext.stopService] Backend response status:', r.status);
       }
     } catch (error) {
-      console.error('Error stopping service:', error);
+      console.error('[DriverServiceContext.stopService] Error:', error);
     } finally {
       cleanup();
     }

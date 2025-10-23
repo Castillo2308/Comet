@@ -61,8 +61,8 @@ export default function Buses() {
 
   useEffect(() => {
     fetchActive();
-    // Refresh active buses roughly every 20 seconds
-    pollRef.current = window.setInterval(fetchActive, 20000) as unknown as number;
+    // Refresh active buses roughly every 10 seconds for all users
+    pollRef.current = window.setInterval(fetchActive, 10000) as unknown as number;
     return () => { if (pollRef.current) window.clearInterval(pollRef.current); };
   }, [fetchActive]);
 
@@ -113,7 +113,7 @@ export default function Buses() {
     try {
       await startService();
       // Refresh the active buses list immediately after starting service
-      setTimeout(() => fetchActive(), 1000);
+      setTimeout(() => fetchActive(), 500);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'No se pudo iniciar el servicio');
     }
@@ -123,7 +123,7 @@ export default function Buses() {
     try {
       await stopService();
       // Refresh the active buses list immediately after stopping service
-      setTimeout(() => fetchActive(), 1000);
+      setTimeout(() => fetchActive(), 500);
     } catch (error) {
       console.error('Error stopping service:', error);
     }

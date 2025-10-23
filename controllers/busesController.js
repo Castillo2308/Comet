@@ -176,7 +176,7 @@ export default {
         return res.status(400).json({ message: 'Location (lat, lng) required' });
       }
       const updated = await startServiceByDriver(cedula, lat, lng);
-      console.log('[busesController.startService] model returned:', updated);
+      console.log('[busesController.startService] model returned:', { _id: updated?._id, isActive: updated?.isActive, cedula: updated?.driverCedula });
       if (!updated) {
         return res.status(404).json({ message: 'No approved bus application found for this driver' });
       }
@@ -193,7 +193,7 @@ export default {
       const { cedula } = req.body || {};
       if (!cedula) return res.status(400).json({ message: 'Cedula is required' });
       const updated = await stopServiceByDriver(cedula);
-      console.log('[busesController.stopService] model returned:', updated);
+      console.log('[busesController.stopService] model returned:', { _id: updated?._id, isActive: updated?.isActive, cedula: updated?.driverCedula });
       if (!updated) {
         return res.status(404).json({ message: 'No active service found for this driver to stop' });
       }
