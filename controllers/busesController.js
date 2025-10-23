@@ -1,4 +1,4 @@
-import { createBusApplication, listBuses, listActiveBuses, getBusById, updateBus, deleteBus, startServiceByDriver, stopServiceByDriver, updateLocationByDriver, approveBus, rejectBus, findApplicationForUser } from '../models/busesModel.js';
+import { createBusApplication, listBuses, listActiveBuses, getBusById, updateBus, deleteBus, startServiceByDriver, stopServiceByDriver, updateLocationByDriver, approveBus, rejectBus, findApplicationForUser, getDriverServiceStatus } from '../models/busesModel.js';
 import { updateUserRole } from '../models/usersModel.js';
 import { isPrivileged } from '../lib/auth.js';
 import { ObjectId } from '../lib/mongoClient.js';
@@ -150,15 +150,17 @@ export default {
       const { cedula } = req.body || {};
       if (!cedula) return res.status(400).json({ message: 'Cedula is required' });
 
-      // Check if there's an active service for this driver
-      const activeBuses = await listActiveBuses();
-      const driverBus = activeBuses.find(bus => bus.driverId === cedula);
+      const status = await getDriverServiceStatus(cedula);
 
-      if (driverBus) {
-        res.json({ isRunning: true, bus: driverBus });
-      } else {
-        res.json({ isRunning: false });
+      if (!status) {
+        return res.json({ isRunning: false, hasApplication: false });
       }
+
+      res.json({
+        isRunning: status.isActive,
+        hasApplication: status.hasApplication,
+        bus: status.bus
+      });
     } catch (e) {
       console.error('[checkServiceStatus] Error:', e);
       res.status(500).json({ message: 'Failed to check service status' });

@@ -163,3 +163,19 @@ export async function findApplicationForUser(cedula) {
   const db = await getDb();
   return await db.collection(BUSES_COLL).findOne({ driverCedula: cedula });
 }
+
+export async function getDriverServiceStatus(cedula) {
+  const db = await getDb();
+  const bus = await db.collection(BUSES_COLL).findOne({
+    driverCedula: String(cedula),
+    status: 'approved'
+  });
+
+  if (!bus) return null;
+
+  return {
+    hasApplication: true,
+    isActive: bus.isActive || false,
+    bus: bus
+  };
+}

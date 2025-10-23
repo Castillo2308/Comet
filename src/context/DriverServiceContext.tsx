@@ -25,23 +25,6 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
   const lastSentRef = useRef<number>(0);
   const cedulaRef = useRef<string | null>(null);
 
-  // Load state from localStorage on mount
-  useEffect(() => {
-    const savedState = localStorage.getItem(STORAGE_KEY);
-    if (savedState) {
-      try {
-        const state: DriverServiceState = JSON.parse(savedState);
-        if (state.isRunning && state.cedula) {
-          // Check if service is still active on backend
-          checkServiceStatus(state.cedula);
-        }
-      } catch (error) {
-        console.error('Error loading driver service state:', error);
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-  }, []);
-
   const saveState = (state: Partial<DriverServiceState>) => {
     const currentState = localStorage.getItem(STORAGE_KEY);
     const parsedState = currentState ? JSON.parse(currentState) : {};
@@ -73,6 +56,20 @@ export function DriverServiceProvider({ children }: { children: ReactNode }) {
       console.error('Error checking service status:', error);
     }
   };
+
+  // Load state from localStorage and check database on mount
+  useEffect(() => {
+    const initializeServiceState = async () => {
+      // First try to get cedula from various sources
+      const cedula = resolveCedula();
+      if (cedula) {
+        // Always check database status for authenticated users
+        await checkServiceStatus(cedula);
+      }
+    };
+
+    initializeServiceState();
+  }, []);
 
   const resolveCedula = () => {
     if (cedulaRef.current) return cedulaRef.current;
