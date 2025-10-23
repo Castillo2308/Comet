@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleMap, Marker, useLoadScript, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, Marker, Polyline, useLoadScript, Autocomplete } from '@react-google-maps/api';
 
 export interface HotspotPoint {
   id: string | number;
@@ -8,6 +8,10 @@ export interface HotspotPoint {
   lat?: number;
   lng?: number;
   riskLevel?: 'Alto' | 'Medio' | 'Bajo';
+  busNumber?: string;
+  busId?: string;
+  routeWaypoints?: Array<{lat: number; lng: number}>;
+  routeColor?: string;
 }
 
 interface Props {
@@ -129,6 +133,28 @@ export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLoc
       </div>
       {isLoaded ? (
         <GoogleMap onClick={handleMapClick} mapContainerStyle={containerStyle} center={center} zoom={zoom} options={{ streetViewControl: false, fullscreenControl: false }}>
+          {/* Render polylines for routes */}
+          {points.map((p) => {
+            const hasWaypoints = Array.isArray(p.routeWaypoints) && p.routeWaypoints.length > 0;
+            if (!hasWaypoints || !p.routeColor) return null;
+            
+            // Create polyline path from waypoints
+            const path = p.routeWaypoints!.map(wp => ({ lat: wp.lat, lng: wp.lng }));
+            
+            return (
+              <Polyline
+                key={`route-${p.id}`}
+                path={path}
+                options={{
+                  strokeColor: p.routeColor,
+                  strokeOpacity: 0.8,
+                  strokeWeight: 3,
+                  geodesic: true,
+                }}
+              />
+            );
+          })}
+          
           {markers.map((p) => (
             <Marker
               key={`m-${p.id}`}
@@ -137,6 +163,12 @@ export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLoc
               icon={computedIcon}
               animation={selectedId !== undefined && p.id === selectedId ? google.maps.Animation.DROP : undefined}
               zIndex={p.id === selectedId ? 999 : undefined}
+              label={p.busNumber ? {
+                text: p.busNumber,
+                color: '#000',
+                fontSize: '11px',
+                fontWeight: 'bold',
+              } as any : undefined}
             />
           ))}
           {/* Ensure selected location is visible even if not part of markers or when pickMode is active */}

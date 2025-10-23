@@ -14,10 +14,14 @@ export async function createBusApplication(app) {
     busId: app.busId,
     routeStart: app.routeStart,
     routeEnd: app.routeEnd || '',
+    routeWaypoints: Array.isArray(app.routeWaypoints) ? app.routeWaypoints : [], // Auto-calculated by backend
+    routeColor: app.routeColor || '#3B82F6', // Color elegido por el conductor
     fee: Number(app.fee) || 0,
     driverLicense: app.driverLicense,
     status: 'pending', // pending -> approved -> rejected
     isActive: false, // Service status (true when driver is transmitting location)
+    stage: 'pickup', // pickup (going to start point) or route (doing the route)
+    arrivedAtStart: false, // True once driver reaches start point
     lat: null,
     lng: null,
     lastLocationUpdate: null,
@@ -75,6 +79,9 @@ export async function startServiceByDriver(driverCedula, lat, lng) {
     { 
       $set: { 
         isActive: true,
+        stage: 'pickup', // Start in pickup stage (going to start point)
+        arrivedAtStart: false,
+        displayRoute: [], // Will be set on first ping
         lat: Number(lat),
         lng: Number(lng),
         lastLocationUpdate: new Date(),

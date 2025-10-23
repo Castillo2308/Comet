@@ -26,11 +26,24 @@ import complaintsRoutes from '../routes/complaintsRoutes.js';
 import busesRoutes from '../routes/busesRoutes.js';
 import uploadsRoutes from '../routes/uploadsRoutes.js';
 import { ensureSchema } from '../lib/initSql.js';
+import { migrateRouteColors } from '../lib/migrateRoutColors.js';
 
 const app = express();
 // When behind a proxy (Vercel/Render/NGINX), enable trust proxy for correct IPs in rate limiters
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
+
+// Run migration on first request (ensures it happens once per container)
+let migrationDone = false;
+
+// Middleware to run migration once
+app.use(async (_req, _res, next) => {
+  if (!migrationDone) {
+    migrationDone = true;
+    await migrateRouteColors();
+  }
+  next();
+});
 
 // Security headers
 app.use(helmet({

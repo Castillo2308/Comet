@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Navigation, Check, Image as ImageIcon } from 'lucide-react';
-import  HotspotsMap  from '../components/HotspotsMap';
+import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Check, Image as ImageIcon } from 'lucide-react';
+import BusesMap from '../components/BusesMap';
+import { GoogleMapsProvider } from '../components/GoogleMapsProvider';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 
@@ -221,7 +222,6 @@ export default function AdminDashboard() {
   const [adminBuses, setAdminBuses] = useState<any[]>([]);
   const [busesFilter, setBusesFilter] = useState<string>('Todos');
   const [busesLoading, setBusesLoading] = useState(false);
-  const [busCenterId, setBusCenterId] = useState<string | null>(null);
 
   const adminNavItems = [
     { id: 'dashboard', icon: BarChart3, label: 'Inicio' },
@@ -1429,13 +1429,6 @@ export default function AdminDashboard() {
   const renderBuses = () => {
     const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyDluFc7caulw2jHJKsPM_mGnLa8oLuFgio';
     const filtered = busesFilter==='Todos' ? adminBuses : adminBuses.filter((b:any) => (b.status||'')===busesFilter);
-    const points = filtered
-      .filter((b:any) => typeof b.lat === 'number' && typeof b.lng === 'number')
-      .map((b:any, i:number) => ({ id: b._id || i, title: b.busNumber ? `Bus ${b.busNumber}` : 'Bus', lat: b.lat, lng: b.lng }));
-    const selected = (() => {
-      const f = adminBuses.find((b:any) => (b._id || b.id) === busCenterId);
-      return f && typeof f.lat === 'number' && typeof f.lng === 'number' ? { lat: f.lat, lng: f.lng } : undefined;
-    })();
     const refresh = async () => {
       setBusesLoading(true);
       try {
@@ -1476,14 +1469,9 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="mt-2">
-            <HotspotsMap
-              apiKey={GOOGLE_MAPS_KEY}
-              points={points}
-              selected={selected}
-              height={360}
-              showAutocomplete={false}
-              markerIcon={"/bus-marker.svg"}
-            />
+            <GoogleMapsProvider apiKey={GOOGLE_MAPS_KEY}>
+              <BusesMap buses={filtered} />
+            </GoogleMapsProvider>
           </div>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
@@ -1520,9 +1508,6 @@ export default function AdminDashboard() {
                       <button onClick={() => approve(b._id || b.id)} className="px-3 py-2 rounded bg-green-600 text-white text-sm flex items-center gap-1"><Check className="h-4 w-4"/>Aprobar</button>
                       <button onClick={async ()=>{ try { await api(`/buses/${b._id || b.id}/reject`, { method: 'POST' }); } catch(e) { console.error(e); } finally { refresh(); } }} className="px-3 py-2 rounded bg-yellow-600 text-white text-sm">Rechazar</button>
                     </>
-                  )}
-                  {(typeof b.lat === 'number' && typeof b.lng === 'number') && (
-                    <button onClick={() => setBusCenterId(b._id || b.id)} className="px-3 py-2 rounded bg-blue-500 text-white text-sm flex items-center gap-1"><Navigation className="h-4 w-4"/>Ubicar</button>
                   )}
                   <button onClick={async ()=>{ try { await api(`/buses/${b._id || b.id}`, { method: 'DELETE' }); } catch(e) { console.error(e); } finally { refresh(); } }} className="px-3 py-2 rounded bg-red-600 text-white text-sm">Eliminar</button>
                 </div>
