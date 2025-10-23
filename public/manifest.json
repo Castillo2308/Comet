@@ -50,6 +50,27 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Vista móvil y navegación"
+    },
+    {
+      "src": "/screenshots/mobile-2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Vista móvil 2"
+    },
+    {
+      "src": "/screenshots/mobile-3.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Vista móvil 3"
+    },
+    {
+      "src": "/screenshots/mobile-4.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Vista móvil 4"
     }
   ]
 }

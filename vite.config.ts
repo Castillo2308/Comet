@@ -18,6 +18,9 @@ export default defineConfig({
         'maskable-512.png',
         'screenshots/wide-1.png',
         'screenshots/mobile-1.png',
+        'screenshots/mobile-2.png',
+        'screenshots/mobile-3.png',
+        'screenshots/mobile-4.png',
       ],
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -78,6 +81,27 @@ export default defineConfig({
             type: 'image/png',
             form_factor: 'narrow',
             label: 'Vista móvil y navegación'
+          },
+          {
+            src: 'screenshots/mobile-2.png',
+            sizes: '1080x1920',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Vista móvil 2'
+          },
+          {
+            src: 'screenshots/mobile-3.png',
+            sizes: '1080x1920',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Vista móvil 3'
+          },
+          {
+            src: 'screenshots/mobile-4.png',
+            sizes: '1080x1920',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Vista móvil 4'
           }
         ]
       },
