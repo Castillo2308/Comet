@@ -5,6 +5,7 @@ import RoutePreviewMap from '../components/RoutePreviewMap';
 import BusesMap from '../components/BusesMap';
 import { GoogleMapsProvider } from '../components/GoogleMapsProvider';
 import { useAuth } from '../context/AuthContext';
+import { useDriverService } from '../context/DriverServiceContext';
 
 type ActiveBus = { _id: string; driverId: string; busNumber?: string; busId?: string; routeStart?: string; routeEnd?: string; routeWaypoints?: Array<{lat: number; lng: number}>; displayRoute?: Array<{lat: number; lng: number}>; pickupRoute?: Array<{lat: number; lng: number}>; stage?: 'pickup' | 'route'; arrivedAtStart?: boolean; fee?: number; status: string; lat?: number; lng?: number; routeColor?: string; duration?: string };
 
@@ -13,6 +14,7 @@ const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyDluFc7cau
 
 export default function Buses() {
   const { user } = useAuth();
+  const { isRunning, startService, stopService } = useDriverService();
   const [active, setActive] = useState<ActiveBus[]>([]);
   const [busDurations, setBusDurations] = useState<Map<string, string>>(new Map());
   const [centerId, setCenterId] = useState<string | null>(null);
@@ -21,11 +23,6 @@ export default function Buses() {
   const [form, setForm] = useState({ busNumber: '', busId: '', routeStart: '', routeEnd: '', fee: '', driverLicense: '', routeColor: '#3B82F6' });
   const [busColorForForm] = useState('#3B82F6'); // Color para el mapa del formulario
   const pollRef = useRef<number | null>(null);
-  const [running, setRunning] = useState(false);
-  const runningRef = useRef(false);
-  const locationWatchRef = useRef<number | null>(null);
-  const lastSentRef = useRef<number>(0);
-  const cedulaRef = useRef<string | null>(null);
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
 
   const fetchActive = useCallback(async () => {
@@ -62,10 +59,10 @@ export default function Buses() {
   useEffect(() => {
     fetchMyApp();
     // Poll more frequently when driver is running (2 seconds), otherwise every 5 seconds
-    const interval = running ? 2000 : 5000;
+    const interval = isRunning ? 2000 : 5000;
     const myAppPoll = window.setInterval(fetchMyApp, interval) as unknown as number;
     return () => { window.clearInterval(myAppPoll); };
-  }, [fetchMyApp, running]);
+  }, [fetchMyApp, isRunning]);
 
   // Handle duration updates from map
   const handleDurationUpdate = useCallback((busId: string, duration: string) => {
@@ -102,139 +99,21 @@ export default function Buses() {
     }
   };
 
-  // Driver helpers
-  const getPositionOnce = () => new Promise<GeolocationPosition>((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error('Geolocalización no disponible'));
-    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
-  });
-
-  const resolveCedula = useCallback(() => {
-    if (cedulaRef.current) {
-      
-      return cedulaRef.current;
-    }
-
-    const stored = localStorage.getItem('cedula');
-    
-    if (stored) {
-      cedulaRef.current = stored;
-      return stored;
-    }
-
-    if (user?.cedula) {
-      
-      cedulaRef.current = user.cedula;
-      localStorage.setItem('cedula', user.cedula);
-      return user.cedula;
-    }
-
+  const handleStartService = async () => {
     try {
-      const authUser = localStorage.getItem('authUser');
-      
-      if (authUser) {
-        const parsed = JSON.parse(authUser);
-        if (parsed?.cedula) {
-          cedulaRef.current = parsed.cedula;
-          localStorage.setItem('cedula', parsed.cedula);
-          return parsed.cedula;
-        }
-      }
-    } catch (e) {
-      
+      await startService();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudo iniciar el servicio');
     }
+  };
 
-    
-    return null;
-  }, [user?.cedula]);
-
-  const sendLocation = useCallback(async (lat: number, lng: number) => {
-    const cedula = resolveCedula();
-    
-    if (!cedula) {
-      
-      return false;
-    }
-
-    const r = await api('/buses/driver/ping', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ cedula, lat, lng }) 
-    });
-
-    if (!r.ok) {
-      return false;
-    }
-
-    
-    return true;
-  }, [resolveCedula]);
-
-  const startDriverService = useCallback(async () => {
+  const handleStopService = async () => {
     try {
-      
-      const cedula = resolveCedula();
-      if (!cedula) throw new Error('No se pudo identificar al conductor');
-      const pos = await getPositionOnce();
-      
-      // Call the new start service endpoint with initial location
-      const r = await api('/buses/driver/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cedula, lat: pos.coords.latitude, lng: pos.coords.longitude })
-      });
-      if (!r.ok) {
-        const error = await r.json().catch(() => ({ message: 'No se pudo iniciar el servicio' }));
-        throw new Error(error.message || 'No se pudo iniciar el servicio');
-      }
-      runningRef.current = true;
-      setRunning(true);
-      lastSentRef.current = Date.now();
-      if (locationWatchRef.current !== null) navigator.geolocation.clearWatch(locationWatchRef.current);
-      locationWatchRef.current = navigator.geolocation.watchPosition(async (p) => {
-        const now = Date.now();
-        if (now - lastSentRef.current < 10_000) return;
-        const sent = await sendLocation(p.coords.latitude, p.coords.longitude);
-        if (sent) lastSentRef.current = now;
-      }, () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'No se pudo iniciar el servicio';
-      
-      alert(msg);
+      await stopService();
+    } catch (error) {
+      console.error('Error stopping service:', error);
     }
-  }, [sendLocation]);
-
-  const stopDriverService = useCallback(async () => {
-    try {
-      
-      const cedula = resolveCedula();
-      if (!cedula) {
-        
-        throw new Error('No se pudo identificar al conductor');
-      }
-      // Call the stop service endpoint
-      const r = await api('/buses/driver/stop', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cedula })
-      });
-      if (!r.ok) {
-        // No alert; silently ignore stop error to avoid noisy UX
-      }
-    } catch (e) {
-      
-    } finally {
-      runningRef.current = false;
-      setRunning(false);
-      if (locationWatchRef.current !== null) {
-        navigator.geolocation.clearWatch(locationWatchRef.current);
-        locationWatchRef.current = null;
-      }
-    }
-  }, []);
-
-  useEffect(() => () => {
-    if (locationWatchRef.current !== null) navigator.geolocation.clearWatch(locationWatchRef.current);
-  }, []);
+  };
 
   return (
     <GoogleMapsProvider apiKey={GOOGLE_MAPS_KEY}>
@@ -258,12 +137,12 @@ export default function Buses() {
               </button>
             )}
             {(myApp?.status === 'approved' || user?.role === 'driver') && (
-              !running ? (
-                <button onClick={startDriverService} className="px-3 py-2 rounded bg-green-600 text-white text-sm font-medium flex items-center gap-1">
+              !isRunning ? (
+                <button onClick={handleStartService} className="px-3 py-2 rounded bg-green-600 text-white text-sm font-medium flex items-center gap-1">
                   <Play className="h-4 w-4" /> Iniciar servicio
                 </button>
               ) : (
-                <button onClick={stopDriverService} className="px-3 py-2 rounded bg-red-600 text-white text-sm font-medium flex items-center gap-1">
+                <button onClick={handleStopService} className="px-3 py-2 rounded bg-red-600 text-white text-sm font-medium flex items-center gap-1">
                   <Square className="h-4 w-4" /> Detener
                 </button>
               )

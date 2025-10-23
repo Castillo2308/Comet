@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { DriverServiceProvider } from './context/DriverServiceContext';
 import SignIn from './pages/SignIn';
 import VerifyRequired from './pages/VerifyRequired';
 import Verified from './pages/Verified';
@@ -102,9 +103,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen bg-gray-50">
-          <AppRoutes />
-        </div>
+        <DriverServiceProvider>
+          <div className="min-h-screen bg-gray-50">
+            <AppRoutes />
+          </div>
+        </DriverServiceProvider>
       </AuthProvider>
     </Router>
   );

@@ -25,5 +25,6 @@ router.delete('/:id', requireAuth, requireRole('admin','buses'), busesController
 router.post('/driver/start', requireAuth, busesController.startService);
 router.post('/driver/stop', requireAuth, busesController.stopService);
 router.post('/driver/ping', requireAuth, busesController.ping);
+router.post('/driver/status', requireAuth, busesController.checkServiceStatus);
 
 export default router;

@@ -143,6 +143,27 @@ export default {
       res.json(bus);
     } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to get bus' }); }
   },
+  // Driver: check service status
+  async checkServiceStatus(req, res) {
+    try {
+      console.log('[busesController.checkServiceStatus] body:', req.body);
+      const { cedula } = req.body || {};
+      if (!cedula) return res.status(400).json({ message: 'Cedula is required' });
+
+      // Check if there's an active service for this driver
+      const activeBuses = await listActiveBuses();
+      const driverBus = activeBuses.find(bus => bus.driverId === cedula);
+
+      if (driverBus) {
+        res.json({ isRunning: true, bus: driverBus });
+      } else {
+        res.json({ isRunning: false });
+      }
+    } catch (e) {
+      console.error('[checkServiceStatus] Error:', e);
+      res.status(500).json({ message: 'Failed to check service status' });
+    }
+  },
   // Driver: start service with initial location
   async startService(req, res) {
     try {
@@ -158,9 +179,9 @@ export default {
         return res.status(404).json({ message: 'No approved bus application found for this driver' });
       }
       res.json(updated);
-    } catch (e) { 
-      console.error('[startService] Error:', e); 
-      res.status(500).json({ message: 'Failed to start service' }); 
+    } catch (e) {
+      console.error('[startService] Error:', e);
+      res.status(500).json({ message: 'Failed to start service' });
     }
   },
   // Driver: stop service
