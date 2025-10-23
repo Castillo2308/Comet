@@ -182,22 +182,21 @@ export default function Buses() {
 
   <section ref={mapSectionRef}>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center"><MapPin className="h-5 w-5 mr-2 text-blue-600"/>Mapa</h2>
             <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-800 flex items-center"><MapPin className="h-5 w-5 mr-2 text-blue-600"/>Mapa</h2>
               {(myApp?.status === 'approved' || user?.role === 'driver') && (
                 <button
                   onClick={fetchActive}
-                  className="px-3 py-1 rounded bg-gray-100 text-gray-700 text-sm flex items-center gap-1 hover:bg-gray-200 transition-colors"
+                  className="p-1.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
                   title="Actualizar lista de buses"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  Actualizar
                 </button>
               )}
-              <div className="flex items-center gap-2 text-sm text-green-700">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/>
-                En vivo
-              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-green-700">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/>
+              En vivo
             </div>
           </div>
           <BusesMap
