@@ -233,7 +233,7 @@ export default function Buses() {
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full border-2" style={{ backgroundColor: b.routeColor || '#3B82F6', borderColor: b.routeColor || '#3B82F6' }} title={`Color: ${b.routeColor || '#3B82F6'}`} />
                   {(typeof b.lat === 'number' && typeof b.lng === 'number') ? (
-                    <button onClick={() => { setCenterId(b._id); mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-3 py-2 rounded bg-blue-500 text-white text-sm flex items-center gap-1"><Navigation className="h-4 w-4"/>Ubicar en el mapa</button>
+                    <button onClick={() => { setCenterId(b._id); mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} className="px-3 py-2 rounded bg-blue-500 text-white text-sm flex items-center gap-1"><Navigation className="h-4 w-4"/>Ubicar</button>
                   ) : (
                     <span className="text-xs text-gray-500">Sin ubicación</span>
                   )}
