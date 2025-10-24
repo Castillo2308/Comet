@@ -277,9 +277,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               <Bell className="h-5 w-5 mr-2 text-blue-600" />
               Noticias Importantes
             </h2>
-            <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-medium animate-pulse">
-              {(news || []).filter(n => n.priority === 'high').length} urgentes
-            </span>
+   
           </div>
           
           <div className="space-y-4">

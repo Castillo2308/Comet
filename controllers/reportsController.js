@@ -1,4 +1,5 @@
 import { listReports, createReport, updateReport, deleteReport, getReportById } from '../models/reportsModel.js';
+import { extractDriveFileId, deleteFromDrive } from '../lib/drive.js';
 import { isPrivileged } from '../lib/auth.js';
 
 export default {
@@ -32,6 +33,11 @@ export default {
   const role = req.user?.role; const cedula = req.user?.cedula;
   const canDelete = isPrivileged(role) || (cedula && String(rep.author) === String(cedula));
       if (!canDelete) return res.status(403).json({ message: 'Prohibido' });
+      // Try deleting the linked Drive file (best effort)
+      try {
+        const id = extractDriveFileId(rep.photo_link);
+        if (id) await deleteFromDrive(id);
+      } catch {}
       const ok = await deleteReport(req.params.id);
       if (!ok) return res.status(404).json({ message: 'Report not found' });
       res.json({ message: 'Report deleted' });

@@ -1,5 +1,6 @@
 import { listPosts, createPost, toggleLikePost, deletePost, listComments, addComment, likeComment, deleteComment, updatePost, getPostById, getCommentById } from '../models/forumModel.js';
 import { analyzeImageForModeration } from '../lib/vision.js';
+import { extractDriveFileId, deleteFromDrive } from '../lib/drive.js';
 import { isPrivileged } from '../lib/auth.js';
 
 export default {
@@ -62,6 +63,11 @@ export default {
       const cedula = req.user?.cedula;
   const canDelete = isPrivileged(role) || (cedula && String(post.author) === String(cedula));
       if (!canDelete) return res.status(403).json({ message: 'Prohibido' });
+      // Best-effort delete of Drive file
+      try {
+        const id = extractDriveFileId(post.photo_link);
+        if (id) await deleteFromDrive(id);
+      } catch {}
       const ok = await deletePost(req.params.id);
       if (!ok) return res.status(404).json({ message: 'Post not found' });
       res.json({ message: 'Post deleted' });

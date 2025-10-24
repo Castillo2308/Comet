@@ -1,5 +1,5 @@
 import express from "express";
-import usersController, { listAllUsers, verifyAccount, me, resendVerification } from "../controllers/usersController.js";
+import usersController, { listAllUsers, verifyAccount, me, resendVerification, requestPasswordReset, verifyPasswordReset, resetPassword } from "../controllers/usersController.js";
 import { requireAuth, requireRole } from "../lib/auth.js";
 
 const router = express.Router();
@@ -9,6 +9,9 @@ router.post("/login", usersController.loginUser); // Assuming you have a loginUs
 router.get('/verify', verifyAccount);
 router.get('/me', requireAuth, me);
 router.post('/resend-verification', resendVerification);
+router.post('/recover-request', requestPasswordReset);
+router.get('/recover/verify', verifyPasswordReset);
+router.post('/recover', resetPassword);
 // PUT /api/users/:cedula - Update user information
 router.put("/:cedula", requireAuth, usersController.updateUserInfo);
 // DELETE /api/users/:cedula - Delete user (self or privileged)

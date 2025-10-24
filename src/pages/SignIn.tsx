@@ -9,6 +9,8 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [failCount, setFailCount] = useState(0);
+  const [recoverMsg, setRecoverMsg] = useState('');
   const [canInstall, setCanInstall] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { signIn } = useAuth();
@@ -30,6 +32,7 @@ export default function SignIn() {
           return;
         }
         setError('Credenciales inválidas');
+        setFailCount(c => c + 1);
       }
     } catch (err) {
       setError('Error al iniciar sesión');
@@ -143,6 +146,39 @@ export default function SignIn() {
             </Link>
           </div>
         </form>
+
+        {failCount >= 3 && (
+          <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl text-sm">
+            <div className="font-semibold mb-2">¿Olvidaste tu contraseña?</div>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                placeholder="Tu correo"
+              />
+              <button
+                onClick={async () => {
+                  try {
+                    setRecoverMsg('');
+                    await fetch('/api/users/recover-request', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email })
+                    });
+                    setRecoverMsg('Si existe una cuenta con ese correo, te enviaremos un enlace para restablecer la contraseña.');
+                  } catch {}
+                }}
+                className="px-3 py-2 rounded-lg bg-blue-600 text-white"
+              >
+                Enviar enlace
+              </button>
+            </div>
+            {recoverMsg && <div className="text-gray-700 mt-2">{recoverMsg}</div>}
+            <div className="text-gray-600 mt-2">También puedes usar un enlace que te llegue a {email || 'tu correo'} y que abrirá la página de restablecer.</div>
+          </div>
+        )}
 
         {canInstall && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm">

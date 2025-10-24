@@ -8,6 +8,7 @@ import Verified from './pages/Verified';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ResetPassword from './pages/ResetPassword';
 import Announcements from './pages/Announcements';
 import Security from './pages/Security';
 import Buses from './pages/Buses';
@@ -75,6 +76,7 @@ function AppRoutes() {
       />
       <Route path="/verify-required" element={<VerifyRequired />} />
   <Route path="/verified" element={<Verified />} />
+    <Route path="/reset-password" element={<ResetPassword />} />
       <Route 
         path="/register" 
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} 
