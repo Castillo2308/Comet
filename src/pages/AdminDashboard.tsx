@@ -186,7 +186,7 @@ export default function AdminDashboard() {
   const [communityLoading, setCommunityLoading] = useState(false);
   const [communityModalOpen, setCommunityModalOpen] = useState(false);
   const [editingCommunityPost, setEditingCommunityPost] = useState<any>(null);
-  const [communityForm, setCommunityForm] = useState<{ content: string; photo_link?: string } >({ content: '', photo_link: '' });
+  const [communityForm, setCommunityForm] = useState<{ content: string; photo_link?: string; status?: 'pending' | 'approved' | 'rejected' } >({ content: '', photo_link: '', status: 'pending' });
   const [communityComments, setCommunityComments] = useState<Record<string, any[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   // Reload community posts (admin)
@@ -1035,10 +1035,15 @@ export default function AdminDashboard() {
             <form className="space-y-3" onSubmit={async (e) => {
               e.preventDefault();
               if (editingCommunityPost) {
-                const res = await api(`/forum/${editingCommunityPost._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: communityForm.content, photo_link: communityForm.photo_link }) });
-                if (res.ok) {
-                  const updated = await res.json();
-                  setCommunityPosts(prev => prev.map(p => (p._id === updated._id) ? updated : p));
+                try {
+                  const res = await api(`/forum/${editingCommunityPost._id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: communityForm.content, photo_link: communityForm.photo_link, status: communityForm.status }) });
+                  if (res.ok) {
+                    const updated = await res.json();
+                    setCommunityPosts(prev => prev.map(p => (p._id === updated._id) ? updated : p));
+                  }
+                } finally {
+                  // Match approve/reject behavior: always refresh after attempting update
+                  try { await refreshCommunity(); } catch {}
                 }
               } else {
                 let photoUrl: string | undefined = communityForm.photo_link || undefined;
@@ -1049,14 +1054,27 @@ export default function AdminDashboard() {
                 if (res.ok) {
                   const created = await res.json();
                   setCommunityPosts(prev => [created, ...prev]);
+                  // Reload the table to ensure latest data from backend
+                  try { await refreshCommunity(); } catch {}
                 }
               }
               setCommunityModalOpen(false);
               setEditingCommunityPost(null);
-              setCommunityForm({ content: '', photo_link: '' });
+              setCommunityForm({ content: '', photo_link: '', status: 'pending' });
             }}>
               <textarea value={communityForm.content} onChange={e=>setCommunityForm({ ...communityForm, content: e.target.value })} placeholder="Contenido de la publicación" className="w-full border rounded-lg px-3 py-2" rows={4} required />
               <input value={communityForm.photo_link} onChange={e=>setCommunityForm({ ...communityForm, photo_link: e.target.value })} placeholder="Enlace de imagen (opcional)" className="w-full border rounded-lg px-3 py-2" />
+              {editingCommunityPost && (
+                <select
+                  value={communityForm.status || 'pending'}
+                  onChange={(e)=> setCommunityForm({ ...communityForm, status: e.target.value as any })}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  <option value="pending">Pendiente</option>
+                  <option value="approved">Aprobado</option>
+                  <option value="rejected">Rechazado</option>
+                </select>
+              )}
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={()=>setCommunityModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
                 <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingCommunityPost ? 'Guardar' : 'Crear'}</button>
@@ -1116,7 +1134,7 @@ export default function AdminDashboard() {
                       <button onClick={async()=>{ try { await api(`/forum/${p._id}/reject`, { method: 'POST' }); } finally { refreshCommunity(); } }} className="px-2 py-1 text-xs bg-yellow-600 text-white rounded">Rechazar</button>
                     </>
                   )}
-                  <button onClick={() => { setEditingCommunityPost(p); setCommunityForm({ content: p.content || '', photo_link: p.photo_link || '' }); setCommunityModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
+                  <button onClick={() => { setEditingCommunityPost(p); setCommunityForm({ content: p.content || '', photo_link: p.photo_link || '', status: (p.status || 'pending') }); setCommunityModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
                   <button onClick={async () => { try { await api(`/forum/${p._id}`, { method: 'DELETE' }); } finally { refreshCommunity(); } }} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
                 </div>
               </div>
