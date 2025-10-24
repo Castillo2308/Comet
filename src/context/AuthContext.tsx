@@ -40,6 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
     try {
+      // Clear any stale verify-required flag so only the current response controls it
+      localStorage.removeItem('pendingVerifyEmail');
       const response = await fetch('/api/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

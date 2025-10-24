@@ -109,4 +109,33 @@ export const consumeVerifyToken = async (token) => {
   return rows?.[0]?.email || null;
 };
 
+// Password reset tokens
+export const insertPasswordResetToken = async ({ token, email, expiresAt }) => {
+  await neonClient`
+    insert into password_reset_tokens (token, email, expires_at) values (${token}, ${email}, ${expiresAt})
+  `;
+  return true;
+};
+
+export const getResetTokenEmail = async (token) => {
+  const rows = await neonClient`
+    select email from password_reset_tokens where token = ${token} and expires_at > now()
+  `;
+  return rows?.[0]?.email || null;
+};
+
+export const consumeResetToken = async (token) => {
+  const rows = await neonClient`
+    delete from password_reset_tokens where token = ${token} and expires_at > now() returning email
+  `;
+  return rows?.[0]?.email || null;
+};
+
+export const setUserPasswordByEmail = async (email, hashedPassword) => {
+  const rows = await neonClient`
+    update users set password = ${hashedPassword} where email = ${email} returning cedula
+  `;
+  return rows?.length > 0;
+};
+
 

@@ -1,8 +1,8 @@
-import { createUser, getUserByEmail, updateUser, deleteUser, getUserByCedula, listUsers, deleteUserCascade, insertVerifyToken, consumeVerifyToken, setUserVerifiedByEmail } from '../models/usersModel.js';
+import { createUser, getUserByEmail, updateUser, deleteUser, getUserByCedula, listUsers, deleteUserCascade, insertVerifyToken, consumeVerifyToken, setUserVerifiedByEmail, insertPasswordResetToken, getResetTokenEmail, consumeResetToken, setUserPasswordByEmail } from '../models/usersModel.js';
 import bcrypt from 'bcryptjs';    // Same as const bcrypt = require('bcryptjs');
 import { signAccessToken } from '../lib/auth.js';
 import crypto from 'crypto';
-import { sendVerificationEmail } from '../lib/email.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../lib/email.js';
 
 const allowedRoles = ['user','admin','security','news','reports','buses','driver','community'];
 
@@ -290,6 +290,76 @@ export const resendVerification = async (req, res) => {
   } catch (e) {
     console.error('resendVerification error', e);
     return res.json({ ok: true });
+  }
+};
+
+// Request password reset (doesn't reveal if email exists)
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    const normalized = String(email || '').trim().toLowerCase();
+    if (!normalized) return res.status(400).json({ message: 'Email requerido' });
+
+    const token = crypto.randomBytes(24).toString('hex');
+    // Build base URL (Vercel proxy-aware)
+    const xfProto = req.get('x-forwarded-proto');
+    const xfHost = req.get('x-forwarded-host');
+    const scheme = process.env.PUBLIC_BASE_URL ? null : (xfProto || req.protocol || 'https');
+    const host = process.env.PUBLIC_BASE_URL ? null : (xfHost || req.get('host'));
+    const baseUrl = process.env.PUBLIC_BASE_URL || `${scheme}://${host}`;
+    const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 1).toISOString(); // 1h
+
+    // Only store token if user exists, but do not reveal outcome
+    try {
+      const user = await getUserByEmail(normalized);
+      if (user) {
+        await insertPasswordResetToken({ token, email: normalized, expiresAt });
+        await sendPasswordResetEmail({ to: normalized, resetUrl });
+      }
+    } catch (e) {
+      // swallow to avoid enumeration
+    }
+    return res.json({ ok: true });
+  } catch (e) {
+    // Never reveal
+    return res.json({ ok: true });
+  }
+};
+
+// Verify password reset token (for pre-validating page)
+export const verifyPasswordReset = async (req, res) => {
+  try {
+    const token = String(req.query.token || '');
+    if (!token) return res.status(400).json({ ok: false, message: 'Token requerido' });
+    const email = await getResetTokenEmail(token);
+    return res.json({ ok: !!email });
+  } catch {
+    return res.json({ ok: false });
+  }
+};
+
+// Reset password using a valid token
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body || {};
+    if (!token || !password) return res.status(400).json({ message: 'Token y contraseña requeridos' });
+    const email = await getResetTokenEmail(String(token));
+    if (!email) return res.status(400).json({ message: 'Token inválido o expirado' });
+    const check = validatePassword(password, { email });
+    if (!check.ok) {
+      return res.status(400).json({ message: 'La contraseña no cumple los requisitos.', violations: check.violations });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(password, salt);
+    const ok = await setUserPasswordByEmail(email, hashed);
+    if (!ok) return res.status(404).json({ message: 'Usuario no encontrado' });
+    // Consume token after successful password update
+    try { await consumeResetToken(String(token)); } catch {}
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('resetPassword error', e);
+    res.status(500).json({ message: 'No se pudo restablecer la contraseña' });
   }
 };
 
