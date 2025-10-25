@@ -3096,7 +3096,7 @@ export default function AdminDashboard() {
       {/* Bottom Navigation */}
       {renderUsersModal()}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-30 shadow-lg">
-        <nav className="flex items-center gap-6 w-full mx-auto justify-start overflow-x-auto no-scrollbar snap-x snap-mandatory" style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}>
+        <nav className="flex items-center gap-6 w-full sm:max-w-3xl mx-auto justify-start sm:justify-center overflow-x-auto sm:overflow-visible no-scrollbar snap-x snap-mandatory sm:snap-none" style={{ touchAction: 'pan-x', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
           {visibleTabs.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -3105,7 +3105,7 @@ export default function AdminDashboard() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform snap-center flex-shrink-0 ${
+                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform snap-center ${
                   isActive
                     ? 'text-blue-500 scale-110'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:scale-105'
