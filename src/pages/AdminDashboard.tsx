@@ -2792,21 +2792,21 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 overflow-x-hidden pb-20">
       {/* Enhanced Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl">
-        <div className="w-full px-3 sm:px-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 py-3 sm:py-4">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="bg-white p-2 rounded-xl shadow-lg flex-shrink-0">
-                <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-8 sm:h-10 w-8 sm:w-10 object-contain" />
+        <div className="w-full px-4">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white p-2 rounded-xl shadow-lg">
+                <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
               </div>
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl font-bold text-white break-words">Admin Panel</h1>
-                <p className="text-xs sm:text-sm text-blue-100 break-words">Bienvenido, {user?.name} • Sistema Comet</p>
+              <div>
+                <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+                <p className="text-blue-100 text-sm">Bienvenido, {user?.name} • Sistema Comet</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={signOut}
-                className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap"
+                className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg text-sm"
               >
                 Salir
               </button>
@@ -3095,8 +3095,8 @@ export default function AdminDashboard() {
 
       {/* Bottom Navigation */}
       {renderUsersModal()}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-2 py-3 z-30 shadow-lg">
-        <nav className="flex items-center gap-2 w-full max-w-3xl mx-auto justify-start overflow-x-auto no-scrollbar snap-x snap-mandatory">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-30 shadow-lg">
+        <nav className="flex items-center gap-6 w-full mx-auto justify-start overflow-x-auto no-scrollbar snap-x snap-mandatory" style={{ scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}>
           {visibleTabs.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
