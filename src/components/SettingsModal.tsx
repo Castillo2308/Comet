@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Moon, Sun, Palette, Bell, Shield, Globe, Smartphone, Settings } from 'lucide-react';
+import { X, Moon, Sun, Bell, Shield, Smartphone, Settings, Users, FileText } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -7,19 +8,18 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const { user } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
-  const [language, setLanguage] = useState('es');
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     // Load saved preferences
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
     const savedNotifications = localStorage.getItem('notifications') !== 'false';
-    const savedLanguage = localStorage.getItem('language') || 'es';
     
     setDarkMode(savedDarkMode);
     setNotifications(savedNotifications);
-    setLanguage(savedLanguage);
     
     // Apply dark mode
     if (savedDarkMode) {
@@ -45,11 +45,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const newNotifications = !notifications;
     setNotifications(newNotifications);
     localStorage.setItem('notifications', newNotifications.toString());
-  };
-
-  const handleLanguageChange = (newLanguage: string) => {
-    setLanguage(newLanguage);
-    localStorage.setItem('language', newLanguage);
   };
 
   if (!isOpen) return null;
@@ -137,34 +132,68 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </button>
             </div>
 
-            {/* Privacy */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                  <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
+            {/* Privacy / Admin Users */}
+            {isAdmin ? (
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Gestión de Usuarios</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Administrar usuarios del sistema</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Privacidad</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Configuración de privacidad</p>
-                </div>
+                <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                  <span className="text-sm font-medium">Ir</span>
+                </button>
               </div>
-              <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
-                <span className="text-sm font-medium">Configurar</span>
-              </button>
-            </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                    <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Privacidad</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Configuración de privacidad</p>
+                  </div>
+                </div>
+                <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                  <span className="text-sm font-medium">Configurar</span>
+                </button>
+              </div>
+            )}
 
-            {/* App Info */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg">
-                  <Smartphone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            {/* Admin Reports or Regular App Info */}
+            {isAdmin ? (
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                    <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Reportes del Sistema</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Estadísticas y reportes</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Versión de la App</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">v1.0.0</p>
+                <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                  <span className="text-sm font-medium">Ver</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg">
+                    <Smartphone className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Versión de la App</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">v1.0.0</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Footer */}

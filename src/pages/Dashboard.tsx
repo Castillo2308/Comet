@@ -140,7 +140,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
   // removed getStatColor; not used in new layout
 
   return (
-    <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+    <div className="flex-1 overflow-y-auto pb-16 sm:pb-20 md:pb-24 min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-200">
       <UserProfileModal 
         isOpen={showProfileModal} 
         onClose={() => setShowProfileModal(false)} 
@@ -151,12 +151,12 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         <img
           src="/landscape.png"
           alt="Paisaje del cantón"
-          className="w-full h-40 sm:h-56 object-cover filter brightness-[.55]"
+          className="w-full h-40 sm:h-56 object-cover filter brightness-[.55] dark:brightness-[.35]"
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.pexels.com/photos/325185/pexels-photo-325185.jpeg?auto=compress&cs=tinysrgb&w=1200'; }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/10 to-transparent dark:from-black/50 dark:via-black/20"></div>
   <div className="absolute top-4 sm:top-5 left-3 flex items-center gap-3">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-lg flex items-center justify-center p-2">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white dark:bg-gray-700 shadow-lg flex items-center justify-center p-2">
             <img src="/municipality-logo.svg" alt="Municipalidad Logo" className="w-full h-full object-contain" />
           </div>
           <div>
@@ -166,7 +166,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         </div>
         <button
           onClick={() => setShowProfileModal(true)}
-          className="absolute top-2 right-3 bg-white/80 text-gray-900 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm backdrop-blur-sm hover:bg-white transition-all duration-200 shadow-lg"
+          className="absolute top-2 right-3 bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm backdrop-blur-sm hover:bg-white dark:hover:bg-gray-600 transition-all duration-200 shadow-lg"
         >
           {user?.name?.charAt(0)}{user?.lastname?.charAt(0)}
         </button>
@@ -176,11 +176,11 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         {/* Reports Section with Enhanced Design */}
         <section className="animate-fadeInUp">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
-              <Activity className="h-5 w-5 mr-2 text-blue-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
+              <Activity className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
               Tus Reportes
             </h2>
-            <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium">
+            <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 px-3 py-1 rounded-full text-sm font-medium">
               {activeCount} activos
             </span>
           </div>
@@ -190,7 +190,7 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               (showAllReports ? allReports : allReports.slice(0,5)).map((report, index) => (
                 <div 
                   key={report.id} 
-                  className="bg-white rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp hover-lift"
+                  className="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp hover-lift"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-4">
@@ -200,48 +200,48 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                           href={report.photoLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 shadow-md border"
+                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shadow-md border dark:border-gray-600"
                           title="Abrir imagen en nueva pestaña"
                         >
                           <ImageIcon className="h-6 w-6" />
                         </a>
                       ) : (
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shadow-md border">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 shadow-md border dark:border-gray-600">
                           <ImageIcon className="h-6 w-6" />
                         </div>
                       )}
-                      <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-lg">
+                      <div className="absolute -top-1 -right-1 bg-blue-500 dark:bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-lg">
                         {index + 1}
                       </div>
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 text-sm sm:text-base">{report.title}</h3>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base">{report.title}</h3>
                         <div className="flex items-center space-x-2 relative">
                           <span className={`bg-gradient-to-r ${getStatusPill(report.status)} text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm`}>
                             {report.status}
                           </span>
-                          <button onClick={() => setMenuOpenId(menuOpenId === report.id ? null : report.id)} className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 hover:bg-gray-100 rounded-full">
+                          <button onClick={() => setMenuOpenId(menuOpenId === report.id ? null : report.id)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
                             <MoreHorizontal className="h-4 w-4" />
                           </button>
                           {menuOpenId === report.id && (
-                            <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 w-36">
-                              <button onClick={() => handleDeleteReport(report.id)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-red-600">Eliminar</button>
+                            <div className="absolute right-0 top-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 w-36">
+                              <button onClick={() => handleDeleteReport(report.id)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-red-600 dark:text-red-400">Eliminar</button>
                             </div>
                           )}
                         </div>
                       </div>
                       
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{report.description}</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">{report.description}</p>
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          <div className="flex items-center text-blue-500 text-sm font-medium bg-blue-50 px-3 py-1 rounded-lg">
+                          <div className="flex items-center text-blue-500 dark:text-blue-400 text-sm font-medium bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg">
                             <MapPin className="h-4 w-4 mr-1" />
                             {report.location}
                           </div>
-                          <div className="flex items-center text-gray-500 text-sm bg-gray-50 px-3 py-1 rounded-lg">
+                          <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm bg-gray-50 dark:bg-gray-700/50 px-3 py-1 rounded-lg">
                             <Clock className="h-4 w-4 mr-1" />
                             {report.date}
                           </div>
@@ -254,16 +254,16 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
                 </div>
               ))
             ) : (
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 text-center border border-blue-200">
-                <Activity className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-blue-800 mb-2">No tienes reportes aún</h3>
-                <p className="text-blue-600">¡Usa el botón "+" para reportar tu primer problema!</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-8 text-center border border-blue-200 dark:border-blue-800">
+                <Activity className="h-12 w-12 text-blue-400 dark:text-blue-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-2">No tienes reportes aún</h3>
+                <p className="text-blue-600 dark:text-blue-400">¡Usa el botón "+" para reportar tu primer problema!</p>
               </div>
             )}
           </div>
           {allReports.length > 5 && (
             <div className="flex justify-center pt-2">
-              <button onClick={() => setShowAllReports(!showAllReports)} className="text-blue-600 text-sm hover:underline">
+              <button onClick={() => setShowAllReports(!showAllReports)} className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
                 {showAllReports ? 'Ver menos' : 'Ver más'}
               </button>
             </div>
@@ -273,8 +273,8 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
         {/* Noticias Importantes (mostrar todas) */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center">
-              <Bell className="h-5 w-5 mr-2 text-blue-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
+              <Bell className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
               Noticias Importantes
             </h2>
    
@@ -287,32 +287,32 @@ export default function Dashboard({ userReports = [] }: { userReports?: any[] })
               return (
                 <div 
                   key={news.id}
-                  className={`bg-white rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${news.insurgent ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-red-25' : 'border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-25'}`}
+                  className={`bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border-l-4 hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp ${news.insurgent ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-red-25 dark:from-red-900/20 dark:to-red-800/10' : 'border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-25 dark:from-blue-900/20 dark:to-blue-800/10'}`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-4">
-                    <div className="bg-white p-2 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-                      <IconComponent className="h-5 w-5 text-gray-600" />
+                    <div className="bg-white dark:bg-gray-700 p-2 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+                      <IconComponent className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                     </div>
                     
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 text-sm sm:text-base">{news.title}</h3>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base">{news.title}</h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getTypeColor(news.type)}`}>
                           {news.type}
                         </span>
                       </div>
                       
-                      <p className="text-gray-700 text-sm mb-3 leading-relaxed">{news.description}</p>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 leading-relaxed">{news.description}</p>
                       
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center text-gray-500 text-sm bg-gray-50 px-3 py-1 rounded-lg">
+                        <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm bg-gray-50 dark:bg-gray-700/50 px-3 py-1 rounded-lg">
                           <Clock className="h-4 w-4 mr-1" />
                           {new Date(news.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: '2-digit' })}
                         </div>
                         
                         {news.priority === 'high' && (
-                          <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                          <span className="bg-red-500 dark:bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
                             URGENTE
                           </span>
                         )}

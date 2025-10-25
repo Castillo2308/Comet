@@ -146,7 +146,7 @@ export default function Buses() {
           <div className="flex items-center gap-2">
             
             {!myApp && (
-              <button onClick={() => setApplyOpen(true)} className="px-3 py-2 rounded bg-white text-blue-700 text-sm font-medium flex items-center gap-1">
+              <button onClick={() => setApplyOpen(true)} className="px-3 py-2 rounded bg-white dark:bg-gray-700 text-blue-700 dark:text-white text-sm font-medium flex items-center gap-1">
                 <Send className="h-4 w-4" /> Unirse como conductor
               </button>
             )}

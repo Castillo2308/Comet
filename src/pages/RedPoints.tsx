@@ -473,12 +473,12 @@ export default function RedPoints() {
 
         {/* Safety Tips */}
         <section className="animate-fadeInUp mt-6">
-          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-            <h3 className="font-semibold text-blue-900 mb-2 text-sm flex items-center">
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 border border-blue-100 dark:border-blue-800">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2 text-sm flex items-center">
               <AlertTriangle className="h-4 w-4 mr-2" />
               Consejos de Seguridad
             </h3>
-            <ul className="space-y-1 text-xs text-blue-800">
+            <ul className="space-y-1 text-xs text-blue-800 dark:text-blue-300">
               <li>• Evita caminar solo por zonas marcadas como peligrosas</li>
               <li>• Mantente alerta en los horarios indicados como riesgosos</li>
               <li>• Reporta cualquier actividad sospechosa a las autoridades</li>

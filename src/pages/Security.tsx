@@ -430,27 +430,27 @@ export default function Security() {
 
         {/* Emergency Contacts */}
         <section className="animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
-          <div className="bg-red-50 rounded-xl p-4 border border-red-100">
-            <h3 className="font-semibold text-red-900 mb-2 text-sm flex items-center">
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-100 dark:border-red-800">
+            <h3 className="font-semibold text-red-900 dark:text-red-200 mb-2 text-sm flex items-center">
               <Shield className="h-4 w-4 mr-2" />
               Contactos de Emergencia
             </h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-white p-3 rounded-lg">
-                <div className="font-medium text-red-800">Policía</div>
-                <div className="text-red-600">911</div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <div className="font-medium text-red-800 dark:text-red-300">Policía</div>
+                <div className="text-red-600 dark:text-red-400 font-semibold">911</div>
               </div>
-              <div className="bg-white p-3 rounded-lg">
-                <div className="font-medium text-red-800">Bomberos</div>
-                <div className="text-red-600">911</div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <div className="font-medium text-red-800 dark:text-red-300">Bomberos</div>
+                <div className="text-red-600 dark:text-red-400 font-semibold">911</div>
               </div>
-              <div className="bg-white p-3 rounded-lg">
-                <div className="font-medium text-red-800">Cruz Roja</div>
-                <div className="text-red-600">911</div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <div className="font-medium text-red-800 dark:text-red-300">Cruz Roja</div>
+                <div className="text-red-600 dark:text-red-400 font-semibold">911</div>
               </div>
-              <div className="bg-white p-3 rounded-lg">
-                <div className="font-medium text-red-800">Fuerza Pública</div>
-                <div className="text-red-600">2295-3000</div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                <div className="font-medium text-red-800 dark:text-red-300">Fuerza Pública</div>
+                <div className="text-red-600 dark:text-red-400 font-semibold">2295-3000</div>
               </div>
             </div>
           </div>

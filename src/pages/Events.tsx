@@ -121,17 +121,17 @@ export default function Events() {
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      'Cultural': 'bg-purple-100 text-purple-600',
-      'Deportes': 'bg-green-100 text-green-600',
-      'Comercio': 'bg-blue-100 text-blue-600',
-      'Educativo': 'bg-orange-100 text-orange-600',
-      'Social': 'bg-pink-100 text-pink-600'
+      'Cultural': 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300',
+      'Deportes': 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300',
+      'Comercio': 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300',
+      'Educativo': 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300',
+      'Social': 'bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-300'
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-600';
+    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
   };
 
   return (
-    <div className="flex-1 overflow-y-auto pb-20 sm:pb-24 md:pb-28 min-h-screen bg-gray-50">
+    <div className="flex-1 overflow-y-auto pb-20 sm:pb-24 md:pb-28 min-h-screen bg-gray-50 dark:bg-gray-900">
       <UserProfileModal 
         isOpen={showProfileModal} 
         onClose={() => setShowProfileModal(false)} 
@@ -163,19 +163,19 @@ export default function Events() {
         <section className="animate-fadeInUp">
           <div className="flex items-center space-x-2 mb-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Buscar eventos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               />
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`p-2 rounded-lg border transition-all duration-200 ${
-                showFilters ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                showFilters ? 'bg-blue-500 text-white border-blue-500' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <Filter className="h-4 w-4" />
@@ -185,7 +185,7 @@ export default function Events() {
           {/* Category Filters */}
           {showFilters && (
             <div className="animate-slideInRight">
-              <div className="flex flex-wrap gap-2 p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 {categories.map((category) => (
                   <button
                     key={category}
@@ -193,7 +193,7 @@ export default function Events() {
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 transform hover:scale-105 ${
                       selectedCategory === category
                         ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     {category}
@@ -209,11 +209,11 @@ export default function Events() {
           {filteredEvents.map((event, index) => (
             <div
               key={event.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] animate-fadeInUp"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Event Header with Category Badge */}
-              <div className="relative bg-gradient-to-r from-blue-50 to-blue-100 p-4 border-b border-gray-100">
+              <div className="relative bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-4 border-b border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(event.category)}`}>
                     {event.category}
@@ -225,15 +225,15 @@ export default function Events() {
               {/* Event Content */}
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-gray-900 text-sm sm:text-base">{event.title}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base">{event.title}</h3>
                 </div>
 
-                <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">{event.description}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-3 line-clamp-2">{event.description}</p>
 
                 {/* Event Details */}
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center space-x-2 text-xs text-gray-600">
-                    <Calendar className="h-3 w-3 text-blue-500" />
+                  <div className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
+                    <Calendar className="h-3 w-3 text-blue-500 dark:text-blue-400" />
                     <span>{new Date(event.date).toLocaleDateString('es-ES', { 
                       weekday: 'long', 
                       year: 'numeric', 
@@ -241,25 +241,25 @@ export default function Events() {
                       day: 'numeric' 
                     })}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs text-gray-600">
-                    <Clock className="h-3 w-3 text-blue-500" />
+                  <div className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
+                    <Clock className="h-3 w-3 text-blue-500 dark:text-blue-400" />
                     <span>{event.time}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs text-gray-600">
-                    <MapPin className="h-3 w-3 text-blue-500" />
+                  <div className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
+                    <MapPin className="h-3 w-3 text-blue-500 dark:text-blue-400" />
                     <span>{event.location}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-xs text-gray-600">
-                    <Users className="h-3 w-3 text-blue-500" />
+                  <div className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
+                    <Users className="h-3 w-3 text-blue-500 dark:text-blue-400" />
                     <span>{event.attendees}{event.maxAttendees ? `/${event.maxAttendees}` : ''} asistentes</span>
                   </div>
                 </div>
 
                 {/* Event Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500">Por {event.organizer}</span>
-                    <span className="text-xs font-medium text-green-600">{event.price}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Por {event.organizer}</span>
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400">{event.price}</span>
                   </div>
                   {/* Asistir button removed */}
                 </div>
@@ -271,18 +271,18 @@ export default function Events() {
         {/* No Results */}
         {filteredEvents.length === 0 && (
           <div className="text-center py-8 animate-fadeInUp">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No se encontraron eventos</h3>
-            <p className="text-gray-600 text-sm">Intenta cambiar los filtros o buscar algo diferente</p>
+            <Calendar className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No se encontraron eventos</h3>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Intenta cambiar los filtros o buscar algo diferente</p>
           </div>
         )}
 
         {/* Quick Stats simplified: only total events */}
-        <section className="animate-fadeInUp bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <h3 className="font-semibold text-gray-900 mb-3 text-sm">Estadísticas de Eventos</h3>
+        <section className="animate-fadeInUp bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm">Estadísticas de Eventos</h3>
           <div className="text-center">
-            <div className="text-lg font-bold text-blue-600">{events.length}</div>
-            <div className="text-xs text-gray-600">Eventos</div>
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{events.length}</div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">Eventos</div>
           </div>
         </section>
       </div>

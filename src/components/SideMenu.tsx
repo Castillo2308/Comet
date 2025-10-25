@@ -110,7 +110,12 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
           {/* Footer */}
           <div className="p-4 border-t border-gray-100 bg-gray-50">
             <div className="text-center">
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">COMET</h3>
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center p-2">
+                  <img src="/municipality-logo.svg" alt="Logo" className="w-full h-full object-contain" />
+                </div>
+                <h3 className="font-semibold text-gray-900 text-sm">COMET</h3>
+              </div>
               <p className="text-gray-600 text-xs mb-2">Versión 1.0.0</p>
               <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
                 <button className="hover:text-blue-500 transition-colors duration-200">

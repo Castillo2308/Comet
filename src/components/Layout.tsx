@@ -24,7 +24,7 @@ export default function Layout({ children, activeTab, onTabChange }: LayoutProps
 
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col relative overflow-hidden transition-colors duration-200">
       <main className="flex-1 overflow-hidden">
         {React.cloneElement(children as React.ReactElement, { userReports: reports, onTabChange })}
       </main>

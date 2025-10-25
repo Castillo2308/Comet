@@ -84,20 +84,20 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
             onClick={() => handleTabClick(item.id, item.hasSubmenu)}
             className={`flex flex-col items-center justify-center p-3 sm:p-4 transition-all duration-300 transform group ${
               isCenter
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-14 h-14 sm:w-16 sm:h-16 -mt-6 sm:-mt-8 shadow-2xl hover:from-blue-600 hover:to-blue-700 hover:scale-110 active:scale-95 border-4 border-white'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-14 h-14 sm:w-16 sm:h-16 -mt-6 sm:-mt-8 shadow-2xl hover:from-blue-600 hover:to-blue-700 hover:scale-110 active:scale-95 border-4 border-white dark:border-gray-800'
                 : isActive
-                ? 'text-blue-500 scale-110 bg-blue-50 rounded-xl px-3 py-2'
-                : 'text-gray-400 hover:text-blue-500 hover:scale-105 hover:bg-gray-50 rounded-xl px-3 py-2'
+                ? 'text-blue-500 dark:text-blue-400 scale-110 bg-blue-50 dark:bg-blue-900/30 rounded-xl px-3 py-2'
+                : 'text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:scale-105 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl px-3 py-2'
             }`}
           >
             <IconComponent 
               className={`${isCenter ? 'h-6 w-6 sm:h-7 sm:w-7' : 'h-5 w-5 sm:h-6 sm:w-6'} ${isCenter ? '' : 'mb-1'} transition-all duration-200 ${!isCenter ? 'group-hover:scale-110' : ''}`} 
             />
             {!isCenter && (
-              <span className="text-xs sm:text-sm font-semibold transition-all duration-200 group-hover:text-blue-600">{item.label}</span>
+              <span className="text-xs sm:text-sm font-semibold transition-all duration-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">{item.label}</span>
             )}
             {isActive && !isCenter && (
-              <div className="absolute -bottom-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <div className="absolute -bottom-1 w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse"></div>
             )}
           </button>
         );
@@ -160,7 +160,7 @@ export default function BottomNavigation({ activeTab, onTabChange, onReportSubmi
       />
 
       {/* Bottom Navigation - Fixed for iPhone safe area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-3 sm:px-6 py-3 sm:py-4 z-30 shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4 z-30 shadow-2xl transition-colors duration-200">
         <div className="pb-safe">
           {showAnnouncementsSubmenu ? (
             <div className="transform transition-all duration-500 animate-slideInRight">

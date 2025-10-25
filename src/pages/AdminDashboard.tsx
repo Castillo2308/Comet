@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Check, Image as ImageIcon } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Check, Image as ImageIcon, Bell } from 'lucide-react';
 import BusesMap from '../components/BusesMap';
 import { GoogleMapsProvider } from '../components/GoogleMapsProvider';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface Report {
   id: number;
@@ -189,6 +192,8 @@ export default function AdminDashboard() {
   const [communityForm, setCommunityForm] = useState<{ content: string; photo_link?: string; status?: 'pending' | 'approved' | 'rejected' } >({ content: '', photo_link: '', status: 'pending' });
   const [communityComments, setCommunityComments] = useState<Record<string, any[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
   // Reload community posts (admin)
   const refreshCommunity = async () => {
     setCommunityLoading(true);
@@ -321,6 +326,712 @@ export default function AdminDashboard() {
     }
   };
 
+  // Función para exportar reportes a Excel
+  const exportToExcel = () => {
+    // Preparar los datos para exportar
+    const dataToExport = filteredReports.map(report => ({
+      'ID': report.id,
+      'Título': report.title,
+      'Descripción': report.description,
+      'Tipo': report.type,
+      'Ubicación': report.location,
+      'Estado': report.status,
+      'Fecha': report.date,
+      'Usuario': report.user,
+      'Prioridad': report.priority
+    }));
+
+    // Crear un libro de trabajo
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reportes');
+
+    // Generar el archivo y descargarlo
+    const fileName = `Reportes_COMET_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  // Función para exportar reportes a PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Título del documento
+    doc.setFontSize(18);
+    doc.text('Sistema COMET - Reportes Ciudadanos', 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Fecha de exportación: ${new Date().toLocaleDateString('es-ES')}`, 14, 30);
+    doc.text(`Total de reportes: ${filteredReports.length}`, 14, 36);
+
+    // Preparar datos para la tabla
+    const tableData = filteredReports.map(report => [
+      report.id,
+      report.title,
+      report.location,
+      report.status,
+      report.date,
+      report.user
+    ]);
+
+    // Agregar tabla
+    autoTable(doc, {
+      head: [['ID', 'Título', 'Ubicación', 'Estado', 'Fecha', 'Usuario']],
+      body: tableData,
+      startY: 42,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { top: 42 }
+    });
+
+    // Guardar el PDF
+    const fileName = `Reportes_COMET_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+  };
+
+  // Función que muestra un menú para elegir el formato de exportación
+  const handleExport = () => {
+    setShowExportModal(true);
+  };
+
+  // Funciones para backup completo del sistema
+  const backupToExcel = async () => {
+    try {
+      // Mostrar mensaje de carga
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center';
+      loadingMsg.innerHTML = '<div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl"><div class="flex items-center space-x-3"><svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-lg font-semibold text-gray-900 dark:text-white">Obteniendo datos de la base de datos...</span></div></div>';
+      document.body.appendChild(loadingMsg);
+
+      // Esperar un poco para que el servidor esté listo
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Obtener todos los datos frescos de la base de datos con reintentos
+      const fetchWithRetry = async (url: string, retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const response = await fetch(url, {
+              headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+            if (response.ok) return response;
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        throw new Error('Max retries reached');
+      };
+
+      const [reportsRes, usersRes, eventsRes, complaintsRes, newsRes, dangerousRes, securityNewsRes, hotspotsRes, communityRes, busesRes] = await Promise.all([
+        fetchWithRetry('/api/reports').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/users').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/events').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/complaints').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/news').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/dangerous-areas').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/security-news').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/security/hotspots').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/forum').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/buses').catch(() => ({ ok: false } as Response))
+      ]);
+
+      const reportsData = reportsRes.ok && 'json' in reportsRes ? await reportsRes.json() : [];
+      const usersData = usersRes.ok && 'json' in usersRes ? await usersRes.json() : [];
+      const eventsData = eventsRes.ok && 'json' in eventsRes ? await eventsRes.json() : [];
+      const complaintsData = complaintsRes.ok && 'json' in complaintsRes ? await complaintsRes.json() : [];
+      const newsData = newsRes.ok && 'json' in newsRes ? await newsRes.json() : [];
+      const dangerousData = dangerousRes.ok && 'json' in dangerousRes ? await dangerousRes.json() : [];
+      const securityNewsData = securityNewsRes.ok && 'json' in securityNewsRes ? await securityNewsRes.json() : [];
+      const hotspotsData = hotspotsRes.ok && 'json' in hotspotsRes ? await hotspotsRes.json() : [];
+      const communityData = communityRes.ok && 'json' in communityRes ? await communityRes.json() : [];
+      const busesData = busesRes.ok && 'json' in busesRes ? await busesRes.json() : [];
+
+      // Remover mensaje de carga
+      document.body.removeChild(loadingMsg);
+
+      // Crear un libro de trabajo con múltiples hojas
+      const workbook = XLSX.utils.book_new();
+
+      // Hoja 1: Reportes (siempre crear)
+      const reportsSheet = (Array.isArray(reportsData) && reportsData.length > 0) 
+        ? reportsData.map((r: any) => ({
+            'ID': r.id || '',
+            'Título': r.title || '',
+            'Descripción': r.description || '',
+            'Tipo': r.type || '',
+            'Ubicación': r.location || '',
+            'Estado': r.status || '',
+            'Fecha': r.date ? new Date(r.date).toLocaleDateString('es-ES') : '',
+            'Usuario': r.user || r.author || '',
+            'Prioridad': r.priority || ''
+          }))
+        : [{ 'ID': '', 'Título': '', 'Descripción': '', 'Tipo': '', 'Ubicación': '', 'Estado': '', 'Fecha': '', 'Usuario': '', 'Prioridad': '' }];
+      const wsReports = XLSX.utils.json_to_sheet(reportsSheet);
+      XLSX.utils.book_append_sheet(workbook, wsReports, 'Reportes');
+
+      // Hoja 2: Usuarios (siempre crear, SIN CONTRASEÑA)
+      const usersSheet = (Array.isArray(usersData) && usersData.length > 0)
+        ? usersData.map((u: any) => ({
+            'ID': u.id || '',
+            'Cédula': u.cedula || '',
+            'Nombre': u.name || '',
+            'Apellido': u.lastname || '',
+            'Email': u.email || '',
+            'Rol': u.role || '',
+            'Verificado': u.verified ? 'Sí' : 'No',
+            'Fecha Creación': u.created_at ? new Date(u.created_at).toLocaleDateString('es-ES') : ''
+          }))
+        : [{ 'ID': '', 'Cédula': '', 'Nombre': '', 'Apellido': '', 'Email': '', 'Rol': '', 'Verificado': '', 'Fecha Creación': '' }];
+      const wsUsers = XLSX.utils.json_to_sheet(usersSheet);
+      XLSX.utils.book_append_sheet(workbook, wsUsers, 'Usuarios');
+
+      // Hoja 3: Eventos (siempre crear)
+      const eventsSheet = (Array.isArray(eventsData) && eventsData.length > 0)
+        ? eventsData.map((e: any) => ({
+            'ID': e.id || '',
+            'Título': e.title || '',
+            'Descripción': e.description || '',
+            'Tipo': e.type || '',
+            'Fecha': e.date ? new Date(e.date).toLocaleDateString('es-ES') : '',
+            'Ubicación': e.location || '',
+            'Asistentes': e.attendants || 0,
+            'Anfitrión': e.host || '',
+            'Precio': e.price || 'Gratis'
+          }))
+        : [{ 'ID': '', 'Título': '', 'Descripción': '', 'Tipo': '', 'Fecha': '', 'Ubicación': '', 'Asistentes': '', 'Anfitrión': '', 'Precio': '' }];
+      const wsEvents = XLSX.utils.json_to_sheet(eventsSheet);
+      XLSX.utils.book_append_sheet(workbook, wsEvents, 'Eventos');
+
+      // Hoja 4: Quejas (siempre crear)
+      const complaintsSheet = (Array.isArray(complaintsData) && complaintsData.length > 0)
+        ? complaintsData.map((c: any) => ({
+            'ID': c.id || '',
+            'Título': c.title || '',
+            'Descripción': c.description || '',
+            'Tipo': c.type || '',
+            'Ubicación': c.location || '',
+            'Estado': c.status || '',
+            'Fecha': c.date ? new Date(c.date).toLocaleDateString('es-ES') : '',
+            'Autor': c.author || ''
+          }))
+        : [{ 'ID': '', 'Título': '', 'Descripción': '', 'Tipo': '', 'Ubicación': '', 'Estado': '', 'Fecha': '', 'Autor': '' }];
+      const wsComplaints = XLSX.utils.json_to_sheet(complaintsSheet);
+      XLSX.utils.book_append_sheet(workbook, wsComplaints, 'Quejas');
+
+      // Hoja 5: Noticias (siempre crear)
+      const newsSheet = (Array.isArray(newsData) && newsData.length > 0)
+        ? newsData.map((n: any) => ({
+            'ID': n.id || '',
+            'Tipo': n.type || '',
+            'Título': n.title || '',
+            'Descripción': n.description || '',
+            'Urgente': n.insurgent ? 'Sí' : 'No',
+            'Fecha': n.date ? new Date(n.date).toLocaleDateString('es-ES') : '',
+            'Autor': n.author || ''
+          }))
+        : [{ 'ID': '', 'Tipo': '', 'Título': '', 'Descripción': '', 'Urgente': '', 'Fecha': '', 'Autor': '' }];
+      const wsNews = XLSX.utils.json_to_sheet(newsSheet);
+      XLSX.utils.book_append_sheet(workbook, wsNews, 'Noticias');
+
+      // Hoja 6: Áreas Peligrosas (siempre crear)
+      const dangerousSheet = (Array.isArray(dangerousData) && dangerousData.length > 0)
+        ? dangerousData.map((d: any) => ({
+            'ID': d.id || '',
+            'Título': d.title || '',
+            'Descripción': d.description || '',
+            'Ubicación': d.location || '',
+            'Nivel de Peligro': d.dangerlevel || '',
+            'Fecha': d.date ? new Date(d.date).toLocaleDateString('es-ES') : '',
+            'Autor': d.author || ''
+          }))
+        : [{ 'ID': '', 'Título': '', 'Descripción': '', 'Ubicación': '', 'Nivel de Peligro': '', 'Fecha': '', 'Autor': '' }];
+      const wsDangerous = XLSX.utils.json_to_sheet(dangerousSheet);
+      XLSX.utils.book_append_sheet(workbook, wsDangerous, 'Áreas Peligrosas');
+
+      // Hoja 7: Noticias de Seguridad (siempre crear)
+      const securityNewsSheet = (Array.isArray(securityNewsData) && securityNewsData.length > 0)
+        ? securityNewsData.map((s: any) => ({
+            'ID': s.id || '',
+            'Tipo': s.type || '',
+            'Título': s.title || '',
+            'Descripción': s.description || '',
+            'Urgente': s.insurgent ? 'Sí' : 'No',
+            'Fecha': s.date ? new Date(s.date).toLocaleDateString('es-ES') : '',
+            'Autor': s.author || ''
+          }))
+        : [{ 'ID': '', 'Tipo': '', 'Título': '', 'Descripción': '', 'Urgente': '', 'Fecha': '', 'Autor': '' }];
+      const wsSecurityNews = XLSX.utils.json_to_sheet(securityNewsSheet);
+      XLSX.utils.book_append_sheet(workbook, wsSecurityNews, 'Noticias Seguridad');
+
+      // Hoja 8: Hotspots (siempre crear)
+      const hotspotsSheet = (Array.isArray(hotspotsData) && hotspotsData.length > 0)
+        ? hotspotsData.map((h: any) => ({
+            'ID': h.id || h._id || '',
+            'Título': h.title || '',
+            'Descripción': h.description || '',
+            'Nivel de Peligro': h.dangerlevel || '',
+            'Tiempo de Peligro': h.dangertime || '',
+            'Fecha': h.date ? new Date(h.date).toLocaleDateString('es-ES') : '',
+            'Autor': h.author || ''
+          }))
+        : [{ 'ID': '', 'Título': '', 'Descripción': '', 'Nivel de Peligro': '', 'Tiempo de Peligro': '', 'Fecha': '', 'Autor': '' }];
+      const wsHotspots = XLSX.utils.json_to_sheet(hotspotsSheet);
+      XLSX.utils.book_append_sheet(workbook, wsHotspots, 'Puntos Rojos');
+
+      // Hoja 9: Comunidad (siempre crear)
+      const communitySheet = (Array.isArray(communityData) && communityData.length > 0)
+        ? communityData.map((p: any) => ({
+            'ID': p._id || p.id || '',
+            'Contenido': p.content || '',
+            'Estado': p.status || '',
+            'Fecha': p.date ? new Date(p.date).toLocaleDateString('es-ES') : '',
+            'Autor': p.author || '',
+            'Likes': p.likes || 0
+          }))
+        : [{ 'ID': '', 'Contenido': '', 'Estado': '', 'Fecha': '', 'Autor': '', 'Likes': '' }];
+      const wsCommunity = XLSX.utils.json_to_sheet(communitySheet);
+      XLSX.utils.book_append_sheet(workbook, wsCommunity, 'Comunidad');
+
+      // Hoja 10: Buses (siempre crear)
+      const busesSheet = (Array.isArray(busesData) && busesData.length > 0)
+        ? busesData.map((b: any) => ({
+            'ID': b.id || b._id || '',
+            'Número de Ruta': b.routeNumber || '',
+            'Nombre de Ruta': b.routeName || '',
+            'Color de Ruta': b.routeColor || '',
+            'Empresa': b.company || '',
+            'Capacidad': b.capacity || '',
+            'Estado': b.status || 'activo',
+            'Conductor': b.driverName || '',
+            'Cédula Conductor': b.driverCedula || '',
+            'Placa': b.licensePlate || '',
+            'Fecha Registro': b.registrationDate ? new Date(b.registrationDate).toLocaleDateString('es-ES') : ''
+          }))
+        : [{ 'ID': '', 'Número de Ruta': '', 'Nombre de Ruta': '', 'Color de Ruta': '', 'Empresa': '', 'Capacidad': '', 'Estado': '', 'Conductor': '', 'Cédula Conductor': '', 'Placa': '', 'Fecha Registro': '' }];
+      const wsBuses = XLSX.utils.json_to_sheet(busesSheet);
+      XLSX.utils.book_append_sheet(workbook, wsBuses, 'Buses');
+
+      // Guardar el archivo
+      const fileName = `Backup_Completo_COMET_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (error) {
+      console.error('Error al generar backup Excel:', error);
+      alert('Error al generar el backup. Por favor, intenta nuevamente.');
+    }
+  };
+
+  const backupToPDF = async () => {
+    try {
+      // Mostrar mensaje de carga
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center';
+      loadingMsg.innerHTML = '<div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl"><div class="flex items-center space-x-3"><svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-lg font-semibold text-gray-900 dark:text-white">Generando PDF...</span></div></div>';
+      document.body.appendChild(loadingMsg);
+
+      // Esperar un poco para que el servidor esté listo
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Obtener todos los datos frescos de la base de datos con reintentos
+      const fetchWithRetry = async (url: string, retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const response = await fetch(url, {
+              headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` }
+            });
+            if (response.ok) return response;
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        throw new Error('Max retries reached');
+      };
+
+      const [reportsRes, usersRes, eventsRes, complaintsRes, newsRes, dangerousRes, securityNewsRes, hotspotsRes, communityRes, busesRes] = await Promise.all([
+        fetchWithRetry('/api/reports').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/users').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/events').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/complaints').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/news').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/dangerous-areas').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/security-news').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/security/hotspots').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/forum').catch(() => ({ ok: false } as Response)),
+        fetchWithRetry('/api/buses').catch(() => ({ ok: false } as Response))
+      ]);
+
+      const reportsData = reportsRes.ok && 'json' in reportsRes ? await reportsRes.json() : [];
+      const usersData = usersRes.ok && 'json' in usersRes ? await usersRes.json() : [];
+      const eventsData = eventsRes.ok && 'json' in eventsRes ? await eventsRes.json() : [];
+      const complaintsData = complaintsRes.ok && 'json' in complaintsRes ? await complaintsRes.json() : [];
+      const newsData = newsRes.ok && 'json' in newsRes ? await newsRes.json() : [];
+      const dangerousData = dangerousRes.ok && 'json' in dangerousRes ? await dangerousRes.json() : [];
+      const securityNewsData = securityNewsRes.ok && 'json' in securityNewsRes ? await securityNewsRes.json() : [];
+      const hotspotsData = hotspotsRes.ok && 'json' in hotspotsRes ? await hotspotsRes.json() : [];
+      const communityData = communityRes.ok && 'json' in communityRes ? await communityRes.json() : [];
+      const busesData = busesRes.ok && 'json' in busesRes ? await busesRes.json() : [];
+
+      // Remover mensaje de carga
+      document.body.removeChild(loadingMsg);
+
+      const doc = new jsPDF();
+      let currentY = 20;
+
+      // Portada
+      doc.setFontSize(22);
+      doc.text('Sistema COMET', 105, 30, { align: 'center' });
+      doc.setFontSize(18);
+      doc.text('Backup Completo del Sistema', 105, 40, { align: 'center' });
+      doc.setFontSize(12);
+      doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`, 105, 50, { align: 'center' });
+
+      // Resumen
+      currentY = 70;
+      doc.setFontSize(14);
+      doc.text('Resumen del Sistema', 14, currentY);
+      currentY += 10;
+      doc.setFontSize(10);
+      doc.text(`Total de Reportes: ${Array.isArray(reportsData) ? reportsData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Usuarios: ${Array.isArray(usersData) ? usersData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Eventos: ${Array.isArray(eventsData) ? eventsData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Quejas: ${Array.isArray(complaintsData) ? complaintsData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Noticias: ${Array.isArray(newsData) ? newsData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Áreas Peligrosas: ${Array.isArray(dangerousData) ? dangerousData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Noticias de Seguridad: ${Array.isArray(securityNewsData) ? securityNewsData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Puntos Rojos: ${Array.isArray(hotspotsData) ? hotspotsData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Publicaciones (Comunidad): ${Array.isArray(communityData) ? communityData.length : 0}`, 14, currentY);
+      currentY += 6;
+      doc.text(`Total de Buses Registrados: ${Array.isArray(busesData) ? busesData.length : 0}`, 14, currentY);
+
+      // Reportes (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Reportes Ciudadanos', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(reportsData) && reportsData.length > 0) {
+        const reportsTableData = reportsData.map((r: any) => [
+          (r.id || '').toString().substring(0, 10),
+          (r.title || '').substring(0, 35),
+          (r.location || '').substring(0, 25),
+          (r.status || '').substring(0, 15),
+          r.date ? new Date(r.date).toLocaleDateString('es-ES') : ''
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Título', 'Ubicación', 'Estado', 'Fecha']],
+          body: reportsTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [59, 130, 246] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay reportes registrados', 14, currentY);
+      }
+
+      // Usuarios (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Usuarios del Sistema', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(usersData) && usersData.length > 0) {
+        const usersTableData = usersData.map((u: any) => [
+          (u.cedula || u.id || '').toString().substring(0, 15),
+          (u.name || '').substring(0, 30),
+          (u.email || '').substring(0, 30),
+          (u.role || '').substring(0, 15),
+          u.verified ? 'Sí' : 'No'
+        ]);
+
+        autoTable(doc, {
+          head: [['Cédula', 'Nombre', 'Email', 'Rol', 'Verificado']],
+          body: usersTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [34, 197, 94] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay usuarios registrados', 14, currentY);
+      }
+
+      // Eventos (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Eventos Comunitarios', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(eventsData) && eventsData.length > 0) {
+        const eventsTableData = eventsData.map((e: any) => [
+          (e.id || '').toString().substring(0, 10),
+          (e.title || '').substring(0, 35),
+          e.date ? new Date(e.date).toLocaleDateString('es-ES') : '',
+          (e.location || '').substring(0, 25),
+          (e.attendants || 0).toString()
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Título', 'Fecha', 'Ubicación', 'Asistentes']],
+          body: eventsTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [249, 115, 22] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay eventos registrados', 14, currentY);
+      }
+
+      // Quejas (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Quejas de Seguridad', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(complaintsData) && complaintsData.length > 0) {
+        const complaintsTableData = complaintsData.map((c: any) => [
+          (c.id || '').toString().substring(0, 10),
+          (c.title || '').substring(0, 35),
+          (c.type || '').substring(0, 20),
+          (c.status || '').substring(0, 15),
+          c.date ? new Date(c.date).toLocaleDateString('es-ES') : ''
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Título', 'Tipo', 'Estado', 'Fecha']],
+          body: complaintsTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [239, 68, 68] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay quejas registradas', 14, currentY);
+      }
+
+      // Noticias (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Noticias Municipales', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(newsData) && newsData.length > 0) {
+        const newsTableData = newsData.map((n: any) => [
+          (n.id || '').toString().substring(0, 10),
+          (n.title || '').substring(0, 40),
+          (n.type || '').substring(0, 20),
+          n.insurgent ? 'Sí' : 'No',
+          n.date ? new Date(n.date).toLocaleDateString('es-ES') : ''
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Título', 'Tipo', 'Urgente', 'Fecha']],
+          body: newsTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [168, 85, 247] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay noticias registradas', 14, currentY);
+      }
+
+      // Áreas Peligrosas (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Áreas Peligrosas', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(dangerousData) && dangerousData.length > 0) {
+        const dangerousTableData = dangerousData.map((d: any) => [
+          (d.id || '').toString().substring(0, 10),
+          (d.title || '').substring(0, 35),
+          (d.location || '').substring(0, 25),
+          (d.dangerlevel || '').substring(0, 15),
+          d.date ? new Date(d.date).toLocaleDateString('es-ES') : ''
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Título', 'Ubicación', 'Nivel', 'Fecha']],
+          body: dangerousTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [220, 38, 38] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay áreas peligrosas registradas', 14, currentY);
+      }
+
+      // Noticias de Seguridad (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Noticias de Seguridad', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(securityNewsData) && securityNewsData.length > 0) {
+        const securityNewsTableData = securityNewsData.map((s: any) => [
+          (s.id || '').toString().substring(0, 10),
+          (s.title || '').substring(0, 40),
+          (s.type || '').substring(0, 20),
+          s.insurgent ? 'Sí' : 'No',
+          s.date ? new Date(s.date).toLocaleDateString('es-ES') : ''
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Título', 'Tipo', 'Urgente', 'Fecha']],
+          body: securityNewsTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [220, 38, 38] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay noticias de seguridad registradas', 14, currentY);
+      }
+
+      // Hotspots (Puntos Rojos) (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Puntos Rojos (Hotspots)', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(hotspotsData) && hotspotsData.length > 0) {
+        const hotspotsTableData = hotspotsData.map((h: any) => [
+          (h.id || h._id || '').toString().substring(0, 10),
+          (h.title || '').substring(0, 35),
+          (h.dangerlevel || '').substring(0, 15),
+          (h.dangertime || '').substring(0, 20),
+          h.date ? new Date(h.date).toLocaleDateString('es-ES') : ''
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Título', 'Nivel de Peligro', 'Tiempo', 'Fecha']],
+          body: hotspotsTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [239, 68, 68] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay puntos rojos registrados', 14, currentY);
+      }
+
+      // Comunidad (Foro) (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Publicaciones de Comunidad (Foro)', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(communityData) && communityData.length > 0) {
+        const communityTableData = communityData.map((p: any) => [
+          (p._id || p.id || '').toString().substring(0, 10),
+          (p.content || '').substring(0, 40),
+          (p.author || '').substring(0, 25),
+          (p.likes || 0).toString(),
+          p.date ? new Date(p.date).toLocaleDateString('es-ES') : ''
+        ]);
+
+        autoTable(doc, {
+          head: [['ID', 'Contenido', 'Autor', 'Likes', 'Fecha']],
+          body: communityTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [168, 85, 247] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay publicaciones de comunidad', 14, currentY);
+      }
+
+      // Buses (siempre crear)
+      doc.addPage();
+      currentY = 20;
+      doc.setFontSize(16);
+      doc.text('Buses Registrados', 14, currentY);
+      currentY += 10;
+
+      if (Array.isArray(busesData) && busesData.length > 0) {
+        const busesTableData = busesData.map((b: any) => [
+          (b.routeNumber || '').toString().substring(0, 10),
+          (b.routeName || '').substring(0, 30),
+          (b.company || '').substring(0, 25),
+          (b.licensePlate || '').substring(0, 15),
+          (b.status || 'activo').substring(0, 12)
+        ]);
+
+        autoTable(doc, {
+          head: [['Ruta', 'Nombre Ruta', 'Empresa', 'Placa', 'Estado']],
+          body: busesTableData,
+          startY: currentY,
+          styles: { fontSize: 7, cellPadding: 1.5 },
+          headStyles: { fillColor: [59, 130, 246] },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { top: currentY }
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.text('No hay buses registrados', 14, currentY);
+      }
+
+      // Guardar el PDF
+      const fileName = `Backup_Completo_COMET_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Error al generar backup PDF:', error);
+      alert('Error al generar el backup. Por favor, intenta nuevamente.');
+    }
+  };
+
+  const handleBackup = () => {
+    setShowBackupModal(true);
+  };
+
   
 
   const filteredReports = reports.filter(report => {
@@ -371,6 +1082,25 @@ export default function AdminDashboard() {
 
   const renderDashboard = () => (
     <div className="space-y-8">
+      {/* Welcome Banner with Logo */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 rounded-2xl p-6 shadow-xl text-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white p-3 rounded-xl shadow-lg">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-16 w-16 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Sistema de Gestión Municipal</h2>
+              <p className="text-blue-100">Plataforma integral de administración - Comet</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold">{new Date().toLocaleDateString('es-ES', { day: 'numeric' })}</div>
+            <div className="text-sm text-blue-100">{new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Enhanced Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => {
@@ -378,7 +1108,7 @@ export default function AdminDashboard() {
           return (
             <div 
               key={index}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="flex items-center justify-start mb-4">
@@ -392,9 +1122,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                <p className="text-sm font-medium text-gray-700 mb-1">{stat.title}</p>
-                <p className="text-xs text-gray-500">{stat.description}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{stat.title}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{stat.description}</p>
               </div>
             </div>
           );
@@ -402,10 +1132,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* Nuevo evento (replaces activity chart) */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-            <Calendar className="h-6 w-6 mr-2 text-blue-600" />
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
+            <Calendar className="h-6 w-6 mr-2 text-blue-600 dark:text-blue-400" />
             Nuevo evento
           </h3>
         </div>
@@ -427,25 +1157,25 @@ export default function AdminDashboard() {
             };
             const latest = [...events].sort((a, b) => parseDateVal(b.date) - parseDateVal(a.date))[0];
             return (
-              <div className="rounded-xl border border-gray-100 p-4 bg-gradient-to-r from-blue-50 to-blue-100">
+              <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
                 <div className="flex items-start justify-between">
                   <div className="pr-4">
-                    <div className="text-sm text-gray-500 mb-1">{latest.category || 'Evento'}</div>
-                    <div className="text-lg font-semibold text-gray-900 mb-1">{latest.title}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">{latest.category || 'Evento'}</div>
+                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{latest.title}</div>
                     {latest.description && (
-                      <div className="text-sm text-gray-700 mb-2 line-clamp-2">{latest.description}</div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300 mb-2 line-clamp-2">{latest.description}</div>
                     )}
-                    <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-                      <span className="inline-flex items-center bg-gray-50 px-2 py-1 rounded">
-                        <Calendar className="h-3.5 w-3.5 mr-1 text-blue-600" /> {latest.date}
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
+                        <Calendar className="h-3.5 w-3.5 mr-1 text-blue-600 dark:text-blue-400" /> {latest.date}
                       </span>
                       {latest.location && (
-                        <span className="inline-flex items-center bg-gray-50 px-2 py-1 rounded">
-                          <MapPin className="h-3.5 w-3.5 mr-1 text-blue-600" /> {latest.location}
+                        <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
+                          <MapPin className="h-3.5 w-3.5 mr-1 text-blue-600 dark:text-blue-400" /> {latest.location}
                         </span>
                       )}
-                      <span className="inline-flex items-center bg-gray-50 px-2 py-1 rounded">
-                        <Users className="h-3.5 w-3.5 mr-1 text-blue-600" /> {latest.attendees} asistentes
+                      <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
+                        <Users className="h-3.5 w-3.5 mr-1 text-blue-600 dark:text-blue-400" /> {latest.attendees} asistentes
                       </span>
                     </div>
                   </div>
@@ -454,20 +1184,20 @@ export default function AdminDashboard() {
             );
           })()
         ) : (
-          <div className="h-24 rounded-xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-gray-500 text-sm">
+          <div className="h-24 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-dashed border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
             No hay eventos registrados aún.
           </div>
         )}
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 flex items-center">
-            <Activity className="h-6 w-6 mr-2 text-blue-600" />
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
+            <Activity className="h-6 w-6 mr-2 text-blue-600 dark:text-blue-400" />
             Actividad Reciente
           </h3>
-          <button className="text-blue-600 hover:text-blue-700 font-medium">Ver todo</button>
+          <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Ver todo</button>
         </div>
         <div className="space-y-4">
           {reports.slice(0, 5).map((report, index) => (
@@ -496,14 +1226,22 @@ export default function AdminDashboard() {
   const renderReports = () => (
     <div className="space-y-6">
       {/* Enhanced Header with Actions */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Reportes</h2>
-            <p className="text-gray-600">Administra y da seguimiento a todos los reportes ciudadanos</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Gestión de Reportes</h2>
+              <p className="text-gray-600 dark:text-gray-400">Administra y da seguimiento a todos los reportes ciudadanos</p>
+            </div>
           </div>
           <div className="flex space-x-3">
-            <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center space-x-2">
+            <button 
+              onClick={handleExport}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center space-x-2"
+            >
               <Download className="h-4 w-4" />
               <span>Exportar</span>
             </button>
@@ -514,22 +1252,74 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+      {/* Modal de Exportación */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fadeInUp">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Exportar Reportes</h3>
+              <button 
+                onClick={() => setShowExportModal(false)}
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <span className="text-2xl">×</span>
+              </button>
+            </div>
+            
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Selecciona el formato en el que deseas exportar los reportes actuales ({filteredReports.length} reportes).
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  exportToExcel();
+                  setShowExportModal(false);
+                }}
+                className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center justify-center space-x-2 font-medium"
+              >
+                <Download className="h-5 w-5" />
+                <span>Exportar a Excel (.xlsx)</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  exportToPDF();
+                  setShowExportModal(false);
+                }}
+                className="w-full px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 flex items-center justify-center space-x-2 font-medium"
+              >
+                <Download className="h-5 w-5" />
+                <span>Exportar a PDF (.pdf)</span>
+              </button>
+
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 font-medium"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Buscar reportes por título, usuario o ubicación..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             <option value="Todos">Todos los estados</option>
             <option value="Pendiente">Pendiente</option>
@@ -550,10 +1340,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* Enhanced Reports Table */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
               <tr>
                 <th className="px-3 py-3 text-left">
                   <input
@@ -565,22 +1355,22 @@ export default function AdminDashboard() {
                         setSelectedItems([]);
                       }
                     }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reporte</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">Usuario</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Reporte</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">Usuario</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Estado</th>
                 
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden lg:table-cell">Fecha</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell">Fecha</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredReports.map((report, index) => (
                 <tr 
                   key={report.id} 
-                  className="hover:bg-gray-50 transition-colors duration-200 animate-fadeInUp"
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 animate-fadeInUp"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   <td className="px-3 py-3">
@@ -683,11 +1473,16 @@ export default function AdminDashboard() {
 
   const renderUsers = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h2>
-            <p className="text-gray-600">Crea usuarios y edita su información</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Gestión de Usuarios</h2>
+              <p className="text-gray-600 dark:text-gray-400">Crea usuarios y edita su información</p>
+            </div>
           </div>
           <button
             onClick={() => { setAdminEditingUser(null); setAdminForm({ cedula: '', name: '', lastname: '', email: '', password: '', role: 'user' }); setAdminModalOpen(true); }}
@@ -701,10 +1496,10 @@ export default function AdminDashboard() {
 
       {adminModalOpen && (
         <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">{adminEditingUser ? 'Editar Usuario' : 'Crear Usuario'}</h3>
-              <button onClick={() => setAdminModalOpen(false)} className="text-gray-500">×</button>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">{adminEditingUser ? 'Editar Usuario' : 'Crear Usuario'}</h3>
+              <button onClick={() => setAdminModalOpen(false)} className="text-gray-500 dark:text-gray-400">×</button>
             </div>
             <form
               className="space-y-3"
@@ -743,16 +1538,16 @@ export default function AdminDashboard() {
               }}
             >
               {!adminEditingUser && (
-                <input value={adminForm.cedula} onChange={e=>setAdminForm({ ...adminForm, cedula: e.target.value })} placeholder="Cédula" className="w-full border rounded-lg px-3 py-2" required />
+                <input value={adminForm.cedula} onChange={e=>setAdminForm({ ...adminForm, cedula: e.target.value })} placeholder="Cédula" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" required />
               )}
               {adminEditingUser && (
-                <input value={adminForm.cedula} readOnly placeholder="Cédula" className="w-full border rounded-lg px-3 py-2 bg-gray-50" />
+                <input value={adminForm.cedula} readOnly placeholder="Cédula" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" />
               )}
-              <input value={adminForm.name} onChange={e=>setAdminForm({ ...adminForm, name: e.target.value })} placeholder="Nombre" className="w-full border rounded-lg px-3 py-2" required />
-              <input value={adminForm.lastname} onChange={e=>setAdminForm({ ...adminForm, lastname: e.target.value })} placeholder="Apellido" className="w-full border rounded-lg px-3 py-2" required />
-              <input value={adminForm.email} onChange={e=>setAdminForm({ ...adminForm, email: e.target.value })} type="email" placeholder="Email" className="w-full border rounded-lg px-3 py-2" required />
-              <input value={adminForm.password} onChange={e=>setAdminForm({ ...adminForm, password: e.target.value })} type="password" placeholder={adminEditingUser ? 'Nueva contraseña (opcional)' : 'Contraseña'} className="w-full border rounded-lg px-3 py-2" {...(adminEditingUser ? {} : { required: true })} />
-              <select value={adminForm.role} onChange={e=>setAdminForm({ ...adminForm, role: e.target.value as User['role'] })} className="w-full border rounded-lg px-3 py-2">
+              <input value={adminForm.name} onChange={e=>setAdminForm({ ...adminForm, name: e.target.value })} placeholder="Nombre" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" required />
+              <input value={adminForm.lastname} onChange={e=>setAdminForm({ ...adminForm, lastname: e.target.value })} placeholder="Apellido" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" required />
+              <input value={adminForm.email} onChange={e=>setAdminForm({ ...adminForm, email: e.target.value })} type="email" placeholder="Email" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" required />
+              <input value={adminForm.password} onChange={e=>setAdminForm({ ...adminForm, password: e.target.value })} type="password" placeholder={adminEditingUser ? 'Nueva contraseña (opcional)' : 'Contraseña'} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" {...(adminEditingUser ? {} : { required: true })} />
+              <select value={adminForm.role} onChange={e=>setAdminForm({ ...adminForm, role: e.target.value as User['role'] })} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                 <option value="user">Usuario</option>
                 <option value="admin">Administrador</option>
                 <option value="security">Seguridad</option>
@@ -762,41 +1557,41 @@ export default function AdminDashboard() {
                 <option value="community">Comunidad</option>
               </select>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={()=>setAdminModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
-                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{adminEditingUser ? 'Guardar' : 'Crear'}</button>
+                <button type="button" onClick={()=>setAdminModalOpen(false)} className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">{adminEditingUser ? 'Guardar' : 'Crear'}</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
               <tr>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Cédula</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Usuario</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">Email</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rol</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Verificado</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Cédula</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Usuario</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">Email</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Rol</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Verificado</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {users.map((u) => (
-                <tr key={u.cedula || u.id}>
-                  <td className="px-3 py-3 text-xs text-gray-900">{u.cedula || u.id}</td>
-                  <td className="px-3 py-3 text-xs text-gray-900">{u.name}</td>
-                  <td className="px-3 py-3 text-xs text-gray-900 hidden sm:table-cell">{u.email}</td>
-                  <td className="px-3 py-3 text-xs text-gray-900">
-                    <span className="px-3 py-1 rounded-full text-xs font-medium border bg-gray-50">{u.role}</span>
+                <tr key={u.cedula || u.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <td className="px-3 py-3 text-xs text-gray-900 dark:text-gray-100">{u.cedula || u.id}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900 dark:text-gray-100">{u.name}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900 dark:text-gray-100 hidden sm:table-cell">{u.email}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900 dark:text-gray-100">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium border bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">{u.role}</span>
                   </td>
-                  <td className="px-3 py-3 text-xs text-gray-900">
+                  <td className="px-3 py-3 text-xs text-gray-900 dark:text-gray-100">
                     {u.verified ? (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-medium border bg-green-100 text-green-700 border-green-200">Sí</span>
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-medium border bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">Sí</span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-medium border bg-yellow-100 text-yellow-700 border-yellow-200">No</span>
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-medium border bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800">No</span>
                     )}
                   </td>
                   <td className="px-3 py-3">
@@ -808,14 +1603,14 @@ export default function AdminDashboard() {
                           setAdminForm({ cedula: String(u.cedula || ''), name: firstName || '', lastname: rest.join(' '), email: u.email, password: '', role: u.role });
                           setAdminModalOpen(true);
                         }}
-                        className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-200 p-1 hover:bg-green-50 dark:hover:bg-green-900/30 rounded"
                         title="Editar"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteUser(u.cedula || String(u.id))}
-                        className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
+                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors duration-200 p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
                         title="Eliminar"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -837,9 +1632,14 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Eventos</h2>
-            <p className="text-gray-600">Crea y administra eventos comunitarios</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Eventos</h2>
+              <p className="text-gray-600">Crea y administra eventos comunitarios</p>
+            </div>
           </div>
           <button 
             onClick={() => setShowCreateModal(true)}
@@ -1014,9 +1814,14 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Comunidad (Foro)</h2>
-            <p className="text-gray-600">Modera publicaciones y comentarios de la comunidad</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Comunidad (Foro)</h2>
+              <p className="text-gray-600">Modera publicaciones y comentarios de la comunidad</p>
+            </div>
           </div>
           <button onClick={() => { setEditingCommunityPost(null); setCommunityForm({ content: '', photo_link: '' }); setCommunityModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
             <Plus className="h-4 w-4" />
@@ -1366,9 +2171,14 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Noticias</h2>
-            <p className="text-gray-600">Publica anuncios municipales</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Noticias</h2>
+              <p className="text-gray-600">Publica anuncios municipales</p>
+            </div>
           </div>
           <button onClick={() => { setEditingNews(null); setNewsForm({ type: '', title: '', description: '', insurgent: false }); setNewsModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
             <Plus className="h-4 w-4" />
@@ -1470,9 +2280,14 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Sistema de Buses</h2>
-              <p className="text-gray-600 text-sm">Monitoreo en vivo y aprobación de conductores</p>
+            <div className="flex items-center space-x-4">
+              <div className="bg-gray-50 p-2 rounded-xl">
+                <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Sistema de Buses</h2>
+                <p className="text-gray-600 text-sm">Monitoreo en vivo y aprobación de conductores</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <select value={busesFilter} onChange={e=>setBusesFilter(e.target.value)} className="px-3 py-2 border rounded-lg text-sm">
@@ -1541,9 +2356,14 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Áreas Peligrosas</h2>
-            <p className="text-gray-600">Gestiona zonas peligrosas reportadas por la municipalidad</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Áreas Peligrosas</h2>
+              <p className="text-gray-600">Gestiona zonas peligrosas reportadas por la municipalidad</p>
+            </div>
           </div>
           <button onClick={() => { setEditingDanger(null); setDangerForm({ title: '', description: '', location: '', date: '', dangerlevel: 'medium' }); setDangerModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
             <Plus className="h-4 w-4" />
@@ -1634,9 +2454,14 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Noticias de Seguridad</h2>
-            <p className="text-gray-600">Publica anuncios relacionados a seguridad</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Noticias de Seguridad</h2>
+              <p className="text-gray-600">Publica anuncios relacionados a seguridad</p>
+            </div>
           </div>
           <button onClick={() => { setEditingSecurityNews(null); setSecurityNewsForm({ type: '', title: '', description: '', insurgent: false }); setSecurityNewsModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
             <Plus className="h-4 w-4" />
@@ -1755,9 +2580,14 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Quejas</h2>
-            <p className="text-gray-600">Revisa y actualiza las quejas de seguridad</p>
+          <div className="flex items-center space-x-4">
+            <div className="bg-gray-50 p-2 rounded-xl">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Quejas</h2>
+              <p className="text-gray-600">Revisa y actualiza las quejas de seguridad</p>
+            </div>
           </div>
           <button onClick={() => { setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'Pendiente' }); setComplaintModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
             <Plus className="h-4 w-4" />
@@ -1846,9 +2676,14 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Hotspots</h2>
-              <p className="text-gray-600">Crea y administra zonas peligrosas</p>
+            <div className="flex items-center space-x-4">
+              <div className="bg-gray-50 p-2 rounded-xl">
+                <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Hotspots</h2>
+                <p className="text-gray-600">Crea y administra zonas peligrosas</p>
+              </div>
             </div>
             <button onClick={() => { setEditingHotspot(null); setHotspotForm({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' }); setHotspotModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
               <Plus className="h-4 w-4" />
@@ -1952,14 +2787,14 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 overflow-x-hidden pb-20">
       {/* Enhanced Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl">
         <div className="w-full px-4">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <div className="bg-white bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
-                <Settings className="h-6 w-6 text-white" />
+              <div className="bg-white p-2 rounded-xl shadow-lg">
+                <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Admin Panel</h1>
@@ -1983,7 +2818,7 @@ export default function AdminDashboard() {
       <div className="w-full px-4 py-6">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {activeTab === 'dashboard' && 'Dashboard Principal'}
               {activeTab === 'reports' && 'Gestión de Reportes'}
               {activeTab === 'users' && 'Gestión de Usuarios'}
@@ -1997,7 +2832,7 @@ export default function AdminDashboard() {
               {activeTab === 'events' && 'Gestión de Eventos'}
               {activeTab === 'settings' && 'Configuración del Sistema'}
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               {activeTab === 'dashboard' && 'Vista general del sistema y estadísticas'}
               {activeTab === 'reports' && 'Administra todos los reportes ciudadanos'}
               {activeTab === 'users' && 'Gestiona usuarios registrados'}
@@ -2026,14 +2861,153 @@ export default function AdminDashboard() {
             {activeTab === 'events' && (role==='admin' || role==='news') && renderEvents()}
             {activeTab === 'buses' && (role==='admin' || role==='buses') && renderBuses()}
             {activeTab === 'settings' && (
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-                <div className="text-center">
-                  <Settings className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Configuración del Sistema</h2>
-                  <p className="text-gray-600 mb-6">Ajustes generales y configuración de la plataforma.</p>
-                  <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">
-                    Abrir Configuración
-                  </button>
+              <div className="space-y-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-xl">
+                        <Settings className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Configuración del Sistema</h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Ajustes generales de la plataforma</p>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-xl">
+                      <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-12 w-12 object-contain" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Dark Mode Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                          <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Modo Oscuro</h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Tema de la interfaz</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const isDark = localStorage.getItem('darkMode') === 'true';
+                          if (isDark) {
+                            document.documentElement.classList.remove('dark');
+                            localStorage.setItem('darkMode', 'false');
+                          } else {
+                            document.documentElement.classList.add('dark');
+                            localStorage.setItem('darkMode', 'true');
+                          }
+                        }}
+                        className="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                      >
+                        <span className="text-sm font-medium">Cambiar</span>
+                      </button>
+                    </div>
+
+                    {/* Notifications */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                          <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Notificaciones</h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Alertas del sistema</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                        <span className="text-sm font-medium">Configurar</span>
+                      </button>
+                    </div>
+
+                    {/* User Management */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 cursor-pointer" onClick={() => setActiveTab('users')}>
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                          <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Gestión de Usuarios</h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Administrar cuentas</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                        <span className="text-sm font-medium">Ir →</span>
+                      </button>
+                    </div>
+
+                    {/* Security Settings */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                          <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Seguridad</h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Configuración de seguridad</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                        <span className="text-sm font-medium">Configurar</span>
+                      </button>
+                    </div>
+
+                    {/* Database Backup */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 cursor-pointer" onClick={handleBackup}>
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                          <Download className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Respaldo de Datos</h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Backup automático</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                        <span className="text-sm font-medium">Ejecutar</span>
+                      </button>
+                    </div>
+
+                    {/* System Reports */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200" onClick={() => setActiveTab('reports')}>
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                          <FileText className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Reportes del Sistema</h3>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Estadísticas y reportes</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
+                        <span className="text-sm font-medium">Ver →</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System Info */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Información del Sistema</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">v1.0.0</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Última actualización</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">24 Oct 2025</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Estado del servidor</p>
+                      <p className="text-lg font-semibold text-green-600 dark:text-green-400">● Activo</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -2041,10 +3015,86 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Modal de Backup Completo */}
+      {showBackupModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fadeInUp">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
+                <Download className="h-6 w-6 mr-2 text-orange-500" />
+                Backup Completo del Sistema
+              </h3>
+              <button 
+                onClick={() => setShowBackupModal(false)}
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <span className="text-2xl">×</span>
+              </button>
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                <strong>El backup incluye todas las tablas de la base de datos:</strong>
+              </p>
+              <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1 ml-4">
+                <li>• Reportes ciudadanos</li>
+                <li>• Usuarios del sistema (sin contraseñas)</li>
+                <li>• Eventos comunitarios</li>
+                <li>• Quejas de seguridad</li>
+                <li>• Noticias municipales</li>
+                <li>• Áreas peligrosas</li>
+                <li>• Noticias de seguridad</li>
+                <li>• Puntos rojos (hotspots)</li>
+                <li>• Publicaciones de comunidad</li>
+                <li>• Buses registrados</li>
+              </ul>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-3 italic">
+                * Los datos se obtendrán directamente de la base de datos al momento de generar el backup
+              </p>
+            </div>
+
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+              Selecciona el formato en el que deseas realizar el backup completo del sistema.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  backupToExcel();
+                  setShowBackupModal(false);
+                }}
+                className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center justify-center space-x-2 font-medium shadow-lg"
+              >
+                <Download className="h-5 w-5" />
+                <span>Backup en Excel (.xlsx)</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  backupToPDF();
+                  setShowBackupModal(false);
+                }}
+                className="w-full px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 flex items-center justify-center space-x-2 font-medium shadow-lg"
+              >
+                <Download className="h-5 w-5" />
+                <span>Backup en PDF (.pdf)</span>
+              </button>
+
+              <button
+                onClick={() => setShowBackupModal(false)}
+                className="w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 font-medium"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation */}
       {renderUsersModal()}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 z-30 shadow-lg">
-  <nav className="flex items-center gap-6 w-full sm:max-w-3xl mx-auto justify-start sm:justify-center overflow-x-auto sm:overflow-visible no-scrollbar snap-x snap-mandatory sm:snap-none">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-30 shadow-lg">
+        <nav className="flex items-center gap-6 w-full sm:max-w-3xl mx-auto justify-start sm:justify-center overflow-x-auto sm:overflow-visible no-scrollbar snap-x snap-mandatory sm:snap-none">
           {visibleTabs.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -2056,7 +3106,7 @@ export default function AdminDashboard() {
                 className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform snap-center ${
                   isActive
                     ? 'text-blue-500 scale-110'
-                    : 'text-gray-400 hover:text-gray-600 hover:scale-105'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:scale-105'
                 }`}
               >
                 <IconComponent className="h-5 w-5 mb-1 transition-transform duration-200" />
