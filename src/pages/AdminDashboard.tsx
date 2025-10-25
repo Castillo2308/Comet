@@ -1081,50 +1081,50 @@ export default function AdminDashboard() {
   ];
 
   const renderDashboard = () => (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Welcome Banner with Logo */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 rounded-2xl p-6 shadow-xl text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white p-3 rounded-xl shadow-lg">
-              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-16 w-16 object-contain" />
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 rounded-2xl p-4 sm:p-6 shadow-xl text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="bg-white p-2 sm:p-3 rounded-xl shadow-lg flex-shrink-0">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-12 sm:h-16 w-12 sm:w-16 object-contain" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-1">Sistema de Gestión Municipal</h2>
-              <p className="text-blue-100">Plataforma integral de administración - Comet</p>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-2xl font-bold mb-1 break-words">Sistema de Gestión Municipal</h2>
+              <p className="text-xs sm:text-sm text-blue-100 break-words">Plataforma integral de administración - Comet</p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold">{new Date().toLocaleDateString('es-ES', { day: 'numeric' })}</div>
-            <div className="text-sm text-blue-100">{new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</div>
+          <div className="text-right flex-shrink-0">
+            <div className="text-2xl sm:text-3xl font-bold">{new Date().toLocaleDateString('es-ES', { day: 'numeric' })}</div>
+            <div className="text-xs sm:text-sm text-blue-100">{new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</div>
           </div>
         </div>
       </div>
 
       {/* Enhanced Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {stats.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
             <div 
               key={index}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-fadeInUp"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className="flex items-center justify-start mb-4">
+              <div className="flex items-center justify-start mb-3 sm:mb-4">
                 <div className={`bg-gradient-to-r ${
                   stat.color === 'blue' ? 'from-blue-500 to-blue-600' :
                   stat.color === 'green' ? 'from-green-500 to-green-600' :
                   stat.color === 'orange' ? 'from-orange-500 to-orange-600' :
                   'from-red-500 to-red-600'
-                } p-3 rounded-xl shadow-lg`}>
-                  <IconComponent className="h-6 w-6 text-white" />
+                } p-2 sm:p-3 rounded-xl shadow-lg flex-shrink-0`}>
+                  <IconComponent className="h-5 sm:h-6 w-5 sm:w-6 text-white" />
                 </div>
               </div>
-              <div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1">{stat.value}</p>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{stat.title}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{stat.description}</p>
+              <div className="min-w-0">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-1 break-words">{stat.value}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 break-words">{stat.title}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 break-words">{stat.description}</p>
               </div>
             </div>
           );
@@ -1132,11 +1132,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Nuevo evento (replaces activity chart) */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-            <Calendar className="h-6 w-6 mr-2 text-blue-600 dark:text-blue-400" />
-            Nuevo evento
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2 min-w-0">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 min-w-0">
+            <Calendar className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <span className="break-words">Nuevo evento</span>
           </h3>
         </div>
         {events && events.length > 0 ? (
@@ -1157,25 +1157,25 @@ export default function AdminDashboard() {
             };
             const latest = [...events].sort((a, b) => parseDateVal(b.date) - parseDateVal(a.date))[0];
             return (
-              <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
-                <div className="flex items-start justify-between">
-                  <div className="pr-4">
-                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">{latest.category || 'Evento'}</div>
-                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{latest.title}</div>
+              <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+                <div className="flex flex-col gap-2 sm:gap-3">
+                  <div className="pr-0 sm:pr-4">
+                    <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1 break-words">{latest.category || 'Evento'}</div>
+                    <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1 break-words">{latest.title}</div>
                     {latest.description && (
-                      <div className="text-sm text-gray-700 dark:text-gray-300 mb-2 line-clamp-2">{latest.description}</div>
+                      <div className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-2 line-clamp-2 break-words">{latest.description}</div>
                     )}
-                    <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-400">
-                      <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
-                        <Calendar className="h-3.5 w-3.5 mr-1 text-blue-600 dark:text-blue-400" /> {latest.date}
+                    <div className="flex flex-col gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded w-fit">
+                        <Calendar className="h-3 sm:h-3.5 w-3 sm:w-3.5 mr-1 text-blue-600 dark:text-blue-400 flex-shrink-0" /> <span className="break-words">{latest.date}</span>
                       </span>
                       {latest.location && (
-                        <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
-                          <MapPin className="h-3.5 w-3.5 mr-1 text-blue-600 dark:text-blue-400" /> {latest.location}
+                        <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded w-fit">
+                          <MapPin className="h-3 sm:h-3.5 w-3 sm:w-3.5 mr-1 text-blue-600 dark:text-blue-400 flex-shrink-0" /> <span className="break-words">{latest.location}</span>
                         </span>
                       )}
-                      <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded">
-                        <Users className="h-3.5 w-3.5 mr-1 text-blue-600 dark:text-blue-400" /> {latest.attendees} asistentes
+                      <span className="inline-flex items-center bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded w-fit">
+                        <Users className="h-3 sm:h-3.5 w-3 sm:w-3.5 mr-1 text-blue-600 dark:text-blue-400 flex-shrink-0" /> <span className="break-words">{latest.attendees} asistentes</span>
                       </span>
                     </div>
                   </div>
@@ -1191,29 +1191,29 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-            <Activity className="h-6 w-6 mr-2 text-blue-600 dark:text-blue-400" />
-            Actividad Reciente
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2 min-w-0">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 min-w-0">
+            <Activity className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <span className="break-words">Actividad Reciente</span>
           </h3>
-          <button className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">Ver todo</button>
+          <button className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium whitespace-nowrap">Ver todo</button>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-2 sm:space-y-4">
           {reports.slice(0, 5).map((report, index) => (
             <div 
               key={report.id} 
-              className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200 animate-fadeInUp"
+              className="flex flex-col gap-2 sm:flex-row sm:items-center p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors duration-200 animate-fadeInUp"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className="bg-blue-100 p-3 rounded-full">
-                <FileText className="h-5 w-5 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 sm:p-3 rounded-full flex-shrink-0 w-fit">
+                <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{report.title}</p>
-                <p className="text-sm text-gray-600">Por {report.user} • {report.location}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-gray-100 break-words">{report.title}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 break-words">Por {report.user} • {report.location}</p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(report.status)}`}>
+              <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border flex-shrink-0 w-fit ${getStatusColor(report.status)}`}>
                 {report.status}
               </span>
             </div>
@@ -1224,62 +1224,62 @@ export default function AdminDashboard() {
   );
 
   const renderReports = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Enhanced Header with Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-xl">
-              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex flex-col gap-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+            <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-xl flex-shrink-0">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-8 sm:h-10 w-8 sm:w-10 object-contain" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Gestión de Reportes</h2>
-              <p className="text-gray-600 dark:text-gray-400">Administra y da seguimiento a todos los reportes ciudadanos</p>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 break-words">Gestión de Reportes</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">Administra y da seguimiento a todos los reportes ciudadanos</p>
             </div>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
             <button 
               onClick={handleExport}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center space-x-2"
+              className="px-3 sm:px-4 py-2 sm:py-3 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-colors duration-200 flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm font-medium flex-1 sm:flex-none"
             >
-              <Download className="h-4 w-4" />
-              <span>Exportar</span>
+              <Download className="h-4 w-4 flex-shrink-0" />
+              <span className="break-words">Exportar</span>
             </button>
-            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
-              <RefreshCw className="h-4 w-4" />
-              <span>Actualizar</span>
+            <button className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-500 text-white rounded-lg sm:rounded-xl hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm font-medium flex-1 sm:flex-none">
+              <RefreshCw className="h-4 w-4 flex-shrink-0" />
+              <span className="break-words">Actualizar</span>
             </button>
           </div>
         </div>
 
       {/* Modal de Exportación */}
       {showExportModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fadeInUp">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Exportar Reportes</h3>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 animate-fadeInUp max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 break-words">Exportar Reportes</h3>
               <button 
                 onClick={() => setShowExportModal(false)}
-                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
               >
                 <span className="text-2xl">×</span>
               </button>
             </div>
             
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 break-words">
               Selecciona el formato en el que deseas exportar los reportes actuales ({filteredReports.length} reportes).
             </p>
 
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <button
                 onClick={() => {
                   exportToExcel();
                   setShowExportModal(false);
                 }}
-                className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center justify-center space-x-2 font-medium"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-green-500 text-white rounded-lg sm:rounded-xl hover:bg-green-600 transition-colors duration-200 flex items-center justify-center gap-2 font-medium text-xs sm:text-sm"
               >
-                <Download className="h-5 w-5" />
-                <span>Exportar a Excel (.xlsx)</span>
+                <Download className="h-4 w-4 flex-shrink-0" />
+                <span className="break-words">Exportar a Excel (.xlsx)</span>
               </button>
 
               <button
@@ -1287,15 +1287,15 @@ export default function AdminDashboard() {
                   exportToPDF();
                   setShowExportModal(false);
                 }}
-                className="w-full px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 flex items-center justify-center space-x-2 font-medium"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-red-500 text-white rounded-lg sm:rounded-xl hover:bg-red-600 transition-colors duration-200 flex items-center justify-center gap-2 font-medium text-xs sm:text-sm"
               >
-                <Download className="h-5 w-5" />
-                <span>Exportar a PDF (.pdf)</span>
+                <Download className="h-4 w-4 flex-shrink-0" />
+                <span className="break-words">Exportar a PDF (.pdf)</span>
               </button>
 
               <button
                 onClick={() => setShowExportModal(false)}
-                className="w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 font-medium"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 font-medium text-xs sm:text-sm"
               >
                 Cancelar
               </button>
@@ -1305,35 +1305,37 @@ export default function AdminDashboard() {
       )}
 
         {/* Search and Filters */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
-            <input
-              type="text"
-              placeholder="Buscar reportes por título, usuario o ubicación..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
+        <div className="flex flex-col gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex-1 relative min-w-0">
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Buscar reportes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-2 sm:py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs sm:text-sm"
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-2.5 sm:px-3 py-2 sm:py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs sm:text-sm"
+            >
+              <option value="Todos">Todos los estados</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Resuelto">Resuelto</option>
+              <option value="Rechazado">Rechazado</option>
+            </select>
           </div>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          >
-            <option value="Todos">Todos los estados</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="En Proceso">En Proceso</option>
-            <option value="Resuelto">Resuelto</option>
-            <option value="Rechazado">Rechazado</option>
-          </select>
           {selectedItems.length > 0 && (
             <button
               onClick={() => handleBulkAction('delete')}
-              className="px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors duration-200 flex items-center space-x-2"
+              className="px-2.5 sm:px-3 py-2 sm:py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
-              <Trash2 className="h-4 w-4" />
-              <span>Eliminar ({selectedItems.length})</span>
+              <Trash2 className="h-4 w-4 flex-shrink-0" />
+              <span className="break-words">Eliminar ({selectedItems.length})</span>
             </button>
           )}
         </div>
@@ -2279,7 +2281,7 @@ export default function AdminDashboard() {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-4 gap-4">
             <div className="flex items-center space-x-4">
               <div className="bg-gray-50 p-2 rounded-xl">
                 <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
@@ -2289,14 +2291,14 @@ export default function AdminDashboard() {
                 <p className="text-gray-600 text-sm">Monitoreo en vivo y aprobación de conductores</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <select value={busesFilter} onChange={e=>setBusesFilter(e.target.value)} className="px-3 py-2 border rounded-lg text-sm">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+              <select value={busesFilter} onChange={e=>setBusesFilter(e.target.value)} className="px-3 py-2 border rounded-lg text-sm flex-1 sm:flex-none">
                 <option>Todos</option>
                 <option value="pending">Pendiente</option>
                 <option value="approved">Aprobado</option>
                 <option value="rejected">Rechazado</option>
               </select>
-              <button onClick={refresh} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2">
+              <button onClick={refresh} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center gap-2 whitespace-nowrap flex-1 sm:flex-none">
                 <RefreshCw className="h-4 w-4" /> {busesLoading ? 'Actualizando…' : 'Actualizar'}
               </button>
             </div>
@@ -2790,21 +2792,21 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 overflow-x-hidden pb-20">
       {/* Enhanced Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 shadow-xl">
-        <div className="w-full px-4">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-white p-2 rounded-xl shadow-lg">
-                <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+        <div className="w-full px-3 sm:px-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 py-3 sm:py-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="bg-white p-2 rounded-xl shadow-lg flex-shrink-0">
+                <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-8 sm:h-10 w-8 sm:w-10 object-contain" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Admin Panel</h1>
-                <p className="text-blue-100 text-sm">Bienvenido, {user?.name} • Sistema Comet</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-white break-words">Admin Panel</h1>
+                <p className="text-xs sm:text-sm text-blue-100 break-words">Bienvenido, {user?.name} • Sistema Comet</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={signOut}
-                className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg text-sm"
+                className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap"
               >
                 Salir
               </button>
@@ -2815,10 +2817,10 @@ export default function AdminDashboard() {
 
 
       {/* Main Content */}
-      <div className="w-full px-4 py-6">
+      <div className="w-full px-2 sm:px-4 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 sm:mb-2 break-words">
               {activeTab === 'dashboard' && 'Dashboard Principal'}
               {activeTab === 'reports' && 'Gestión de Reportes'}
               {activeTab === 'users' && 'Gestión de Usuarios'}
@@ -2832,7 +2834,7 @@ export default function AdminDashboard() {
               {activeTab === 'events' && 'Gestión de Eventos'}
               {activeTab === 'settings' && 'Configuración del Sistema'}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               {activeTab === 'dashboard' && 'Vista general del sistema y estadísticas'}
               {activeTab === 'reports' && 'Administra todos los reportes ciudadanos'}
               {activeTab === 'users' && 'Gestiona usuarios registrados'}
@@ -2861,34 +2863,34 @@ export default function AdminDashboard() {
             {activeTab === 'events' && (role==='admin' || role==='news') && renderEvents()}
             {activeTab === 'buses' && (role==='admin' || role==='buses') && renderBuses()}
             {activeTab === 'settings' && (
-              <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-xl">
-                        <Settings className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="space-y-4 sm:space-y-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div className="bg-blue-100 dark:bg-blue-900 p-2 sm:p-3 rounded-xl flex-shrink-0">
+                        <Settings className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Configuración del Sistema</h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Ajustes generales de la plataforma</p>
+                      <div className="min-w-0">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 break-words">Configuración del Sistema</h2>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Ajustes generales de la plataforma</p>
                       </div>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-xl">
-                      <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-12 w-12 object-contain" />
+                    <div className="bg-gray-50 dark:bg-gray-700 p-2 sm:p-3 rounded-xl flex-shrink-0">
+                      <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 sm:h-12 w-10 sm:w-12 object-contain" />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {/* Dark Mode Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                          <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                        <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900 rounded-lg flex-shrink-0">
+                          <svg className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                           </svg>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Modo Oscuro</h3>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Modo Oscuro</h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400">Tema de la interfaz</p>
                         </div>
                       </div>
@@ -2958,54 +2960,54 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Database Backup */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 cursor-pointer" onClick={handleBackup}>
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                          <Download className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 cursor-pointer" onClick={handleBackup}>
+                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                        <div className="p-1.5 sm:p-2 bg-orange-100 dark:bg-orange-900 rounded-lg flex-shrink-0">
+                          <Download className="h-4 sm:h-5 w-4 sm:w-5 text-orange-600 dark:text-orange-400" />
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Respaldo de Datos</h3>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Respaldo de Datos</h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400">Backup automático</p>
                         </div>
                       </div>
-                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
-                        <span className="text-sm font-medium">Ejecutar</span>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200 text-xs sm:text-sm font-medium flex-shrink-0">
+                        <span>Ejecutar</span>
                       </button>
                     </div>
 
                     {/* System Reports */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200" onClick={() => setActiveTab('reports')}>
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-                          <FileText className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200" onClick={() => setActiveTab('reports')}>
+                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                        <div className="p-1.5 sm:p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex-shrink-0">
+                          <FileText className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-600 dark:text-yellow-400" />
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Reportes del Sistema</h3>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Reportes del Sistema</h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400">Estadísticas y reportes</p>
                         </div>
                       </div>
-                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
-                        <span className="text-sm font-medium">Ver →</span>
+                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200 text-xs sm:text-sm font-medium flex-shrink-0">
+                        <span>Ver →</span>
                       </button>
                     </div>
                   </div>
                 </div>
 
                 {/* System Info */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Información del Sistema</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">v1.0.0</p>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Información del Sistema</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Versión</p>
+                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">v1.0.0</p>
                     </div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Última actualización</p>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">24 Oct 2025</p>
+                    <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Última actualización</p>
+                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">24 Oct 2025</p>
                     </div>
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Estado del servidor</p>
-                      <p className="text-lg font-semibold text-green-600 dark:text-green-400">● Activo</p>
+                    <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Estado del servidor</p>
+                      <p className="text-base sm:text-lg font-semibold text-green-600 dark:text-green-400">● Activo</p>
                     </div>
                   </div>
                 </div>
@@ -3093,8 +3095,8 @@ export default function AdminDashboard() {
 
       {/* Bottom Navigation */}
       {renderUsersModal()}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-30 shadow-lg">
-        <nav className="flex items-center gap-6 w-full sm:max-w-3xl mx-auto justify-start sm:justify-center overflow-x-auto sm:overflow-visible no-scrollbar snap-x snap-mandatory sm:snap-none">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-2 py-3 z-30 shadow-lg">
+        <nav className="flex items-center gap-2 w-full max-w-3xl mx-auto justify-start overflow-x-auto no-scrollbar snap-x snap-mandatory">
           {visibleTabs.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -3103,7 +3105,7 @@ export default function AdminDashboard() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform snap-center ${
+                className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 transform snap-center flex-shrink-0 ${
                   isActive
                     ? 'text-blue-500 scale-110'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:scale-105'
