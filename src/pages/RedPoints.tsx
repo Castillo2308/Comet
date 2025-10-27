@@ -135,6 +135,15 @@ export default function RedPoints() {
     }
   };
 
+  const handleDeleteComment = async (pointId: any, commentId: any) => {
+    try {
+      const res = await api(`/security/hotspots/comments/${commentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setRedPoints(prev => prev.map(p => p.id === pointId ? { ...p, comments: p.comments.filter(c => String(c.id) !== String(commentId)) } : p));
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     // Load hotspots and comments (authenticated)
     api('/security/hotspots')
@@ -431,8 +440,10 @@ export default function RedPoints() {
                         </div>
                         <div className="flex-1 bg-white rounded-lg p-3 shadow-sm">
                           <div className="flex items-center justify-between mb-1">
-                            
                             <span className="text-gray-500 text-xs">{comment.date}</span>
+                            {(user?.cedula && String(comment.author) === String(user.cedula)) && (
+                              <button onClick={() => handleDeleteComment(point.id, comment.id)} className="text-red-600 hover:text-red-800 text-xs" title="Eliminar comentario">Eliminar</button>
+                            )}
                           </div>
                           <p className="text-gray-800 text-xs">{comment.content}</p>
                         </div>

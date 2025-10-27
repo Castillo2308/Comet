@@ -1,4 +1,4 @@
-import { listHotspots, createHotspot, listHotspotComments, addHotspotComment, deleteHotspot, updateHotspot, getHotspotById } from '../models/securityModel.js';
+import { listHotspots, createHotspot, listHotspotComments, addHotspotComment, deleteHotspot, updateHotspot, getHotspotById, getHotspotCommentById, deleteHotspotComment } from '../models/securityModel.js';
 import { isPrivileged } from '../lib/auth.js';
 
 export default {
@@ -39,6 +39,20 @@ export default {
       const created = await addHotspotComment(req.params.id, { ...body, author: req.user?.cedula || body.author });
       res.status(201).json(created);
     } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to add comment' }); }
+  },
+  async deleteComment(req, res) {
+    try {
+      const cid = req.params.commentId;
+      const c = await getHotspotCommentById(cid);
+      if (!c) return res.status(404).json({ message: 'Not found' });
+      const role = req.user?.role;
+      const cedula = req.user?.cedula;
+      const can = isPrivileged(role) || (cedula && String(c.author) === String(cedula));
+      if (!can) return res.status(403).json({ message: 'Prohibido' });
+      const ok = await deleteHotspotComment(cid);
+      if (!ok) return res.status(404).json({ message: 'Not found' });
+      res.json({ message: 'Deleted' });
+    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to delete comment' }); }
   },
   async remove(req, res) {
     try {

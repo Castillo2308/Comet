@@ -80,6 +80,27 @@ export async function addHotspotComment(hotspotId, c) {
   return { _id: insertedId, ...doc };
 }
 
+export async function getHotspotCommentById(id) {
+  const db = await getDb();
+  try {
+    const _id = new ObjectId(id);
+    return await db.collection('hotSpotsComments').findOne({ _id });
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteHotspotComment(id) {
+  const db = await getDb();
+  try {
+    const _id = new ObjectId(id);
+    const res = await db.collection('hotSpotsComments').deleteOne({ _id });
+    return res.deletedCount > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function deleteHotspot(id) {
   const db = await getDb();
   const _id = new ObjectId(id);

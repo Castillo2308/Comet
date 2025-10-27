@@ -10,6 +10,8 @@ router.post('/hotspots', requireAuth, controller.create);
 router.get('/hotspots/:id/comments', requireAuth, controller.comments);
 // Allow any authenticated user to comment on hotspots
 router.post('/hotspots/:id/comments', requireAuth, controller.addComment);
+// Allow authors to delete their own comment; privileged roles can delete any
+router.delete('/hotspots/comments/:commentId', requireAuth, controller.deleteComment);
 // Allow authors to delete their own hotspot, or privileged roles
 router.delete('/hotspots/:id', requireAuth, controller.remove);
 router.put('/hotspots/:id', requireAuth, controller.update);

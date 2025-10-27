@@ -71,7 +71,7 @@ export default function SignIn() {
           {/* COMET Logo */}
           <div className="flex justify-center mb-6">
             <div className="w-24 h-24 rounded-full bg-white shadow-lg flex items-center justify-center p-4">
-              <img src="/COMET-isotipo.png" alt="COMET Logo" className="w-full h-full object-contain" />
+              <img src="/pwa-512x512.png" alt="COMET Logo" className="w-full h-full object-contain" />
             </div>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Iniciar sesión</h2>
