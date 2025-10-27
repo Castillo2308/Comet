@@ -161,7 +161,7 @@ export default function HotspotsMap({ apiKey, points, onPlaceSelected, onUserLoc
               position={{ lat: p.lat!, lng: p.lng! }}
               title={p.title}
               icon={computedIcon}
-              animation={selectedId !== undefined && p.id === selectedId ? google.maps.Animation.DROP : undefined}
+              animation={selectedId !== undefined && p.id === selectedId ? google.maps.Animation.BOUNCE : undefined}
               zIndex={p.id === selectedId ? 999 : undefined}
               label={p.busNumber ? {
                 text: p.busNumber,

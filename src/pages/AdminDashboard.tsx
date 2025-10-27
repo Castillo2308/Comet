@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Users, FileText, AlertTriangle, Calendar, BarChart3, Settings, Trash2, Edit, Plus, Search, Download, RefreshCw, Activity, Clock, MapPin, Megaphone, Shield, MessageSquare, Bus, Check, Image as ImageIcon, Bell } from 'lucide-react';
+import HotspotsMap, { HotspotPoint } from '../components/HotspotsMap';
 import BusesMap from '../components/BusesMap';
 import { GoogleMapsProvider } from '../components/GoogleMapsProvider';
 import { useAuth } from '../context/AuthContext';
@@ -149,6 +150,9 @@ export default function AdminDashboard() {
   const [hotspots, setHotspots] = useState<any[]>([]);
   const [dangerous, setDangerous] = useState<any[]>([]);
   const [hotspotComments, setHotspotComments] = useState<Record<string, any[]>>({});
+  // Admin hotspots map selection state
+  const [selectedHotspotCenter, setSelectedHotspotCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [selectedHotspotId, setSelectedHotspotId] = useState<string | number | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
@@ -963,7 +967,7 @@ export default function AdminDashboard() {
       doc.addPage();
       currentY = 20;
       doc.setFontSize(16);
-      doc.text('Publicaciones de Comunidad (Foro)', 14, currentY);
+      doc.text('Publicaciones de Comunidad', 14, currentY);
       currentY += 10;
 
       if (Array.isArray(communityData) && communityData.length > 0) {
@@ -1091,7 +1095,7 @@ export default function AdminDashboard() {
             </div>
             <div className="min-w-0">
               <h2 className="text-lg sm:text-2xl font-bold mb-1 break-words">Sistema de Gestión Municipal</h2>
-              <p className="text-xs sm:text-sm text-blue-100 break-words">Plataforma integral de administración - Comet</p>
+              <p className="text-xs sm:text-sm text-blue-100 break-words">Plataforma integral de administración - COMET</p>
             </div>
           </div>
           <div className="text-right flex-shrink-0">
@@ -1821,14 +1825,20 @@ export default function AdminDashboard() {
               <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Comunidad (Foro)</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Comunidad</h2>
               <p className="text-gray-600">Modera publicaciones y comentarios de la comunidad</p>
             </div>
           </div>
-          <button onClick={() => { setEditingCommunityPost(null); setCommunityForm({ content: '', photo_link: '' }); setCommunityModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
-            <Plus className="h-4 w-4" />
-            <span>Nueva Publicación</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { refreshCommunity(); }} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center gap-2">
+              <RefreshCw className={`h-4 w-4 ${communityLoading ? 'animate-spin' : ''}`} />
+              <span>{communityLoading ? 'Actualizando…' : 'Actualizar'}</span>
+            </button>
+            <button onClick={() => { setEditingCommunityPost(null); setCommunityForm({ content: '', photo_link: '' }); setCommunityModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>Nueva Publicación</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2683,7 +2693,7 @@ export default function AdminDashboard() {
                 <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Hotspots</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Puntos Rojos</h2>
                 <p className="text-gray-600">Crea y administra zonas peligrosas</p>
               </div>
             </div>
@@ -2691,6 +2701,37 @@ export default function AdminDashboard() {
               <Plus className="h-4 w-4" />
               <span>Nuevo Hotspot</span>
             </button>
+          </div>
+          {/* Mapa de Puntos Rojos */}
+          <div className="mt-4">
+            <h3 className="font-semibold text-gray-900 text-sm mb-2">Mapa de Zonas de Riesgo</h3>
+            {(() => {
+              const points: HotspotPoint[] = hotspots.map((h:any) => {
+                const id = h._id || h.id;
+                let lat: number | undefined = undefined; let lng: number | undefined = undefined;
+                if (typeof h.lat === 'number' && typeof h.lng === 'number') { lat = h.lat; lng = h.lng; }
+                else if (h.lat != null && h.lng != null) {
+                  const nlat = Number(h.lat); const nlng = Number(h.lng);
+                  if (Number.isFinite(nlat) && Number.isFinite(nlng)) { lat = nlat; lng = nlng; }
+                } else if (h.location && Array.isArray(h.location.coordinates) && h.location.coordinates.length === 2) {
+                  const [lg, lt] = h.location.coordinates; const nlt = Number(lt), nlg = Number(lg);
+                  if (Number.isFinite(nlt) && Number.isFinite(nlg)) { lat = nlt; lng = nlg; }
+                }
+                return { id: String(id), title: h.title || 'Zona', lat, lng } as HotspotPoint;
+              });
+              const first = points.find(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+              // Debug: surface issues if markers still not rendering
+              try { console.debug('[Admin Hotspots Map] points:', points.length, points.slice(0,3)); } catch {}
+              return (
+                <HotspotsMap
+                  apiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyDluFc7caulw2jHJKsPM_mGnLa8oLuFgio'}
+                  points={points}
+                  selected={selectedHotspotCenter ?? (first ? { lat: first.lat as number, lng: first.lng as number } : undefined)}
+                  selectedId={selectedHotspotId}
+                  showAutocomplete={false}
+                />
+              );
+            })()}
           </div>
         </div>
 
@@ -2753,6 +2794,35 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium border ${toRiskPill(level)}`}>{level === 'high' ? 'Alto' : level === 'medium' ? 'Medio' : 'Bajo'}</span>
                   <div className="flex space-x-1">
+                    {/* Ubicar en el mapa */}
+                    {(() => {
+                      let lat: number | undefined; let lng: number | undefined;
+                      if (typeof h.lat === 'number' && typeof h.lng === 'number') { lat = h.lat; lng = h.lng; }
+                      else if (h.lat != null && h.lng != null) {
+                        const nlat = Number(h.lat); const nlng = Number(h.lng);
+                        if (Number.isFinite(nlat) && Number.isFinite(nlng)) { lat = nlat; lng = nlng; }
+                      } else if (h.location && Array.isArray(h.location.coordinates) && h.location.coordinates.length === 2) {
+                        const [lg, lt] = h.location.coordinates; const nlt = Number(lt), nlg = Number(lg);
+                        if (Number.isFinite(nlt) && Number.isFinite(nlg)) { lat = nlt; lng = nlg; }
+                      }
+                      const hasCoords = typeof lat === 'number' && typeof lng === 'number';
+                      return (
+                        <button
+                          onClick={() => {
+                            if (hasCoords) {
+                              setSelectedHotspotCenter({ lat: lat as number, lng: lng as number });
+                              setSelectedHotspotId(String(id));
+                            } else {
+                              alert('Este hotspot no tiene coordenadas válidas para ubicar en el mapa.');
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 hover:bg-blue-50 rounded"
+                          title="Ubicar en el mapa"
+                        >
+                          <MapPin className="h-4 w-4" />
+                        </button>
+                      );
+                    })()}
                     <button onClick={() => { setEditingHotspot(h); setHotspotForm({ title, description, date: new Date(h.date).toISOString().slice(0,10), time: '', dangerlevel: level as any, dangertime: h.dangerTime || h.dangertime || '' }); setHotspotModalOpen(true); }} className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded" title="Editar">
                       <Edit className="h-4 w-4" />
                     </button>
@@ -2769,12 +2839,33 @@ export default function AdminDashboard() {
                     <div className="text-xs font-semibold text-gray-700 mb-1">Comentarios</div>
                     {Array.isArray(hotspotComments[String(id)]) && hotspotComments[String(id)].length > 0 ? (
                       <div className="space-y-2 max-h-32 overflow-auto pr-1">
-                        {hotspotComments[String(id)].map((c:any) => (
-                          <div key={String(c._id || c.id)} className="text-[12px] text-gray-700">
-                            <span className="font-medium text-gray-900">{c.author || 'anon'}:</span> {c.content}
-                            <span className="text-gray-400 ml-2">{new Date(c.date).toLocaleString('es-ES')}</span>
-                          </div>
-                        ))}
+                        {hotspotComments[String(id)].map((c:any) => {
+                          const canDelete = (user?.role === 'admin' || user?.role === 'security') || (user?.cedula && String(c.author) === String(user.cedula));
+                          return (
+                            <div key={String(c._id || c.id)} className="text-[12px] text-gray-700 flex items-start justify-between gap-2">
+                              <div>
+                                <span className="font-medium text-gray-900">{c.author || 'anon'}:</span> {c.content}
+                                <span className="text-gray-400 ml-2">{new Date(c.date).toLocaleString('es-ES')}</span>
+                              </div>
+                              {canDelete && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const r = await api(`/security/hotspots/comments/${c._id || c.id}`, { method: 'DELETE' });
+                                      if (r.ok) {
+                                        setHotspotComments(prev => ({ ...prev, [String(id)]: (prev[String(id)]||[]).filter((x:any) => (String(x._id||x.id) !== String(c._id||c.id))) }));
+                                      }
+                                    } catch {}
+                                  }}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                  title="Eliminar comentario"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-[12px] text-gray-400">Sin comentarios</div>
@@ -2800,7 +2891,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Admin Panel</h1>
-                <p className="text-blue-100 text-sm">Bienvenido, {user?.name} • Sistema Comet</p>
+                <p className="text-blue-100 text-sm">Bienvenido, {user?.name} • Sistema COMET</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -2825,12 +2916,12 @@ export default function AdminDashboard() {
               {activeTab === 'reports' && 'Gestión de Reportes'}
               {activeTab === 'users' && 'Gestión de Usuarios'}
               {activeTab === 'complaints' && 'Gestión de Quejas'}
-              {activeTab === 'hotspots' && 'Gestión de Hotspots'}
+              {activeTab === 'hotspots' && 'Gestión de Puntos Rojos'}
               {activeTab === 'dangerous' && 'Áreas Peligrosas'}
               {activeTab === 'securityNews' && 'Noticias de Seguridad'}
               {activeTab === 'news' && 'Gestión de Noticias'}
               {activeTab === 'buses' && 'Sistema de Buses'}
-              {activeTab === 'community' && 'Comunidad (Foro)'}
+              {activeTab === 'community' && 'Comunidad'}
               {activeTab === 'events' && 'Gestión de Eventos'}
               {activeTab === 'settings' && 'Configuración del Sistema'}
             </h2>
@@ -3003,7 +3094,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Última actualización</p>
-                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">24 Oct 2025</p>
+                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">26 Oct 2025</p>
                     </div>
                     <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Estado del servidor</p>
