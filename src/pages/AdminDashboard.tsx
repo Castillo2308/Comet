@@ -3094,7 +3094,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Última actualización</p>
-                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">26 Oct 2025</p>
+                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">5 Nov 2025</p>
                     </div>
                     <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Estado del servidor</p>
