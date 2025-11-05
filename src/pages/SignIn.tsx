@@ -150,12 +150,12 @@ export default function SignIn() {
         {failCount >= 3 && (
           <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl text-sm">
             <div className="font-semibold mb-2">¿Olvidaste tu contraseña?</div>
-            <div className="flex gap-2">
+            <div className="flex flex-col">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 placeholder="Tu correo"
               />
               <button
@@ -167,10 +167,10 @@ export default function SignIn() {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ email })
                     });
-                    setRecoverMsg('Si existe una cuenta con ese correo, te enviaremos un enlace para restablecer la contraseña.');
+                    setRecoverMsg('Si existe una cuenta con ese correo, te enviaremos un enlace para restablecer la contraseña. El correo puede tardar unos minutos en aparecer en tu bandeja de entrada.');
                   } catch {}
                 }}
-                className="px-3 py-2 rounded-lg bg-blue-600 text-white"
+                 className="mt-3 w-full px-3 py-2 rounded-lg bg-blue-600 text-white"
               >
                 Enviar enlace
               </button>
