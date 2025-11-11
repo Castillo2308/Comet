@@ -17,7 +17,6 @@ import Events from './pages/Events';
 import RedPoints from './pages/RedPoints';
 import Layout from './components/Layout';
 import SplashScreen from './components/SplashScreen';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { startServiceWorkerNewsChecks, stopServiceWorkerNewsChecks } from './lib/swClient';
 
 function AppRoutes() {
@@ -126,7 +125,6 @@ function App() {
         <DriverServiceProvider>
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <AppRoutes />
-            <PWAInstallPrompt />
           </div>
         </DriverServiceProvider>
       </AuthProvider>
