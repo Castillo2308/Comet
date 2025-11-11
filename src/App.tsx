@@ -16,6 +16,7 @@ import Community from './pages/Community';
 import Events from './pages/Events';
 import RedPoints from './pages/RedPoints';
 import Layout from './components/Layout';
+import SplashScreen from './components/SplashScreen';
 import { startServiceWorkerNewsChecks, stopServiceWorkerNewsChecks } from './lib/swClient';
 
 function AppRoutes() {
@@ -102,6 +103,8 @@ function AppRoutes() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   // Initialize dark mode on app load
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
@@ -111,6 +114,10 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, []);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
 
   return (
     <Router>
