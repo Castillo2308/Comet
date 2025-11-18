@@ -88,19 +88,23 @@ export default function Events() {
       .then(r => r.ok ? r.json() : [])
       .then((rows) => {
         if (Array.isArray(rows) && rows.length) {
-          const mapped: Event[] = rows.map((e:any) => ({
-            id: e.id,
-            title: e.title,
-            description: e.description,
-            date: new Date(e.date).toISOString().slice(0,10),
-            time: new Date(e.date).toLocaleTimeString(),
-            location: e.location,
-            category: e.type || 'Social',
-            attendees: Number(e.attendants) || 0,
-            organizer: e.host || 'Municipalidad',
-            price: e.price ? `₡${e.price}` : 'Gratis',
-            rating: 4.5
-          }));
+          const mapped: Event[] = rows.map((e:any) => {
+            const utcDate = new Date(e.date);
+            const localDate = new Date(utcDate.getTime() - 6 * 60 * 60 * 1000); // Restar 6 horas para obtener UTC-6
+            return {
+              id: e.id,
+              title: e.title,
+              description: e.description,
+              date: localDate.toISOString().slice(0,10),
+              time: localDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+              location: e.location,
+              category: e.type || 'Social',
+              attendees: Number(e.attendants) || 0,
+              organizer: e.host || 'Municipalidad',
+              price: e.price ? `₡${e.price}` : 'Gratis',
+              rating: 4.5
+            };
+          });
           setEvents(mapped);
         }
       })

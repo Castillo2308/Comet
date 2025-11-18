@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, CreditCard, Mail } from 'lucide-react';
+import { User, CreditCard, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
@@ -13,6 +13,7 @@ export default function Register() {
   });
   const [pwViolations, setPwViolations] = useState<string[]>([]);
   const [pwTouched, setPwTouched] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dupError, setDupError] = useState('');
@@ -69,9 +70,17 @@ export default function Register() {
       }
     } catch (err) {
       const msg = (err as Error)?.message || '';
-      if (msg.includes('cédula') || msg.toLowerCase().includes('cedula')) setDupError('Esta cédula ya está registrada.');
-      else if (msg.toLowerCase().includes('email')) setDupError('Este email ya está registrado.');
-      else setError('Error al registrarse');
+      
+      // Check if it's a password violation error (contains typical password policy messages)
+      if (msg.includes('carácter') || msg.includes('caracteres') || msg.includes('minúscula') || msg.includes('mayúscula') || msg.includes('número') || msg.includes('especial') || msg.includes('espacios') || msg.includes('nombre/apellido') || msg.includes('correo') || msg.includes('cédula')) {
+        setError(msg);
+      } else if (msg.includes('cédula') || msg.toLowerCase().includes('cedula')) {
+        setDupError('Esta cédula ya está registrada.');
+      } else if (msg.toLowerCase().includes('email')) {
+        setDupError('Este email ya está registrado.');
+      } else {
+        setError('Error al registrarse');
+      }
     } finally {
       setLoading(false);
     }
@@ -164,17 +173,33 @@ export default function Register() {
               />
             </div>
 
-            <div className="relative">
-              <input
-                type="password"
-                name="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                onBlur={() => setPwTouched(true)}
-                className="appearance-none relative block w-full pl-3 pr-3 py-4 border border-gray-200 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
-                placeholder="Ingresa tu contraseña"
-              />
+            <div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  onBlur={() => setPwTouched(true)}
+                  className="appearance-none relative block w-full pl-10 pr-10 py-4 border border-gray-200 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                  placeholder="Ingresa tu contraseña"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-200" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-200" />
+                  )}
+                </button>
+              </div>
               {(pwTouched || formData.password) && (
                 <div className="mt-2 text-xs">
                   <div className={`h-1 rounded ${pwViolations.length === 0 && formData.password.length >= 12 ? 'bg-green-500' : pwViolations.length <= 2 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>

@@ -1668,7 +1668,11 @@ export default function AdminDashboard() {
               className="space-y-3"
               onSubmit={async (e) => {
                 e.preventDefault();
-                const isoDate = eventForm.date ? `${eventForm.date}T${eventForm.time || '00:00'}:00.000Z` : new Date().toISOString();
+                // Convertir fecha y hora de Costa Rica (UTC-6) a UTC
+                const localDateTime = eventForm.date ? `${eventForm.date}T${eventForm.time || '00:00'}` : new Date().toISOString().slice(0, 16);
+                const localDate = new Date(localDateTime);
+                const utcDate = new Date(localDate.getTime() + 6 * 60 * 60 * 1000); // Sumar 6 horas para convertir a UTC
+                const isoDate = utcDate.toISOString();
                 const payload: any = {
                   type: eventForm.category,
                   title: eventForm.title,
