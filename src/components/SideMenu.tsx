@@ -87,12 +87,15 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
             <div className="space-y-2">
               {menuItems.map((item) => {
                 const IconComponent = item.icon;
+                const shouldCloseMenu = !['help', 'about'].includes(item.id);
                 return (
                   <button
                     key={item.id}
                     onClick={() => {
                       item.action();
-                      onClose();
+                      if (shouldCloseMenu) {
+                        onClose();
+                      }
                     }}
                     className="w-full flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 text-left hover:bg-gray-50 hover:shadow-sm active:scale-98"
                   >
