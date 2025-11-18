@@ -3096,7 +3096,7 @@ export default function AdminDashboard() {
                 <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+                <h1 className="text-xl font-bold text-white">Portal Administrativo</h1>
                 <p className="text-blue-100 text-sm">Bienvenido, {user?.name} • Sistema COMET</p>
               </div>
             </div>

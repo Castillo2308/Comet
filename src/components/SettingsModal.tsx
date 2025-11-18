@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Moon, Sun, Bell, Shield, Smartphone, Settings, Users, FileText } from 'lucide-react';
+import { X, Moon, Sun, Bell, Smartphone, Settings, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 
@@ -167,39 +167,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 />
               </button>
             </div>
-
-            {/* Privacy / Admin Users */}
-            {isAdmin ? (
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                    <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Gestión de Usuarios</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Administrar usuarios del sistema</p>
-                  </div>
-                </div>
-                <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
-                  <span className="text-sm font-medium">Ir</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                    <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Privacidad</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Configuración de privacidad</p>
-                  </div>
-                </div>
-                <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
-                  <span className="text-sm font-medium">Configurar</span>
-                </button>
-              </div>
-            )}
 
             {/* Admin Reports or Regular App Info */}
             {isAdmin ? (
