@@ -11,7 +11,7 @@ export default function SignIn() {
   const [error, setError] = useState('');
   const [failCount, setFailCount] = useState(0);
   const [recoverMsg, setRecoverMsg] = useState('');
-  const [showInstallBanner, setShowInstallBanner] = useState(true);
+  const [canInstall, setCanInstall] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -46,33 +46,19 @@ export default function SignIn() {
     const onBIP = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      setCanInstall(true);
     };
     window.addEventListener('beforeinstallprompt', onBIP);
-    
-    // Mostrar banner siempre, incluso si ya está instalada
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    if (!isStandalone) {
-      setShowInstallBanner(true);
-    } else {
-      setShowInstallBanner(false);
-    }
-    
     return () => window.removeEventListener('beforeinstallprompt', onBIP);
   }, []);
 
   const triggerInstall = async () => {
     const prompt = deferredPrompt;
-    if (!prompt) {
-      // Si no hay prompt nativo, mostrar instrucciones
-      alert('Para instalar la app:\n\niOS/Safari: Toca el botón de compartir y selecciona "Añadir a la pantalla de inicio"\n\nAndroid/Chrome: Toca el menú (⋮) y selecciona "Instalar aplicación"');
-      return;
-    }
+    if (!prompt) return;
+    setCanInstall(false);
     prompt.prompt();
     try {
-      const result = await prompt.userChoice;
-      if (result.outcome === 'accepted') {
-        setShowInstallBanner(false);
-      }
+      await prompt.userChoice;
     } finally {
       setDeferredPrompt(null);
     }
@@ -194,13 +180,13 @@ export default function SignIn() {
           </div>
         )}
 
-        {showInstallBanner && (
+        {canInstall && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm">
             <div className="font-semibold text-blue-800 mb-1">Instala COMET</div>
             <div className="text-blue-700 mb-3">Instálala como app para acceder más rápido y usarla sin conexión.</div>
             <div className="flex gap-2 justify-center">
               <button onClick={triggerInstall} className="px-4 py-2 rounded-lg bg-blue-600 text-white">Instalar</button>
-              <button onClick={() => setShowInstallBanner(false)} className="px-4 py-2 rounded-lg border">Ahora no</button>
+              <button onClick={() => setCanInstall(false)} className="px-4 py-2 rounded-lg border">Ahora no</button>
             </div>
           </div>
         )}
