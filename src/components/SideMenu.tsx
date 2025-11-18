@@ -1,4 +1,4 @@
-import { X, HelpCircle, MessageSquare, Settings, Info, Phone } from 'lucide-react';
+import { X, HelpCircle, MessageSquare, Settings, Info, Phone, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 interface SideMenuProps {
@@ -10,6 +10,9 @@ interface SideMenuProps {
 export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuProps) {
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
 
   const menuItems = [
     {
@@ -17,7 +20,7 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
       icon: HelpCircle,
       label: 'Ayuda y Soporte',
       description: 'Encuentra respuestas a tus preguntas',
-      action: () => console.log('Ayuda clicked')
+      action: () => setShowHelp(true)
     },
     {
       id: 'whatsapp',
@@ -41,7 +44,7 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
       icon: Info,
       label: 'Acerca de',
       description: 'Información sobre la app',
-      action: () => console.log('About clicked')
+      action: () => setShowAbout(true)
     },
     {
       id: 'contact',
@@ -264,6 +267,232 @@ export default function SideMenu({ isOpen, onClose, onOpenSettings }: SideMenuPr
                 <button
                   onClick={() => setShowPrivacy(false)}
                   className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help & Support Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto transform transition-all duration-300 animate-scaleIn shadow-2xl">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
+                    <HelpCircle className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ayuda y Soporte</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Preguntas Frecuentes</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowHelp(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors duration-200"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+
+              {/* FAQ Content */}
+              <div className="space-y-3">
+                {[
+                  {
+                    id: 'q1',
+                    question: '¿Cómo registro mi cuenta?',
+                    answer: 'Puedes registrarte en la pantalla de inicio usando tu correo electrónico y cédula de identidad. Verifica tu correo y completa tu perfil.'
+                  },
+                  {
+                    id: 'q2',
+                    question: '¿Cómo reporto un problema?',
+                    answer: 'Toca el botón "+" en la barra inferior, selecciona el tipo de problema, añade una descripción y ubicación (opcional). El reporte será enviado a las autoridades.'
+                  },
+                  {
+                    id: 'q3',
+                    question: '¿Cómo veo el estado de mis reportes?',
+                    answer: 'Ve a la sección "Reportes" en el menú. Allí podrás ver todos tus reportes y su estado actual (Pendiente, En Proceso, Resuelto).'
+                  },
+                  {
+                    id: 'q4',
+                    question: '¿Dónde veo los eventos municipales?',
+                    answer: 'En la sección "Eventos" puedes ver todos los eventos próximos, sus fechas, ubicaciones y detalles. Puedes marcar tu asistencia.'
+                  },
+                  {
+                    id: 'q5',
+                    question: '¿Cómo veo la información de buses?',
+                    answer: 'En la sección "Buses" encuentras información sobre rutas, horarios y ubicación en tiempo real de los autobuses municipales.'
+                  },
+                  {
+                    id: 'q6',
+                    question: '¿Qué son los "Puntos Rojos"?',
+                    answer: 'Son áreas con alta incidencia de inseguridad reportadas por ciudadanos. Te ayudan a identificar zonas de riesgo en tu municipio.'
+                  },
+                  {
+                    id: 'q7',
+                    question: '¿Cómo cambio mi contraseña?',
+                    answer: 'Ve a Configuración > Cambiar Contraseña. Ingresa tu contraseña actual y luego crea una nueva más segura.'
+                  },
+                  {
+                    id: 'q8',
+                    question: '¿Cómo desactivo las notificaciones?',
+                    answer: 'Ve a Configuración > Notificaciones y desactiva el toggle. Así no recibirás alertas de nuevos eventos.'
+                  },
+                  {
+                    id: 'q9',
+                    question: '¿La app funciona sin internet?',
+                    answer: 'No, COMET requiere conexión a internet para funcionar correctamente, ya que sincroniza datos en tiempo real.'
+                  },
+                  {
+                    id: 'q10',
+                    question: '¿Es segura mi información personal?',
+                    answer: 'Sí, tus datos están protegidos con encriptación. Consulta nuestra Política de Privacidad para más detalles.'
+                  }
+                ].map((faq) => (
+                  <div key={faq.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
+                      className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-left">{faq.question}</h3>
+                      <ChevronDown
+                        className={`h-5 w-5 text-gray-600 dark:text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2 ${
+                          expandedFaq === faq.id ? 'transform rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                    {expandedFaq === faq.id && (
+                      <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{faq.answer}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">¿Aún tienes dudas? Contáctanos:</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      window.open('https://wa.me/+50687398074', '_blank');
+                      setShowHelp(false);
+                    }}
+                    className="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                  >
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={() => setShowHelp(false)}
+                    className="flex-1 px-3 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-900 dark:text-white rounded-lg transition-colors duration-200 text-sm font-medium"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* About Modal */}
+      {showAbout && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto transform transition-all duration-300 animate-scaleIn shadow-2xl">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
+                    <Info className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Acerca de COMET</h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">v1.0.0</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAbout(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors duration-200"
+                >
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-6 text-gray-700 dark:text-gray-300">
+                {/* What is COMET */}
+                <section>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">¿Qué es COMET?</h3>
+                  <p className="text-sm leading-relaxed">
+                    COMET es una plataforma digital innovadora diseñada para fortalecer la comunicación entre ciudadanos y autoridades municipales. Actúa como un puente tecnológico que facilita el diálogo bidireccional y la participación cívica activa en la gestión local.
+                  </p>
+                </section>
+
+                {/* Why COMET */}
+                <section>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">¿Por qué COMET?</h3>
+                  <ul className="text-sm space-y-2 list-disc list-inside">
+                    <li><strong>Transparencia:</strong> Acceso a información municipal en tiempo real</li>
+                    <li><strong>Participación:</strong> Los ciudadanos pueden reportar problemas directamente</li>
+                    <li><strong>Eficiencia:</strong> Respuesta rápida a reportes y solicitudes</li>
+                    <li><strong>Seguridad:</strong> Información sobre áreas seguras y eventos de riesgo</li>
+                    <li><strong>Comunidad:</strong> Espacios para interacción y colaboración ciudadana</li>
+                  </ul>
+                </section>
+
+                {/* What COMET does */}
+                <section>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">¿Qué puedo hacer en COMET?</h3>
+                  <div className="text-sm space-y-2">
+                    <p>✓ <strong>Reportar problemas:</strong> Infraestructura, seguridad, servicios</p>
+                    <p>✓ <strong>Consultar eventos:</strong> Actividades municipales y comunitarias</p>
+                    <p>✓ <strong>Ver información de transporte:</strong> Rutas y horarios de buses</p>
+                    <p>✓ <strong>Identificar zonas seguras:</strong> Mapa de puntos rojos de inseguridad</p>
+                    <p>✓ <strong>Conectar con la comunidad:</strong> Foros y espacios de diálogo</p>
+                    <p>✓ <strong>Recibir noticias:</strong> Actualizaciones importantes de la municipalidad</p>
+                  </div>
+                </section>
+
+                {/* For whom */}
+                <section>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">¿Para quién es COMET?</h3>
+                  <div className="text-sm space-y-2">
+                    <p><strong className="text-blue-600 dark:text-blue-400">👥 Ciudadanos:</strong> Pueden reportar problemas, participar en consultas y estar informados</p>
+                    <p><strong className="text-green-600 dark:text-green-400">🏛️ Autoridades:</strong> Pueden gestionar reportes, comunicarse con ciudadanos y mejorar servicios</p>
+                    <p><strong className="text-orange-600 dark:text-orange-400">🚔 Seguridad:</strong> Acceso a información de incidentes y áreas de riesgo</p>
+                    <p><strong className="text-purple-600 dark:text-purple-400">📰 Comunicación:</strong> Difusión de noticias e información municipal importante</p>
+                  </div>
+                </section>
+
+                {/* Vision */}
+                <section>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">Nuestra Visión</h3>
+                  <p className="text-sm leading-relaxed italic">
+                    "Una municipalidad más conectada, transparente y responsiva, donde los ciudadanos tienen voz en la toma de decisiones y las autoridades pueden servir mejor a su comunidad."
+                  </p>
+                </section>
+
+                {/* Technology */}
+                <section>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">Tecnología</h3>
+                  <p className="text-sm leading-relaxed">
+                    COMET está desarrollada con tecnologías modernas: React para la interfaz, Node.js en el backend, y PostgreSQL para gestionar datos de manera segura y confiable.
+                  </p>
+                </section>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setShowAbout(false)}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 font-medium"
                 >
                   Cerrar
                 </button>
