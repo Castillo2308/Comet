@@ -157,7 +157,9 @@ export default function AdminDashboard() {
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
   const [eventForm, setEventForm] = useState({
     title: '',
     description: '',
@@ -1648,7 +1650,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <button 
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => { setEditingEvent(null); setEventForm({ title: '', description: '', date: '', time: '', location: '', category: 'Social', host: 'Municipalidad', price: '', attendants: 0 }); setEventModalOpen(true); }}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2"
           >
             <Plus className="h-4 w-4" />
@@ -1657,18 +1659,22 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {showCreateModal && (
+      {(showCreateModal || eventModalOpen) && (
         <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">{editingItem ? 'Editar Evento' : 'Crear Evento'}</h3>
-              <button onClick={() => { setShowCreateModal(false); setEditingItem(null); }} className="text-gray-500">×</button>
+              <h3 className="font-semibold">{editingEvent || editingItem ? 'Editar Evento' : 'Crear Evento'}</h3>
+              <button onClick={() => { setShowCreateModal(false); setEventModalOpen(false); setEditingItem(null); setEditingEvent(null); }} className="text-gray-500">×</button>
             </div>
             <form
               className="space-y-3"
               onSubmit={async (e) => {
                 e.preventDefault();
-                const isoDate = eventForm.date ? `${eventForm.date}T${eventForm.time || '00:00'}:00.000Z` : new Date().toISOString();
+                // Convertir fecha y hora de Costa Rica (UTC-6) a UTC
+                const localDateTime = eventForm.date ? `${eventForm.date}T${eventForm.time || '00:00'}` : new Date().toISOString().slice(0, 16);
+                const localDate = new Date(localDateTime);
+                const utcDate = new Date(localDate.getTime() + 6 * 60 * 60 * 1000); // Sumar 6 horas para convertir a UTC
+                const isoDate = utcDate.toISOString();
                 const payload: any = {
                   type: eventForm.category,
                   title: eventForm.title,
@@ -1681,14 +1687,15 @@ export default function AdminDashboard() {
                   author: 'admin',
                 };
                 try {
-                  if (editingItem) {
-                    const res = await api(`/events/${editingItem.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  if (editingEvent || editingItem) {
+                    const eventId = editingEvent?.id || editingItem?.id;
+                    const res = await api(`/events/${eventId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (res.ok) {
                       const updated = await res.json();
-                      setEvents(prev => prev.map(ev => ev.id === editingItem.id ? {
+                      setEvents(prev => prev.map(ev => ev.id === eventId ? {
                         id: updated.id,
                         title: updated.title,
-                        date: new Date(updated.date).toLocaleDateString('es-ES'),
+                        date: updated.date,
                         location: updated.location,
                         attendees: Number(updated.attendants) || 0,
                         status: 'Programado',
@@ -1703,7 +1710,7 @@ export default function AdminDashboard() {
                       const mapped = {
                         id: created.id,
                         title: created.title,
-                        date: new Date(created.date).toLocaleDateString('es-ES'),
+                        date: created.date,
                         location: created.location,
                         attendees: Number(created.attendants) || 0,
                         status: 'Programado' as const,
@@ -1715,7 +1722,9 @@ export default function AdminDashboard() {
                   }
                 } finally {
                   setShowCreateModal(false);
+                  setEventModalOpen(false);
                   setEditingItem(null);
+                  setEditingEvent(null);
                   setEventForm({ title: '', description: '', date: '', time: '', location: '', category: 'Social', host: 'Municipalidad', price: '', attendants: 0 });
                 }
               }}
@@ -1742,8 +1751,8 @@ export default function AdminDashboard() {
                 <input value={eventForm.price} onChange={e=>setEventForm({...eventForm, price: e.target.value})} placeholder="Precio (opcional)" className="border rounded-lg px-3 py-2" />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={()=>{ setShowCreateModal(false); setEditingItem(null); }} className="px-3 py-2 rounded-lg border">Cancelar</button>
-                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingItem ? 'Guardar' : 'Crear'}</button>
+                <button type="button" onClick={()=>{ setShowCreateModal(false); setEventModalOpen(false); setEditingItem(null); setEditingEvent(null); }} className="px-3 py-2 rounded-lg border">Cancelar</button>
+                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingEvent || editingItem ? 'Guardar' : 'Crear'}</button>
               </div>
             </form>
           </div>
@@ -1764,19 +1773,28 @@ export default function AdminDashboard() {
               <div className="flex space-x-1">
                 <button 
                   onClick={() => { 
-                    setEditingItem(event); 
-                    setEventForm({
-                      title: event.title,
-                      description: event.description,
-                      date: new Date(event.date).toISOString().slice(0,10),
-                      time: '',
-                      location: event.location,
-                      category: event.category,
-                      host: 'Municipalidad',
-                      price: '',
-                      attendants: event.attendees,
-                    });
-                    setShowCreateModal(true); 
+                    try {
+                      // event.date viene como ISO string desde la BD
+                      const eventDate = new Date(event.date);
+                      if (isNaN(eventDate.getTime())) throw new Error('Invalid date');
+                      const localDate = new Date(eventDate.getTime() - 6 * 60 * 60 * 1000);
+                      setEditingEvent(event); 
+                      setEventForm({
+                        title: event.title,
+                        description: event.description,
+                        date: localDate.toISOString().slice(0,10),
+                        time: localDate.toISOString().slice(11,16),
+                        location: event.location,
+                        category: event.category,
+                        host: 'Municipalidad',
+                        price: '',
+                        attendants: event.attendees,
+                      });
+                      setEventModalOpen(true);
+                    } catch (err) {
+                      console.error('Error loading event:', err);
+                      alert('Error al cargar el evento');
+                    }
                   }}
                   className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
                   title="Editar evento"
@@ -1799,7 +1817,7 @@ export default function AdminDashboard() {
             <div className="space-y-1 text-xs text-gray-500">
               <div className="flex items-center">
                 <Calendar className="h-3 w-3 mr-2" />
-                {event.date}
+                {event.date ? new Date(event.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no especificada'}
               </div>
               <div className="flex items-center">
                 <MapPin className="h-3 w-3 mr-2" />
@@ -2038,7 +2056,7 @@ export default function AdminDashboard() {
           const mapped: Event[] = rows.map((e:any) => ({
             id: e.id,
             title: e.title,
-            date: new Date(e.date).toLocaleDateString('es-ES'),
+            date: e.date, // Guardar el ISO string original para poder editarlo
             location: e.location,
             attendees: Number(e.attendants) || 0,
             status: 'Programado',
