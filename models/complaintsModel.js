@@ -7,7 +7,7 @@ export async function listComplaints() {
 export async function createComplaint(c) {
   const rows = await neonClient`
     insert into complaints (type, title, description, location, date, status, author)
-    values (${c.type}, ${c.title}, ${c.description}, ${c.location}, ${c.date}, ${c.status ?? 'Pendiente'}, ${c.author})
+    values (${c.type}, ${c.title}, ${c.description}, ${c.location}, ${c.date}, ${c.status ?? 'pending'}, ${c.author})
     returning id, type, title, description, location, date, status, author
   `;
   return rows?.[0];

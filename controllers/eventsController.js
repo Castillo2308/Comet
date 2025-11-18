@@ -1,5 +1,6 @@
 import { listEvents, createEvent, updateEvent, deleteEvent } from '../models/eventsModel.js';
 import { isPrivileged } from '../lib/auth.js';
+import * as notificationsModel from '../models/notificationsModel.js';
 
 export async function getEvents(_req, res) {
   try {
@@ -16,6 +17,22 @@ export async function postEvent(req, res) {
     const body = { ...req.body };
     if (!body.author && req.user?.cedula) body.author = req.user.cedula;
     const evt = await createEvent(body);
+    
+    // Send notifications to all users about the new event
+    try {
+      const notificationTitle = `Nuevo evento: ${evt.title}`;
+      const notificationMessage = `Se ha creado un nuevo evento en ${evt.location || 'tu zona'} el ${new Date(evt.date).toLocaleDateString('es-CR')}`;
+      await notificationsModel.createNotificationForAllUsers(
+        notificationTitle,
+        notificationMessage,
+        'event',
+        evt.id
+      );
+    } catch (notificationError) {
+      console.error('Error creating notifications for event:', notificationError);
+      // Don't fail the event creation if notifications fail
+    }
+    
     res.status(201).json(evt);
   } catch (e) {
     console.error('postEvent error', e);

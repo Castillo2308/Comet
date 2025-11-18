@@ -8,9 +8,10 @@ export default {
   async create(req, res) {
     try {
       const body = { ...req.body };
-    if (!body.author && req.user?.cedula) body.author = req.user.cedula;
+      if (!body.author && req.user?.cedula) body.author = req.user.cedula;
+      if (!body.author) body.author = null; // Allow null author if not provided
       res.status(201).json(await createComplaint(body));
-    } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to create complaint' }); }
+    } catch (e) { console.error('Create complaint error:', e); res.status(500).json({ message: 'Failed to create complaint', error: e.message }); }
   },
   async update(req, res) {
     try { const row = await updateComplaint(req.params.id, req.body); if (!row) return res.status(404).json({ message: 'Complaint not found' }); res.json(row); } catch (e) { console.error(e); res.status(500).json({ message: 'Failed to update complaint' }); }

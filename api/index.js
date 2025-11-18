@@ -25,6 +25,7 @@ import commentsRoutes from '../routes/commentsRoutes.js';
 import complaintsRoutes from '../routes/complaintsRoutes.js';
 import busesRoutes from '../routes/busesRoutes.js';
 import uploadsRoutes from '../routes/uploadsRoutes.js';
+import notificationsRoutes from '../routes/notificationsRoutes.js';
 import { ensureSchema } from '../lib/initSql.js';
 import { migrateRouteColors } from '../lib/migrateRoutColors.js';
 
@@ -212,6 +213,7 @@ app.use('/api/comments', commentsRoutes);
 app.use('/api/complaints', complaintsRoutes);
 app.use('/api/buses', busesRoutes);
 app.use('/api/uploads', uploadsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/auth/whoami', requireAuth, (req, res) => {

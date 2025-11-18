@@ -181,7 +181,7 @@ export default function AdminDashboard() {
   const [complaintForm, setComplaintForm] = useState<{ type: string; title: string; description: string; location: string; status: string }>({ type: '', title: '', description: '', location: '', status: 'Pendiente' });
   const [editingComplaint, setEditingComplaint] = useState<any>(null);
   const [hotspotModalOpen, setHotspotModalOpen] = useState(false);
-  const [hotspotForm, setHotspotForm] = useState<{ title: string; description: string; date: string; time: string; dangerlevel: 'low' | 'medium' | 'high'; dangertime?: string }>({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' });
+  const [hotspotForm, setHotspotForm] = useState<{ title: string; description: string; date: string; time: string; dangerlevel: 'low' | 'medium' | 'high'; lat?: number; lng?: number }>({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', lat: undefined, lng: undefined });
   const [editingHotspot, setEditingHotspot] = useState<any>(null);
   const [dangerModalOpen, setDangerModalOpen] = useState(false);
   const [dangerForm, setDangerForm] = useState<{ title: string; description: string; location: string; date: string; dangerlevel: 'low' | 'medium' | 'high' }>({ title: '', description: '', location: '', date: '', dangerlevel: 'medium' });
@@ -1047,6 +1047,21 @@ export default function AdminDashboard() {
     return matchesSearch && matchesFilter;
   });
 
+  const filteredComplaints = complaints.filter(complaint => {
+    const statusLabels: {[key: string]: string} = {
+      'pending': 'Pendiente',
+      'in_process': 'En Proceso',
+      'resolved': 'Resuelto',
+      'rejected': 'Rechazado'
+    };
+    const statusLabel = statusLabels[complaint.status] || complaint.status || 'Pendiente';
+    const matchesSearch = complaint.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         complaint.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         complaint.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'Todos' || statusLabel === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
   const stats = [
     {
       title: 'Total Reportes',
@@ -1454,13 +1469,6 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex space-x-1">
-                      <button 
-                        onClick={() => setEditingItem(report)}
-                        className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded"
-                        title="Editar"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
                       <button
                         onClick={() => handleDeleteReport(report.id)}
                         className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded"
@@ -1649,13 +1657,23 @@ export default function AdminDashboard() {
               <p className="text-gray-600">Crea y administra eventos comunitarios</p>
             </div>
           </div>
-          <button 
-            onClick={() => { setEditingEvent(null); setEventForm({ title: '', description: '', date: '', time: '', location: '', category: 'Social', host: 'Municipalidad', price: '', attendants: 0 }); setEventModalOpen(true); }}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Nuevo Evento</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => { setEditingEvent(null); setEventForm({ title: '', description: '', date: '', time: '', location: '', category: 'Social', host: 'Municipalidad', price: '', attendants: 0 }); setEventModalOpen(true); }}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nuevo Evento</span>
+            </button>
+            <button 
+              onClick={async () => { try { const res = await fetch('/api/events'); const data = await res.json(); const mapped = data.map((e:any) => ({ id: e.id, title: e.title, date: e.date, location: e.location, attendees: Number(e.attendants) || 0, status: 'Programado', category: e.type || 'Social', description: e.description || '' })); setEvents(mapped); } catch (err) { console.error('Error actualizando eventos:', err); } }}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center space-x-2"
+              title="Actualizar lista de eventos"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Actualizar</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2607,93 +2625,246 @@ export default function AdminDashboard() {
   );
 
   const renderComplaints = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="bg-gray-50 p-2 rounded-xl">
-              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-10 w-10 object-contain" />
+    <div className="space-y-4 sm:space-y-6">
+      {/* Enhanced Header with Actions */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="flex flex-col gap-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+            <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded-xl flex-shrink-0">
+              <img src="/municipality-logo.svg" alt="Logo Municipalidad" className="h-8 sm:h-10 w-8 sm:w-10 object-contain" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestión de Quejas</h2>
-              <p className="text-gray-600">Revisa y actualiza las quejas de seguridad</p>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 break-words">Gestión de Quejas</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">Administra y da seguimiento a todas las quejas ciudadanas</p>
             </div>
           </div>
-          <button onClick={() => { setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'Pendiente' }); setComplaintModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
-            <Plus className="h-4 w-4" />
-            <span>Nueva Queja</span>
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+            <button 
+              onClick={() => { setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'Pendiente' }); setComplaintModalOpen(true); }}
+              className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-500 text-white rounded-lg sm:rounded-xl hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm font-medium flex-1 sm:flex-none"
+            >
+              <Plus className="h-4 w-4 flex-shrink-0" />
+              <span className="break-words">Nueva Queja</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col gap-2 sm:gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex-1 relative min-w-0">
+              <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Buscar quejas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-2 sm:py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs sm:text-sm"
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-2.5 sm:px-3 py-2 sm:py-3 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs sm:text-sm"
+            >
+              <option value="Todos">Todos los estados</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Resuelto">Resuelto</option>
+              <option value="Rechazado">Rechazado</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {complaintModalOpen && (
-        <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">{editingComplaint ? 'Editar Queja' : 'Crear Queja'}</h3>
-              <button onClick={() => setComplaintModalOpen(false)} className="text-gray-500">×</button>
+        <div className="fixed inset-0 z-30 bg-black/50 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{editingComplaint ? 'Editar Queja' : 'Crear Queja'}</h3>
+              <button onClick={() => setComplaintModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0">
+                <span className="text-2xl">×</span>
+              </button>
             </div>
             <form className="space-y-3" onSubmit={async (e) => {
               e.preventDefault();
-              const payload = { ...complaintForm, date: new Date().toISOString(), author: 'admin' };
-              if (editingComplaint) {
-                const res = await fetch(`/api/complaints/${editingComplaint.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (res.ok) { const up = await res.json(); setComplaints(prev => prev.map((c:any) => c.id === editingComplaint.id ? up : c)); }
-              } else {
-                const res = await fetch('/api/complaints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (res.ok) { const created = await res.json(); setComplaints(prev => [created, ...prev]); }
+              try {
+                const statusMap: {[key: string]: string} = {
+                  'Pendiente': 'pending',
+                  'En Proceso': 'in_process',
+                  'Resuelto': 'resolved',
+                  'Rechazado': 'rejected'
+                };
+                const payload = { 
+                  ...complaintForm, 
+                  status: statusMap[complaintForm.status] || complaintForm.status,
+                  date: new Date().toISOString(), 
+                  author: 'admin' 
+                };
+                if (editingComplaint) {
+                  const res = await fetch(`/api/complaints/${editingComplaint.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  if (res.ok) { const up = await res.json(); setComplaints(prev => prev.map((c:any) => c.id === editingComplaint.id ? up : c)); }
+                  else { const err = await res.json(); alert('Error: ' + (err.message || res.statusText)); }
+                } else {
+                  const res = await fetch('/api/complaints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                  if (res.ok) { const created = await res.json(); setComplaints(prev => [created, ...prev]); }
+                  else { const err = await res.json(); alert('Error: ' + (err.message || res.statusText)); }
+                }
+                setComplaintModalOpen(false); setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'Pendiente' });
+              } catch (err) {
+                console.error('Complaint error:', err);
+                alert('Error al guardar la queja');
               }
-              setComplaintModalOpen(false); setEditingComplaint(null); setComplaintForm({ type: '', title: '', description: '', location: '', status: 'pending' });
             }}>
-              <input value={complaintForm.title} onChange={e=>setComplaintForm({ ...complaintForm, title: e.target.value })} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
-              <textarea value={complaintForm.description} onChange={e=>setComplaintForm({ ...complaintForm, description: e.target.value })} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
+              <input value={complaintForm.title} onChange={e=>setComplaintForm({ ...complaintForm, title: e.target.value })} placeholder="Título" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              <textarea value={complaintForm.description} onChange={e=>setComplaintForm({ ...complaintForm, description: e.target.value })} placeholder="Descripción" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows={3} />
               <div className="grid grid-cols-2 gap-2">
-                <input value={complaintForm.type} onChange={e=>setComplaintForm({ ...complaintForm, type: e.target.value })} placeholder="Tipo" className="border rounded-lg px-3 py-2" />
-                <input value={complaintForm.location} onChange={e=>setComplaintForm({ ...complaintForm, location: e.target.value })} placeholder="Ubicación" className="border rounded-lg px-3 py-2" />
+                <input value={complaintForm.type} onChange={e=>setComplaintForm({ ...complaintForm, type: e.target.value })} placeholder="Tipo" className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input value={complaintForm.location} onChange={e=>setComplaintForm({ ...complaintForm, location: e.target.value })} placeholder="Ubicación" className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <select value={complaintForm.status} onChange={e=>setComplaintForm({ ...complaintForm, status: e.target.value })} className="w-full border rounded-lg px-3 py-2">
+              <select value={complaintForm.status} onChange={e=>setComplaintForm({ ...complaintForm, status: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="Pendiente">Pendiente</option>
                 <option value="En Proceso">En Proceso</option>
                 <option value="Resuelto">Resuelto</option>
                 <option value="Rechazado">Rechazado</option>
               </select>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={()=>setComplaintModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
-                <button type="submit" className="px-3 py-2 rounded-lg bg-blue-600 text-white">{editingComplaint ? 'Guardar' : 'Crear'}</button>
+              <div className="flex justify-end gap-2 pt-4">
+                <button type="button" onClick={()=>setComplaintModalOpen(false)} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancelar</button>
+                <button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">{editingComplaint ? 'Guardar' : 'Crear'}</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="divide-y">
-          {complaints.map((c:any, idx:number) => (
-            <div key={c.id ?? idx} className="p-4 flex items-start justify-between">
-              <div className="pr-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">{c.type || 'General'}</span>
-                  <span className="text-xs text-gray-500">{new Date(c.date).toLocaleDateString('es-ES')}</span>
-                  {c.author && <span className="text-xs text-gray-400">por {c.author}</span>}
-                </div>
-                <div className="font-semibold text-gray-900">{c.title}</div>
-                <div className="text-xs text-gray-600">{c.description}</div>
-                <div className="text-[11px] text-gray-500 mt-1">{c.location}</div>
-              </div>
-              <div className="flex gap-1 items-center">
-                <select defaultValue={c.status} onChange={async (e)=>{ const nv = e.target.value; const res = await fetch(`/api/complaints/${c.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: nv }) }); if (res.ok) setComplaints(prev => prev.map((x:any)=> x.id===c.id ? { ...x, status: nv } : x)); }} className="text-xs border rounded px-2 py-1">
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="En Proceso">En Proceso</option>
-                  <option value="Resuelto">Resuelto</option>
-                  <option value="Rechazado">Rechazado</option>
-                </select>
-                <button onClick={() => { setEditingComplaint(c); setComplaintForm({ type: c.type || '', title: c.title || '', description: c.description || '', location: c.location || '', status: c.status || 'Pendiente' }); setComplaintModalOpen(true); }} className="p-2 text-green-600 hover:bg-green-50 rounded"><Edit className="h-4 w-4" /></button>
-                <button onClick={() => handleDeleteComplaint(c.id)} className="p-2 text-red-600 hover:bg-red-50 rounded"><Trash2 className="h-4 w-4" /></button>
-              </div>
+      {/* Complaints Table - Same style as Reports */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
+              <tr>
+                <th className="px-3 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Queja</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Tipo</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider hidden sm:table-cell">Ubicación</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell">Fecha</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {filteredComplaints.map((c:any, idx:number) => {
+                const statusLabels: {[key: string]: string} = {
+                  'pending': 'Pendiente',
+                  'in_process': 'En Proceso',
+                  'resolved': 'Resuelto',
+                  'rejected': 'Rechazado'
+                };
+                const statusLabel = statusLabels[c.status] || c.status || 'Pendiente';
+                const getStatusColor = (status: string) => {
+                  switch(status) {
+                    case 'Resuelto':
+                    case 'resolved': 
+                      return 'px-3 py-1 rounded-full text-xs font-medium border bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-200 dark:border-green-700';
+                    case 'En Proceso':
+                    case 'in_process': 
+                      return 'px-3 py-1 rounded-full text-xs font-medium border bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 border-blue-200 dark:border-blue-700';
+                    case 'Rechazado':
+                    case 'rejected': 
+                      return 'px-3 py-1 rounded-full text-xs font-medium border bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-200 border-red-200 dark:border-red-700';
+                    default: 
+                      return 'px-3 py-1 rounded-full text-xs font-medium border bg-yellow-50 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700';
+                  }
+                };
+                return (
+                  <tr 
+                    key={c.id ?? idx} 
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 animate-fadeInUp"
+                    style={{ animationDelay: `${idx * 0.05}s` }}
+                  >
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-1">
+                          <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">{c.title}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{c.description ? c.description.substring(0, 40) + (c.description.length > 40 ? '...' : '') : '-'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{c.type || 'General'}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <select
+                        value={statusLabel}
+                        onChange={(e) => {
+                          const statusMapReverse: {[key: string]: string} = {
+                            'Pendiente': 'pending',
+                            'En Proceso': 'in_process',
+                            'Resuelto': 'resolved',
+                            'Rechazado': 'rejected'
+                          };
+                          const newStatus = statusMapReverse[e.target.value] || e.target.value;
+                          fetch(`/api/complaints/${c.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+                            .then(res => res.ok && setComplaints(prev => prev.map((x:any) => x.id === c.id ? { ...x, status: newStatus } : x)));
+                        }}
+                        className={`${getStatusColor(statusLabel)} focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer`}
+                      >
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En Proceso">En Proceso</option>
+                        <option value="Resuelto">Resuelto</option>
+                        <option value="Rechazado">Rechazado</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-3 hidden sm:table-cell">
+                      <div className="text-xs text-gray-900 dark:text-gray-100 flex items-center">
+                        <MapPin className="h-3 w-3 mr-1 text-gray-400 flex-shrink-0" />
+                        {c.location || '-'}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 hidden lg:table-cell">
+                      <div className="text-xs text-gray-900 dark:text-gray-100 flex items-center">
+                        <Clock className="h-3 w-3 mr-1 text-gray-400 flex-shrink-0" />
+                        {c.date ? new Date(c.date).toLocaleDateString('es-ES') : '-'}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={() => { setEditingComplaint(c); const statusLabels: {[key: string]: string} = { 'pending': 'Pendiente', 'in_process': 'En Proceso', 'resolved': 'Resuelto', 'rejected': 'Rechazado' }; setComplaintForm({ type: c.type || '', title: c.title || '', description: c.description || '', location: c.location || '', status: statusLabels[c.status] || c.status || 'Pendiente' }); setComplaintModalOpen(true); }}
+                          className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-200 p-1 hover:bg-green-50 dark:hover:bg-green-900 rounded"
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteComplaint(c.id)}
+                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors duration-200 p-1 hover:bg-red-50 dark:hover:bg-red-900 rounded"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredComplaints.length === 0 && (
+            <div className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              {complaints.length === 0 ? 'No hay quejas aún.' : 'No hay quejas que coincidan con tu búsqueda o filtro.'}
             </div>
-          ))}
-          {complaints.length === 0 && (
-            <div className="p-6 text-center text-sm text-gray-500">No hay quejas aún.</div>
           )}
         </div>
       </div>
@@ -2715,7 +2886,7 @@ export default function AdminDashboard() {
                 <p className="text-gray-600">Crea y administra zonas peligrosas</p>
               </div>
             </div>
-            <button onClick={() => { setEditingHotspot(null); setHotspotForm({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' }); setHotspotModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
+            <button onClick={() => { setEditingHotspot(null); setHotspotForm({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', lat: undefined, lng: undefined }); setHotspotModalOpen(true); }} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center space-x-2">
               <Plus className="h-4 w-4" />
               <span>Nuevo Hotspot</span>
             </button>
@@ -2754,8 +2925,8 @@ export default function AdminDashboard() {
         </div>
 
         {hotspotModalOpen && (
-          <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
-            <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-md">
+          <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white p-4 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold">{editingHotspot ? 'Editar Hotspot' : 'Crear Hotspot'}</h3>
                 <button onClick={() => setHotspotModalOpen(false)} className="text-gray-500">×</button>
@@ -2763,7 +2934,11 @@ export default function AdminDashboard() {
               <form className="space-y-3" onSubmit={async (e) => {
                 e.preventDefault();
                 const isoDate = hotspotForm.date ? `${hotspotForm.date}T${hotspotForm.time || '00:00'}:00.000Z` : new Date().toISOString();
-                const payload:any = { title: hotspotForm.title, description: hotspotForm.description, date: isoDate, dangerlevel: hotspotForm.dangerlevel, dangertime: hotspotForm.dangertime, author: 'admin' };
+                const payload:any = { title: hotspotForm.title, description: hotspotForm.description, date: isoDate, dangerlevel: hotspotForm.dangerlevel, author: 'admin' };
+                if (typeof hotspotForm.lat === 'number' && typeof hotspotForm.lng === 'number') {
+                  payload.lat = hotspotForm.lat;
+                  payload.lng = hotspotForm.lng;
+                }
                 if (editingHotspot) {
                   const id = editingHotspot._id || editingHotspot.id;
                   const res = await fetch(`/api/security/hotspots/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -2775,7 +2950,7 @@ export default function AdminDashboard() {
                   const res = await fetch('/api/security/hotspots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                   if (res.ok) { const created = await res.json(); setHotspots(prev => [created, ...prev]); }
                 }
-                setHotspotModalOpen(false); setEditingHotspot(null); setHotspotForm({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', dangertime: '' });
+                setHotspotModalOpen(false); setEditingHotspot(null); setHotspotForm({ title: '', description: '', date: '', time: '', dangerlevel: 'medium', lat: undefined, lng: undefined });
               }}>
                 <input value={hotspotForm.title} onChange={e=>setHotspotForm({ ...hotspotForm, title: e.target.value })} placeholder="Título" className="w-full border rounded-lg px-3 py-2" required />
                 <textarea value={hotspotForm.description} onChange={e=>setHotspotForm({ ...hotspotForm, description: e.target.value })} placeholder="Descripción" className="w-full border rounded-lg px-3 py-2" rows={3} />
@@ -2789,7 +2964,20 @@ export default function AdminDashboard() {
                     <option value="medium">Medio</option>
                     <option value="high">Alto</option>
                   </select>
-                  <input value={hotspotForm.dangertime} onChange={e=>setHotspotForm({ ...hotspotForm, dangertime: e.target.value })} placeholder="Franja horaria (opcional)" className="border rounded-lg px-3 py-2" />
+                </div>
+                <div className="border rounded-lg overflow-hidden">
+                  <HotspotsMap
+                    apiKey={import.meta.env.VITE_GOOGLE_MAPS_KEY || 'AIzaSyDluFc7caulw2jHJKsPM_mGnLa8oLuFgio'}
+                    points={[]}
+                    pickMode={true}
+                    selected={hotspotForm.lat && hotspotForm.lng ? { lat: hotspotForm.lat, lng: hotspotForm.lng } : undefined}
+                    onSelect={(coords) => setHotspotForm({ ...hotspotForm, lat: coords.lat, lng: coords.lng })}
+                    showAutocomplete={true}
+                    height={300}
+                  />
+                </div>
+                <div className="text-xs text-gray-500">
+                  {hotspotForm.lat && hotspotForm.lng ? `Ubicación seleccionada: ${hotspotForm.lat.toFixed(4)}, ${hotspotForm.lng.toFixed(4)}` : 'Haz clic en el mapa para seleccionar una ubicación'}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button type="button" onClick={()=>setHotspotModalOpen(false)} className="px-3 py-2 rounded-lg border">Cancelar</button>
@@ -2841,7 +3029,7 @@ export default function AdminDashboard() {
                         </button>
                       );
                     })()}
-                    <button onClick={() => { setEditingHotspot(h); setHotspotForm({ title, description, date: new Date(h.date).toISOString().slice(0,10), time: '', dangerlevel: level as any, dangertime: h.dangerTime || h.dangertime || '' }); setHotspotModalOpen(true); }} className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded" title="Editar">
+                    <button onClick={() => { setEditingHotspot(h); setHotspotForm({ title, description, date: new Date(h.date).toISOString().slice(0,10), time: '', dangerlevel: level as any, lat: h.lat, lng: h.lng }); setHotspotModalOpen(true); }} className="text-green-600 hover:text-green-800 transition-colors duration-200 p-1 hover:bg-green-50 rounded" title="Editar">
                       <Edit className="h-4 w-4" />
                     </button>
                     <button onClick={() => handleDeleteHotspot(String(id))} className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 hover:bg-red-50 rounded" title="Eliminar">
@@ -3222,9 +3410,6 @@ export default function AdminDashboard() {
               >
                 <IconComponent className="h-5 w-5 mb-1 transition-transform duration-200" />
                 <span className="text-xs font-medium transition-all duration-200">{item.label}</span>
-                {isActive && (
-                  <div className="absolute -bottom-1 w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
-                )}
               </button>
             );
           })}

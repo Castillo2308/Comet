@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Moon, Sun, Bell, Shield, Smartphone, Settings, Users, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,16 +11,18 @@ interface SettingsModalProps {
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     // Load saved preferences
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    const savedNotifications = localStorage.getItem('notifications') !== 'false';
+    const savedNotifications = localStorage.getItem('notificationsEnabled') !== 'false';
     
     setDarkMode(savedDarkMode);
-    setNotifications(savedNotifications);
+    setNotificationsEnabled(savedNotifications);
     
     // Apply dark mode
     if (savedDarkMode) {
@@ -27,7 +30,27 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, []);
+
+    // Fetch unread notifications count if enabled
+    if (savedNotifications && user?.cedula) {
+      fetchUnreadCount();
+    }
+  }, [user?.cedula]);
+
+  const fetchUnreadCount = async () => {
+    setLoadingNotifications(true);
+    try {
+      const response = await api('/notifications/unread/count');
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching unread notifications:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
 
   const handleDarkModeToggle = () => {
     const newDarkMode = !darkMode;
@@ -42,9 +65,16 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   const handleNotificationsToggle = () => {
-    const newNotifications = !notifications;
-    setNotifications(newNotifications);
-    localStorage.setItem('notifications', newNotifications.toString());
+    const newNotifications = !notificationsEnabled;
+    setNotificationsEnabled(newNotifications);
+    localStorage.setItem('notificationsEnabled', newNotifications.toString());
+    
+    // Fetch unread count when enabling notifications
+    if (newNotifications) {
+      fetchUnreadCount();
+    } else {
+      setUnreadCount(0);
+    }
   };
 
   if (!isOpen) return null;
@@ -107,26 +137,32 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* Notifications */}
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 flex-1">
                 <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                   <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white">Notificaciones</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Recibir alertas y actualizaciones
+                    {notificationsEnabled ? (
+                      <span>
+                        Activas {loadingNotifications ? '(cargando...)' : unreadCount > 0 ? `(${unreadCount} nuevas)` : ''}
+                      </span>
+                    ) : (
+                      'Desactivadas'
+                    )}
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleNotificationsToggle}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                  notifications ? 'bg-green-600' : 'bg-gray-300'
+                  notificationsEnabled ? 'bg-green-600' : 'bg-gray-300'
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                    notifications ? 'translate-x-6' : 'translate-x-1'
+                    notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
