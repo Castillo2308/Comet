@@ -3208,22 +3208,6 @@ export default function AdminDashboard() {
                       </button>
                     </div>
 
-                    {/* Notifications */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                          <Bell className="h-5 w-5 text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Notificaciones</h3>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Alertas del sistema</p>
-                        </div>
-                      </div>
-                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
-                        <span className="text-sm font-medium">Configurar</span>
-                      </button>
-                    </div>
-
                     {/* User Management */}
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200 cursor-pointer" onClick={() => setActiveTab('users')}>
                       <div className="flex items-center space-x-3">
@@ -3237,22 +3221,6 @@ export default function AdminDashboard() {
                       </div>
                       <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
                         <span className="text-sm font-medium">Ir →</span>
-                      </button>
-                    </div>
-
-                    {/* Security Settings */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                          <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Seguridad</h3>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Configuración de seguridad</p>
-                        </div>
-                      </div>
-                      <button className="text-blue-500 hover:text-blue-600 transition-colors duration-200">
-                        <span className="text-sm font-medium">Configurar</span>
                       </button>
                     </div>
 
